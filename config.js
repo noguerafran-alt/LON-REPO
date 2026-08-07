@@ -62,12 +62,16 @@ module.exports = {
     // F ("Cantidad a generar") es una columna de uso manual en la
     // planilla, no la escribe ni la lee esta app — se salta a proposito
     // para no pisarla.
-    foto: 6,           // G: URL de la foto del producto (/uploads/productos/archivo.jpg), vacio si no tiene
+    foto: 6,           // G: fotos del producto. Puede tener una URL sola
+                        // (/uploads/productos/archivo.jpg) o, si tiene mas
+                        // de una, un array JSON de hasta 4 URLs, ej:
+                        // ["/uploads/productos/a.jpg","/uploads/productos/b.jpg"]
     // H: fecha/hora de la ultima modificacion del precio. La app NO
     // escribe esta columna (el precio se edita a mano en Sheets, no
     // desde la app) — la completa un trigger onEdit en Apps Script, ver
     // ControlDeStock.gs.js / README.
     ultimaModificacionPrecio: 7,
+    descripcion: 8,     // I: descripcion libre del producto (opcional), se muestra en la pagina de detalle del catalogo publico
   },
 
   COLUMNAS_CONTADOR_UNIDADES: {
