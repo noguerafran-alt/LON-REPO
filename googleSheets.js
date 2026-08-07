@@ -238,13 +238,35 @@ async function getFilasImprimir(sheetsClient, spreadsheetId, sheetName) {
 }
 
 /**
+ * Interpreta el valor crudo de la columna de fotos (columna G de
+ * Productos). Puede venir vacio, con una URL suelta (formato viejo, un
+ * solo producto = una sola foto) o con un array JSON de hasta 4 URLs
+ * (formato nuevo, galeria). Siempre devuelve un array (posiblemente
+ * vacio), recortado a 4 elementos por las dudas.
+ */
+function parsearFotos(valorCrudo) {
+  const valor = valorCrudo ? String(valorCrudo).trim() : '';
+  if (!valor) return [];
+  if (valor.startsWith('[')) {
+    try {
+      const arr = JSON.parse(valor);
+      if (Array.isArray(arr)) return arr.filter(Boolean).map((f) => String(f).trim()).slice(0, 4);
+    } catch (e) {
+      // No era un JSON valido (dato viejo raro) — lo tratamos como URL suelta abajo.
+    }
+  }
+  return [valor];
+}
+
+/**
  * Lee la hoja de catalogo (config.HOJA_PRODUCTOS) y devuelve un array de
- * objetos { producto, categoria, subcategoria, skuGeneral, precio, foto }.
+ * objetos { producto, categoria, subcategoria, skuGeneral, precio, foto,
+ * fotos, descripcion }.
  * Usa config.COLUMNAS_PRODUCTOS para saber en que columna esta cada dato.
  */
 async function getCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
   const cols = config.COLUMNAS_PRODUCTOS;
-  const maxIndice = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.ultimaModificacionPrecio);
+  const maxIndice = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.ultimaModificacionPrecio, cols.descripcion);
   const ultimaLetra = columnaALetra(maxIndice);
   const range = `${sheetName}!A:${ultimaLetra}`;
 
@@ -262,13 +284,17 @@ async function getCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
     const skuGeneral = row[cols.skuGeneral] ? String(row[cols.skuGeneral]).trim() : '';
     if (skuGeneral === '') continue;
 
+    const fotos = parsearFotos(row[cols.foto]);
+
     productos.push({
       producto: row[cols.producto] ? String(row[cols.producto]).trim() : '',
       categoria: row[cols.categoria] ? String(row[cols.categoria]).trim() : '',
       subcategoria: row[cols.subcategoria] ? String(row[cols.subcategoria]).trim() : '',
       skuGeneral,
       precio: row[cols.precio] !== undefined ? row[cols.precio] : '',
-      foto: row[cols.foto] ? String(row[cols.foto]).trim() : '',
+      foto: fotos[0] || '',
+      fotos,
+      descripcion: row[cols.descripcion] ? String(row[cols.descripcion]).trim() : '',
       ultimaModificacionPrecio: row[cols.ultimaModificacionPrecio] ? String(row[cols.ultimaModificacionPrecio]).trim() : '',
     });
   }
@@ -588,23 +614,79 @@ async function buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, shee
 }
 
 /**
- * Actualiza la URL de la foto de un producto (columna Foto) en la hoja
+ * Agrega una foto a la galeria de un producto (columna Foto de la hoja
+ * Productos, que guarda un array JSON de hasta 4 URLs), buscandolo por
+ * SKU general. Devuelve { encontrado, fotos, limiteAlcanzado }:
+ *  - encontrado=false si el SKU general no existe en la hoja.
+ *  - limiteAlcanzado=true si ya tenia 4 fotos y no se agrego ninguna mas.
+ */
+async function agregarFotoProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, fotoUrl) {
+  const cols = config.COLUMNAS_PRODUCTOS;
+  const { numeroFila, fila } = await buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral);
+  if (!numeroFila) return { encontrado: false, fotos: [] };
+
+  const fotosActuales = parsearFotos(fila[cols.foto]);
+  if (fotosActuales.length >= 4) {
+    return { encontrado: true, fotos: fotosActuales, limiteAlcanzado: true };
+  }
+
+  const fotosNuevas = [...fotosActuales, fotoUrl];
+
+  await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetNameProductos, numeroFila);
+  const letraFoto = columnaALetra(cols.foto);
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetNameProductos}!${letraFoto}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[JSON.stringify(fotosNuevas)]] },
+  });
+
+  return { encontrado: true, fotos: fotosNuevas, limiteAlcanzado: false };
+}
+
+/**
+ * Saca una foto de la galeria de un producto por indice (0 a 3),
+ * buscandolo por SKU general. Devuelve { encontrado, fotos, fotoEliminada }.
+ */
+async function eliminarFotoProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, indice) {
+  const cols = config.COLUMNAS_PRODUCTOS;
+  const { numeroFila, fila } = await buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral);
+  if (!numeroFila) return { encontrado: false, fotos: [], fotoEliminada: null };
+
+  const fotosActuales = parsearFotos(fila[cols.foto]);
+  const fotoEliminada = fotosActuales[indice] || null;
+  const fotosNuevas = fotosActuales.filter((_, i) => i !== indice);
+
+  await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetNameProductos, numeroFila);
+  const letraFoto = columnaALetra(cols.foto);
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetNameProductos}!${letraFoto}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[fotosNuevas.length ? JSON.stringify(fotosNuevas) : '']] },
+  });
+
+  return { encontrado: true, fotos: fotosNuevas, fotoEliminada };
+}
+
+/**
+ * Actualiza la descripcion (columna I) de un producto en la hoja
  * Productos, buscandolo por SKU general. Devuelve true si lo encontro y
  * actualizo, false si el SKU general no existe en la hoja.
  */
-async function actualizarFotoProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, fotoUrl) {
+async function actualizarDescripcionProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, descripcion) {
   const cols = config.COLUMNAS_PRODUCTOS;
   const { numeroFila } = await buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral);
   if (!numeroFila) return false;
 
   await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetNameProductos, numeroFila);
-  const letraFoto = columnaALetra(cols.foto);
+  const letraDescripcion = columnaALetra(cols.descripcion);
 
   await sheetsClient.spreadsheets.values.update({
     spreadsheetId,
-    range: `${sheetNameProductos}!${letraFoto}${numeroFila}`,
+    range: `${sheetNameProductos}!${letraDescripcion}${numeroFila}`,
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [[fotoUrl]] },
+    requestBody: { values: [[descripcion || '']] },
   });
 
   return true;
@@ -1256,7 +1338,9 @@ module.exports = {
   getSiguienteNumeroProducto,
   crearProductoNuevo,
   buscarFilaProductoPorSkuGeneral,
-  actualizarFotoProducto,
+  agregarFotoProducto,
+  eliminarFotoProducto,
+  actualizarDescripcionProducto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
