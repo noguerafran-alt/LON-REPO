@@ -21,7 +21,9 @@ const {
   getConfigCategorias,
   crearCategoriaConfig,
   crearProductoNuevo,
-  actualizarFotoProducto,
+  agregarFotoProducto,
+  eliminarFotoProducto,
+  actualizarDescripcionProducto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
@@ -553,12 +555,18 @@ app.get('/catalogo-publico', async (req, res) => {
     // precio por unidad individual y puede quedar viejo).
     const precioPorSkuGeneral = {};
     const fotoPorSkuGeneral = {};
+    const fotosPorSkuGeneral = {};
+    const descripcionPorSkuGeneral = {};
     catalogoProductos.forEach((p) => {
       if (p.skuGeneral && p.precio !== '' && p.precio !== undefined) {
         precioPorSkuGeneral[p.skuGeneral] = p.precio;
       }
       if (p.skuGeneral && p.foto) {
         fotoPorSkuGeneral[p.skuGeneral] = p.foto;
+      }
+      if (p.skuGeneral) {
+        fotosPorSkuGeneral[p.skuGeneral] = p.fotos || [];
+        descripcionPorSkuGeneral[p.skuGeneral] = p.descripcion || '';
       }
     });
 
@@ -580,6 +588,8 @@ app.get('/catalogo-publico', async (req, res) => {
         disponible: cantidadActual > 0,
         precio: precioPorSkuGeneral[skuGeneral] || null,
         foto: fotoPorSkuGeneral[skuGeneral] || null,
+        fotos: fotosPorSkuGeneral[skuGeneral] || [],
+        descripcion: descripcionPorSkuGeneral[skuGeneral] || '',
       });
     }
 
@@ -790,20 +800,87 @@ app.post('/admin/producto/foto', (req, res) => {
 
       const fotoUrl = `/uploads/productos/${req.file.filename}`;
       const sheetsClient = google.sheets({ version: 'v4', auth });
-      const encontrado = await actualizarFotoProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), fotoUrl);
+      const resultado = await agregarFotoProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), fotoUrl);
 
-      if (!encontrado) {
+      if (!resultado.encontrado) {
         fs.unlink(req.file.path, () => {});
         return res.status(404).json({ error: `No se encontró el producto con SKU general "${skuGeneral}".` });
       }
 
-      res.json({ ok: true, foto: fotoUrl });
+      if (resultado.limiteAlcanzado) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ error: 'Este producto ya tiene el máximo de 4 fotos. Borrá una antes de subir otra.' });
+      }
+
+      res.json({ ok: true, foto: fotoUrl, fotos: resultado.fotos });
     } catch (err) {
       console.error('Error subiendo la foto del producto:', err.message);
       if (req.file) fs.unlink(req.file.path, () => {});
       res.status(500).json({ error: 'No se pudo guardar la foto.' });
     }
   });
+});
+
+/* Saca una foto puntual (por indice, 0 a 3) de la galeria de un producto.
+   Si la foto era un archivo subido a este servidor (/uploads/productos/...),
+   tambien lo borra del disco. Requiere admin. */
+app.post('/admin/producto/foto/eliminar', async (req, res) => {
+  try {
+    const { password, skuGeneral, indice } = req.body;
+    if (!checkAdmin(password)) {
+      return res.status(401).json({ error: 'No autorizado.' });
+    }
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+    const indiceNumerico = Number(indice);
+    if (Number.isNaN(indiceNumerico) || indiceNumerico < 0) {
+      return res.status(400).json({ error: 'Índice de foto inválido.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const resultado = await eliminarFotoProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), indiceNumerico);
+
+    if (!resultado.encontrado) {
+      return res.status(404).json({ error: `No se encontró el producto con SKU general "${skuGeneral}".` });
+    }
+
+    if (resultado.fotoEliminada && resultado.fotoEliminada.startsWith('/uploads/productos/')) {
+      const rutaArchivo = path.join(__dirname, 'public', resultado.fotoEliminada);
+      fs.unlink(rutaArchivo, () => {}); // si no existe o falla, no pasa nada grave
+    }
+
+    res.json({ ok: true, fotos: resultado.fotos });
+  } catch (err) {
+    console.error('Error borrando la foto del producto:', err.message);
+    res.status(500).json({ error: 'No se pudo borrar la foto.' });
+  }
+});
+
+/* Actualiza la descripcion (texto libre) de un producto, mostrada en la
+   pagina de detalle del catalogo publico. Requiere admin. */
+app.post('/admin/producto/descripcion', async (req, res) => {
+  try {
+    const { password, skuGeneral, descripcion } = req.body;
+    if (!checkAdmin(password)) {
+      return res.status(401).json({ error: 'No autorizado.' });
+    }
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const encontrado = await actualizarDescripcionProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), String(descripcion || '').trim());
+
+    if (!encontrado) {
+      return res.status(404).json({ error: `No se encontró el producto con SKU general "${skuGeneral}".` });
+    }
+
+    res.json({ ok: true, descripcion: String(descripcion || '').trim() });
+  } catch (err) {
+    console.error('Error actualizando la descripción del producto:', err.message);
+    res.status(500).json({ error: 'No se pudo guardar la descripción.' });
+  }
 });
 
 /* ============================================================
