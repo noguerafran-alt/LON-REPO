@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escanear producto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#F6EFE4; --bg-alt:#EDE3D0; --ink:#3B1220; --ink-muted:#8C5B66;
+    --line:rgba(59,18,32,0.18); --accent:#A9762A; --accent-soft:rgba(169,118,42,0.14);
+    --stamp-green:#2F7D4F; --stamp-green-soft:rgba(47,125,79,0.14);
+    --stamp-red:#B14A2E; --stamp-red-soft:rgba(177,74,46,0.14);
+    --field-bg:#FFFFFF; --field-text:#3B1220; --radius:3px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Archivo', -apple-system, sans-serif;
+    display:flex; flex-direction:column; min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--ink-muted);
+  }
+
+  header{
+    padding:14px 20px; border-bottom:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .volver-catalogo-header{
+    background:none; border:none; color:var(--ink-muted);
+    font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.04em;
+    text-decoration:none; cursor:pointer; padding:0; white-space:nowrap;
+  }
+  .admin-link-header{
+    background:none; border:none; color:var(--ink-muted);
+    font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.04em;
+    text-decoration:none; cursor:pointer; padding:0; white-space:nowrap;
+  }
+
+  .logo-catalogo{ width:100%; display:flex; justify-content:center; margin:24px 0 4px; }
+  .logo-catalogo img{ width:auto; height:56px; object-fit:contain; }
+
+  #reader{ width:100%; max-width:480px; margin:20px auto 0; padding:0 24px; overflow:hidden; }
+  #reader video{
+    border-radius:var(--radius); border:1px solid var(--line);
+    width:100% !important; height:auto !important; object-fit:cover;
+  }
+
+  .instruccion-escaneo{
+    color:var(--ink); font-weight:700; text-align:center; font-size:15px;
+    margin:14px 24px 0;
+  }
+
+  .status-bar{
+    margin:16px 24px; padding:13px 16px; border-radius:var(--radius); background:var(--bg-alt);
+    border:1px solid var(--line); font-size:13px; text-align:center; color:var(--ink-muted);
+    font-family:'IBM Plex Mono', monospace; transition:background .2s, color .2s, border-color .2s;
+  }
+  .status-bar.ok{ background:var(--stamp-green-soft); border-color:var(--stamp-green); color:var(--stamp-green); }
+  .status-bar.error{ background:var(--stamp-red-soft); border-color:var(--stamp-red); color:var(--stamp-red); }
+
+  .bloque-contacto{
+    padding:0 24px; margin-top:20px; display:flex; flex-direction:column; align-items:center; text-align:center;
+  }
+  .btn-contacto{
+    background:var(--accent); color:#FFFFFF; border:none; border-radius:var(--radius);
+    padding:14px 28px; font-size:15px; font-weight:700; font-family:'Archivo', sans-serif;
+    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  }
+  .bloque-contacto .login-box{ margin-top:16px; }
+
+  .login-box{ width:100%; max-width:280px; text-align:left; margin:0 auto; }
+  .login-box label{
+    display:block; font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-muted); margin:0 0 6px 1px;
+  }
+  .login-box input{
+    width:100%; padding:13px 14px; font-size:15px; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
+    margin-bottom:16px; color:var(--field-text);
+  }
+  .login-box input::placeholder{ color:#9a9488; }
+  .login-box input:focus{ outline:none; border-color:var(--accent); }
+  .opcional-tag{ text-transform:none; letter-spacing:0; font-weight:400; }
+  .login-box button{
+    width:100%; padding:14px; font-size:15px; font-weight:600; font-family:'Archivo', sans-serif;
+    border:none; border-radius:var(--radius); background:var(--ink); color:var(--bg); cursor:pointer;
+    margin-bottom:10px;
+  }
+  .aviso-privacidad{
+    font-size:11px; color:var(--ink-muted); max-width:280px; margin:14px auto 0; line-height:1.4;
+  }
+
+  .log{ margin:44px 24px 44px; flex:1; overflow-y:auto; }
+  .log h2{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-muted); margin:0 0 10px; font-weight:400; }
+  .log-item{
+    display:flex; justify-content:space-between; align-items:center; padding:11px 0;
+    border-bottom:1px solid var(--line); font-size:14px; gap:8px;
+  }
+  .log-item .sku-time-btn{
+    display:block; text-align:left; background:none; border:none; padding:0; margin:0;
+    font-family:'Archivo', sans-serif; font-size:14px; color:var(--ink); cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .badge{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; font-weight:500; letter-spacing:0.04em;
+    padding:4px 8px; border-radius:var(--radius); white-space:nowrap; border:1px solid;
+  }
+  .badge.consulta{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,5,10,0.55);
+    display:none; align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--bg); border:1px solid var(--accent); border-radius:var(--radius);
+    padding:28px 24px; max-width:340px; width:100%; text-align:center; position:relative;
+    overflow:hidden;
+  }
+  .modal p.label{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--ink-muted);
+    margin:0 0 6px; letter-spacing:0.1em; text-transform:uppercase;
+  }
+  .modal h2{
+    font-family:'Fraunces', serif; font-weight:600; font-size:21px; margin:0 0 2px; line-height:1.2;
+    color:var(--ink);
+  }
+  .modal .sku-chico{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-muted); margin:0 0 18px; }
+  .modal .precio{ font-family:'Fraunces', serif; font-size:30px; font-weight:600; color:var(--accent); margin:0 0 22px; }
+  .modal .precio.no-encontrado{ font-family:'Archivo', sans-serif; font-size:14px; font-weight:500; color:var(--stamp-red); }
+
+  .stamp-in{ animation: stampDown 320ms cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes stampDown{
+    0%{ transform:scale(1.5) rotate(-6deg); opacity:0; }
+    60%{ transform:scale(0.97) rotate(1deg); opacity:1; }
+    100%{ transform:scale(1) rotate(0deg); opacity:1; }
+  }
+
+  .modal-buttons{ display:flex; flex-direction:column; gap:10px; }
+  .modal-buttons button{
+    border:1px solid var(--ink); border-radius:var(--radius); padding:14px;
+    font-family:'Archivo', sans-serif; font-size:15px; font-weight:600; cursor:pointer;
+    background:transparent; color:var(--ink); transition:background .15s ease;
+  }
+  .btn-cerrar{ background:var(--ink); color:var(--bg); }
+  .btn-ver-catalogo{ background:none; border:1px solid var(--accent); color:var(--accent); }
+
+  @media (prefers-reduced-motion: reduce){ .stamp-in{ animation:none; } }
+
+  @media (max-width: 360px){
+    .volver-catalogo-header, .admin-link-header{ font-size:10px; }
+  }
+
+  .footer-legal{
+    padding:14px 10px; padding-bottom:max(14px, env(safe-area-inset-bottom));
+    font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:0.02em;
+    color:var(--ink-muted); text-align:center; border-top:1px solid var(--line);
+  }
+  .footer-legal a{ color:var(--ink-muted); text-decoration:none; }
+
+  .fullscreen{
+    position:fixed; inset:0; background:var(--bg); z-index:2000;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:28px; padding-bottom:56px; text-align:center; overflow-y:auto;
+  }
+  .fullscreen.hidden{ display:none; }
+  .fullscreen h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:26px; margin:0 0 6px;
+    letter-spacing:-0.01em; color:var(--ink);
+  }
+  .fullscreen p.sub{ color:var(--ink-muted); font-size:14px; margin:0 0 26px; max-width:280px; }
+  .gate-botones{ width:100%; max-width:280px; display:flex; flex-direction:column; gap:12px; }
+  .gate-botones button{
+    padding:16px; font-size:15px; font-weight:700; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); cursor:pointer;
+  }
+  .btn-gate-contacto{ background:var(--accent); color:#FFFFFF; border:none; }
+  .btn-gate-continuar{ background:none; color:var(--ink-muted); border:1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<div class="fullscreen" id="pantallaGate">
+  <p class="eyebrow">Antes de empezar</p>
+  <h1>¡Hola!</h1>
+  <p class="sub">¿Querés dejarnos tu contacto o preferís pasar directo a ver los precios?</p>
+  <div class="gate-botones">
+    <button class="btn-gate-contacto" id="btnGateContacto">✉️ Dejanos tu contacto</button>
+    <button class="btn-gate-continuar" id="btnGateContinuar">Continuar a ver precios</button>
+  </div>
+</div>
+
+<div class="fullscreen hidden" id="pantallaGateFormulario">
+  <div class="login-box">
+    <label for="inputNombreGate">Nombre</label>
+    <input type="text" id="inputNombreGate" placeholder="Tu nombre" autocomplete="name">
+
+    <label for="inputEmailGate">Email <span class="opcional-tag">(opcional)</span></label>
+    <input type="email" id="inputEmailGate" placeholder="tu@email.com" autocomplete="email">
+
+    <label for="inputTelefonoGate">Teléfono <span class="opcional-tag">(opcional)</span></label>
+    <input type="tel" id="inputTelefonoGate" placeholder="Tu teléfono" autocomplete="tel">
+
+    <button id="btnGateEnviar">Continuar</button>
+  </div>
+  <p class="aviso-privacidad">Tus datos se usan únicamente para responder tu consulta y no se comparten con terceros. Podés pedir que los eliminemos cuando quieras.</p>
+</div>
+
+<header>
+  <a class="volver-catalogo-header" href="/">← Volver al catálogo</a>
+  <a class="admin-link-header" href="/admin.html">Admin</a>
+</header>
+
+<div class="logo-catalogo"><img src="/logo2.png" alt="LON"></div>
+
+<div id="reader"></div>
+<p class="instruccion-escaneo">Apuntá la cámara al código QR del producto</p>
+<div class="status-bar" id="statusBar">Esperando código QR...</div>
+
+<div class="bloque-contacto">
+  <button class="btn-contacto" id="btnMostrarContacto">✉️ Dejanos tu contacto</button>
+  <div id="boxContacto" style="display:none; margin-top:16px;" class="login-box">
+    <label for="inputNombreContacto">Nombre</label>
+    <input type="text" id="inputNombreContacto" placeholder="Tu nombre" autocomplete="name">
+
+    <label for="inputEmailContacto">Email <span class="opcional-tag">(opcional)</span></label>
+    <input type="email" id="inputEmailContacto" placeholder="tu@email.com" autocomplete="email">
+
+    <label for="inputTelefonoContacto">Teléfono <span class="opcional-tag">(opcional)</span></label>
+    <input type="tel" id="inputTelefonoContacto" placeholder="Tu teléfono" autocomplete="tel">
+
+    <button id="btnEnviarContacto">Enviar</button>
+    <div id="mensajeContacto" style="margin-top:8px; font-size:13px;"></div>
+    <p class="aviso-privacidad">Tus datos se usan únicamente para responder tu consulta y no se comparten con terceros. Podés pedir que los eliminemos cuando quieras.</p>
+  </div>
+</div>
+
+<div class="log">
+  <h2>Últimos escaneados</h2>
+  <div id="logList"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalCard">
+    <p class="label">SKU escaneado</p>
+    <h2 id="modalNombre">-</h2>
+    <p class="sku-chico" id="modalSku">-</p>
+    <p class="precio" id="modalPrecio">Buscando...</p>
+    <div class="modal-buttons">
+      <button class="btn-ver-catalogo" id="btnVerCatalogo">Ver en catálogo</button>
+      <button class="btn-cerrar" id="btnCerrarCliente">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer-legal">
+  © 2026 NFL Data Analysis — Todos los derechos reservados · Software licenciado para uso exclusivo de LON Philosophy
+  · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a>
+</div>
+
+<script>
+  const statusBar = document.getElementById('statusBar');
+  const logList = document.getElementById('logList');
+  const overlay = document.getElementById('overlay');
+  const modalCard = document.getElementById('modalCard');
+  const modalNombre = document.getElementById('modalNombre');
+  const modalSku = document.getElementById('modalSku');
+  const modalPrecio = document.getElementById('modalPrecio');
+  const btnCerrarCliente = document.getElementById('btnCerrarCliente');
+
+  let lastScanned = null;
+  let lastScanTime = 0;
+  let isBusy = false;
+  let pendingSku = null;
+  let pendingNombre = '';
+  let modoSoloVista = false;
+
+  function addLogEntry(sku, nombre, estado){
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.innerHTML = `
+      <button type="button" class="sku-time-btn">
+        <span>${nombre || sku}</span>
+      </button>
+      <span class="badge consulta">${estado}</span>
+    `;
+    item.querySelector('.sku-time-btn').addEventListener('click', () => {
+      lastScanned = null;
+      isBusy = true;
+      showModal(sku, { ocultarSku: true });
+    });
+    logList.prepend(item);
+  }
+
+  async function showModal(sku, opciones = {}){
+    pendingSku = sku;
+    pendingNombre = '';
+    modoSoloVista = Boolean(opciones.ocultarSku);
+    modalCard.classList.remove('stamp-in');
+    modalSku.style.display = opciones.ocultarSku ? 'none' : 'block';
+    modalSku.textContent = sku;
+    modalNombre.textContent = 'Buscando...';
+    modalPrecio.className = 'precio';
+    modalPrecio.textContent = '';
+    overlay.classList.add('show');
+
+    try {
+      const res = await fetch(`/producto/${encodeURIComponent(sku)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        modalNombre.textContent = 'No encontrado';
+        modalPrecio.className = 'precio no-encontrado';
+        modalPrecio.textContent = data.error || 'Producto no encontrado';
+      } else {
+        pendingNombre = data.nombre || '';
+        modalNombre.textContent = data.nombre || '(sin nombre)';
+        modalPrecio.className = 'precio';
+        modalPrecio.textContent = `$${data.precio}`;
+      }
+      void modalCard.offsetWidth;
+      modalCard.classList.add('stamp-in');
+    } catch (err) {
+      modalNombre.textContent = 'Error';
+      modalPrecio.className = 'precio no-encontrado';
+      modalPrecio.textContent = 'No se pudo consultar el producto';
+      modalCard.classList.add('stamp-in');
+    }
+  }
+
+  function hideModal(){
+    overlay.classList.remove('show');
+    pendingSku = null;
+  }
+
+  async function guardarConsultaCliente(sku){
+    // Revisamos el localStorage justo ahora (no solo lo que se cargo al
+    // abrir la pagina), por si el contacto se dejo en otra pestana/momento
+    // mientras esta pagina ya estaba abierta.
+    const datosActuales = getContactoGuardado() || clienteDatos;
+    try {
+      await fetch('/consulta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku,
+          nombre: datosActuales.nombre,
+          email: datosActuales.email,
+          telefono: datosActuales.telefono,
+        })
+      });
+    } catch (err) {
+      console.warn('No se pudo registrar la consulta:', err);
+    }
+  }
+
+  function extraerSkuGeneral(skuCompleto){
+    const partes = String(skuCompleto).split('-');
+    if (partes.length <= 1) return skuCompleto;
+    partes.pop();
+    return partes.join('-');
+  }
+
+  document.getElementById('btnVerCatalogo').addEventListener('click', () => {
+    const sku = pendingSku;
+    if (!sku) return;
+    const skuGeneral = extraerSkuGeneral(sku);
+    window.location.href = `/?producto=${encodeURIComponent(skuGeneral)}`;
+  });
+
+  btnCerrarCliente.addEventListener('click', () => {
+    const sku = pendingSku;
+    const nombre = pendingNombre;
+    const eraSoloVista = modoSoloVista;
+    hideModal();
+    isBusy = false;
+    if (eraSoloVista) return; // solo estabamos reviendo una consulta pasada, no registramos nada de nuevo
+
+    statusBar.className = 'status-bar';
+    statusBar.textContent = `Consultado: ${nombre || sku}`;
+    addLogEntry(sku, nombre, 'Consulta');
+    guardarConsultaCliente(sku);
+  });
+
+  function handleScan(decodedText){
+    const now = Date.now();
+    if (isBusy || (decodedText === lastScanned && now - lastScanTime < 4000)) return;
+    lastScanned = decodedText;
+    lastScanTime = now;
+    isBusy = true;
+    showModal(decodedText);
+  }
+
+  let scanner = null;
+  let escanerIniciado = false;
+
+  function iniciarEscanerSiHaceFalta(){
+    if (escanerIniciado) return;
+    escanerIniciado = true;
+
+    scanner = new Html5Qrcode('reader', {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.ITF,
+      ]
+    });
+    scanner.start(
+      { facingMode: 'environment' },
+      {
+        fps: 10,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const lado = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.5);
+          return { width: lado, height: Math.floor(lado * 1.25) };
+        }
+      },
+      (decodedText) => { handleScan(decodedText); },
+      () => {}
+    ).catch((err) => {
+      statusBar.className = 'status-bar error';
+      statusBar.textContent = 'No se pudo acceder a la cámara. Revisá los permisos del navegador.';
+      escanerIniciado = false;
+    });
+  }
+
+  function reiniciarEscaner(){
+    if (scanner) {
+      scanner.stop()
+        .catch(() => {})
+        .finally(() => {
+          scanner = null;
+          escanerIniciado = false;
+          iniciarEscanerSiHaceFalta();
+        });
+    } else {
+      escanerIniciado = false;
+      iniciarEscanerSiHaceFalta();
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') reiniciarEscaner();
+  });
+  window.addEventListener('pageshow', (evento) => {
+    if (evento.persisted) reiniciarEscaner();
+  });
+
+  /* ------------------------------------------------------------
+   * PANTALLA DE BIENVENIDA: contacto u omitir
+   * Si la persona ya dejo su contacto antes (en este navegador), no
+   * se le vuelve a pedir: pasamos directo a la camara.
+   * ------------------------------------------------------------ */
+  const CLAVE_CONTACTO_GUARDADO = 'lon_contacto_cliente';
+  let clienteDatos = { nombre: '', email: '', telefono: '' };
+
+  function getContactoGuardado(){
+    try {
+      const crudo = localStorage.getItem(CLAVE_CONTACTO_GUARDADO);
+      return crudo ? JSON.parse(crudo) : null;
+    } catch (e) { return null; }
+  }
+  function guardarContactoLocal(datos){
+    try { localStorage.setItem(CLAVE_CONTACTO_GUARDADO, JSON.stringify(datos)); } catch (e) {}
+  }
+
+  const pantallaGate = document.getElementById('pantallaGate');
+  const pantallaGateFormulario = document.getElementById('pantallaGateFormulario');
+
+  function continuarDespuesDelGate(){
+    pantallaGate.classList.add('hidden');
+    pantallaGateFormulario.classList.add('hidden');
+    iniciarEscanerSiHaceFalta();
+  }
+
+  const contactoGuardado = getContactoGuardado();
+  if (contactoGuardado) {
+    clienteDatos = contactoGuardado;
+    continuarDespuesDelGate();
+    document.querySelector('.bloque-contacto').style.display = 'none';
+  }
+
+  document.getElementById('btnGateContinuar').addEventListener('click', () => {
+    continuarDespuesDelGate();
+  });
+
+  document.getElementById('btnGateContacto').addEventListener('click', () => {
+    pantallaGate.classList.add('hidden');
+    pantallaGateFormulario.classList.remove('hidden');
+  });
+
+  document.getElementById('btnGateEnviar').addEventListener('click', () => {
+    clienteDatos = {
+      nombre: document.getElementById('inputNombreGate').value.trim(),
+      email: document.getElementById('inputEmailGate').value.trim(),
+      telefono: document.getElementById('inputTelefonoGate').value.trim(),
+    };
+    guardarContactoLocal(clienteDatos);
+    continuarDespuesDelGate();
+    document.querySelector('.bloque-contacto').style.display = 'none';
+  });
+
+  /* ------------------------------------------------------------
+   * DEJANOS TU CONTACTO (inline)
+   * ------------------------------------------------------------ */
+  const btnMostrarContacto = document.getElementById('btnMostrarContacto');
+  const boxContacto = document.getElementById('boxContacto');
+  const btnEnviarContacto = document.getElementById('btnEnviarContacto');
+  const mensajeContacto = document.getElementById('mensajeContacto');
+
+  btnMostrarContacto.addEventListener('click', () => {
+    if (getContactoGuardado()) {
+      boxContacto.style.display = 'none';
+      mensajeContacto.style.color = 'var(--stamp-green)';
+      mensajeContacto.textContent = '¡Ya tenemos tu contacto guardado, gracias!';
+      return;
+    }
+    const mostrando = boxContacto.style.display !== 'none';
+    boxContacto.style.display = mostrando ? 'none' : 'block';
+  });
+
+  btnEnviarContacto.addEventListener('click', async () => {
+    const nombre = document.getElementById('inputNombreContacto').value.trim();
+    const email = document.getElementById('inputEmailContacto').value.trim();
+    const telefono = document.getElementById('inputTelefonoContacto').value.trim();
+
+    mensajeContacto.style.color = '';
+    mensajeContacto.textContent = '';
+    btnEnviarContacto.disabled = true;
+    btnEnviarContacto.textContent = 'Enviando...';
+
+    try {
+      const res = await fetch('/consulta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku: '', nombre, email, telefono }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      mensajeContacto.style.color = 'var(--stamp-green)';
+      mensajeContacto.textContent = '¡Gracias! Ya registramos tu contacto.';
+      clienteDatos = { nombre, email, telefono };
+      guardarContactoLocal(clienteDatos);
+      document.getElementById('inputNombreContacto').value = '';
+      document.getElementById('inputEmailContacto').value = '';
+      document.getElementById('inputTelefonoContacto').value = '';
+      setTimeout(() => {
+        const bloque = document.querySelector('.bloque-contacto');
+        if (bloque) bloque.style.display = 'none';
+      }, 2500);
+    } catch (err) {
+      mensajeContacto.style.color = 'var(--stamp-red)';
+      mensajeContacto.textContent = `No se pudo enviar: ${err.message}`;
+    } finally {
+      btnEnviarContacto.disabled = false;
+      btnEnviarContacto.textContent = 'Enviar';
+    }
+  });
+</script>
+</body>
+</html>
