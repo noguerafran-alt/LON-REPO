@@ -1,0 +1,22 @@
+{
+  "name": "qr-sku-scanner",
+  "version": "2.0.0",
+  "description": "Escanea un SKU por QR, gestiona catálogo con fotos, cobra con Mercado Pago, coordina envíos y atiende por WhatsApp con un chatbot.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "googleapis": "^140.0.1",
+    "bwip-js": "^4.3.2",
+    "pdfkit": "^0.15.0",
+    "qrcode": "^1.5.4",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^9.0.3"
+  }
+}
