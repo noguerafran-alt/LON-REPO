@@ -170,9 +170,21 @@
     color:var(--ink-muted); font-size:12px; font-family:'IBM Plex Mono', monospace; margin-bottom:16px;
   }
   .detalle-producto .foto-detalle img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .detalle-producto .miniaturas-detalle{
+    display:flex; gap:8px; max-width:320px; margin:0 0 16px;
+  }
+  .detalle-producto .miniaturas-detalle button{
+    width:56px; height:56px; padding:0; border-radius:var(--radius); overflow:hidden; cursor:pointer;
+    background:var(--bg-alt); border:1px solid var(--line); flex-shrink:0;
+  }
+  .detalle-producto .miniaturas-detalle button.activa{ border-color:var(--accent); border-width:2px; }
+  .detalle-producto .miniaturas-detalle img{ width:100%; height:100%; object-fit:cover; display:block; }
   .detalle-producto .nombre{ font-family:'Fraunces', serif; font-weight:600; font-size:24px; color:var(--ink); margin:0 0 6px; }
   .detalle-producto .meta{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ink-muted); margin-bottom:4px; }
   .detalle-producto .precio{ font-size:20px; font-weight:700; color:var(--accent); margin-top:14px; }
+  .detalle-producto .descripcion-producto{
+    font-size:14px; line-height:1.6; color:var(--ink); max-width:520px; margin:16px 0 0; white-space:pre-wrap;
+  }
   .detalle-producto .btn-comprar{
     display:block; width:100%; max-width:320px; margin-top:18px; padding:14px; font-size:15px; font-weight:700;
     font-family:'Archivo', sans-serif; border:none; border-radius:var(--radius); background:var(--accent);
@@ -180,6 +192,13 @@
   }
   .detalle-producto .btn-comprar:disabled{ opacity:.5; cursor:default; }
   .detalle-producto .sin-stock-aviso{ margin-top:14px; font-size:13px; color:var(--stamp-red); }
+  .seccion-relacionados{ margin-top:36px; max-width:900px; }
+  .seccion-relacionados h3{
+    font-family:'Fraunces', serif; font-weight:600; font-size:18px; color:var(--ink); margin:0 0 12px;
+  }
+  .grilla-relacionados{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:14px;
+  }
 
   .btn-contacto{
     background:var(--accent); color:#FFFFFF; border:none; border-radius:var(--radius);
@@ -508,26 +527,101 @@
     });
   }
 
+  function fotosDelProducto(producto){
+    if (Array.isArray(producto.fotos) && producto.fotos.length > 0) return producto.fotos;
+    if (producto.foto) return [producto.foto];
+    return [];
+  }
+
   function mostrarDetalleProductoPublico(producto){
     const puedeComprar = Boolean(producto.precio) && producto.disponible;
+    const fotos = fotosDelProducto(producto);
+
+    const miniaturasHtml = fotos.length > 1 ? `
+      <div class="miniaturas-detalle">
+        ${fotos.map((url, indice) => `
+          <button type="button" data-foto-indice="${indice}" class="${indice === 0 ? 'activa' : ''}">
+            <img src="${escaparHtmlPublico(url)}" alt="Miniatura ${indice + 1}">
+          </button>
+        `).join('')}
+      </div>
+    ` : '';
+
     catalogoDetalleContenido.innerHTML = `
       <div class="detalle-producto">
-        <div class="foto-detalle">${fotoOPlaceholder(producto.foto)}</div>
+        <div class="foto-detalle" id="fotoPrincipalDetalle">${fotos.length ? `<img src="${escaparHtmlPublico(fotos[0])}" alt="Foto del producto">` : 'Sin foto'}</div>
+        ${miniaturasHtml}
         <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
         <div class="meta">${escaparHtmlPublico(producto.categoria || '')}</div>
         <div class="meta">${producto.disponible ? 'En stock' : 'Sin stock'}</div>
         ${producto.precio ? `<div class="precio">$${escaparHtmlPublico(String(producto.precio))}</div>` : ''}
         <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>Comprar</button>
         ${!puedeComprar ? '<div class="sin-stock-aviso">' + (producto.disponible ? 'Todavía no tiene precio cargado para comprar online.' : 'Sin stock por el momento.') + '</div>' : ''}
+        ${producto.descripcion ? `<p class="descripcion-producto">${escaparHtmlPublico(producto.descripcion)}</p>` : ''}
       </div>
+      <div id="seccionRelacionadosDetalle"></div>
     `;
     catalogoListaView.style.display = 'none';
     catalogoDetalleView.style.display = 'block';
+    window.scrollTo(0, 0);
 
     const btnComprar = document.getElementById('btnComprarProducto');
     if (btnComprar) {
       btnComprar.addEventListener('click', () => abrirCheckout(producto));
     }
+
+    if (fotos.length > 1) {
+      const fotoPrincipalDetalle = document.getElementById('fotoPrincipalDetalle');
+      catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((boton) => {
+        boton.addEventListener('click', () => {
+          const indice = Number(boton.getAttribute('data-foto-indice'));
+          fotoPrincipalDetalle.innerHTML = `<img src="${escaparHtmlPublico(fotos[indice])}" alt="Foto del producto">`;
+          catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((b) => b.classList.remove('activa'));
+          boton.classList.add('activa');
+        });
+      });
+    }
+
+    renderizarRelacionados(producto);
+  }
+
+  function renderizarRelacionados(producto){
+    const contenedor = document.getElementById('seccionRelacionadosDetalle');
+    if (!contenedor) return;
+
+    const relacionados = catalogoPublicoProductos.filter((p) =>
+      p.skuGeneral !== producto.skuGeneral && (p.categoria || '') === (producto.categoria || '')
+    ).slice(0, 6);
+
+    if (relacionados.length === 0) {
+      contenedor.innerHTML = '';
+      return;
+    }
+
+    contenedor.innerHTML = `
+      <div class="seccion-relacionados">
+        <h3>También te puede interesar</h3>
+        <div class="grilla-relacionados">
+          ${relacionados.map((p, indice) => `
+            <div class="item-catalogo-publico">
+              <div class="foto-item">${fotoOPlaceholder(p.foto)}</div>
+              <div class="info-item">
+                <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
+                <div class="meta">${p.precio ? '$' + escaparHtmlPublico(String(p.precio)) + ' · ' : ''}${p.disponible ? 'En stock' : 'Sin stock'}</div>
+                <button type="button" data-relacionado-indice="${indice}">Ver más</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    contenedor.querySelectorAll('button[data-relacionado-indice]').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        const indice = Number(boton.getAttribute('data-relacionado-indice'));
+        mostrarDetalleProductoPublico(relacionados[indice]);
+      });
+    });
   }
 
   btnVolverDeDetalle.addEventListener('click', () => {
