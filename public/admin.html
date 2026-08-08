@@ -363,6 +363,33 @@
     padding:7px 12px; font-size:13px; cursor:pointer;
   }
   .pedidos-filtros button.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .pedido-card .bloque-unidad{
+    margin-top:10px; padding:10px 12px; border:1px dashed var(--line);
+    border-radius:var(--radius); background:var(--bg-alt);
+  }
+  .pedido-card .bloque-unidad .titulo-unidad{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--ink-muted); font-family:'IBM Plex Mono', monospace; margin-bottom:6px;
+  }
+  .pedido-card .fila-unidad{ display:flex; gap:6px; }
+  .pedido-card .fila-unidad input{ flex:1; margin:0; }
+  .pedido-card .fila-unidad button{
+    padding:8px 12px; font-size:13px; border-radius:var(--radius);
+    border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; white-space:nowrap;
+  }
+  .pedido-card .fila-unidad button.btn-camara-unidad{ background:#fff; color:var(--ink); border-color:var(--line); }
+  .pedido-card .unidades-despachadas{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink);
+    margin-bottom:6px; word-break:break-all;
+  }
+  .pedido-card .mensaje-unidad{ font-size:12.5px; margin-top:6px; }
+  .chip-stock{
+    display:inline-block; font-size:11px; padding:2px 7px; border-radius:20px;
+    font-family:'IBM Plex Mono', monospace; letter-spacing:0.04em; margin-left:6px;
+  }
+  .chip-stock.reservado{ background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent); }
+  .chip-stock.libre{ background:#fff; color:var(--ink-muted); border:1px solid var(--line); }
+  #readerPedido{ width:100%; border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
 </style>
 </head>
 <body>
@@ -493,6 +520,17 @@
 </div>
 
 <input type="file" id="inputFotoOculto" accept="image/jpeg,image/png,image/webp" style="display:none;">
+
+<div class="overlay" id="overlayUnidadPedido">
+  <div class="modal modal-asociar" id="modalUnidadPedido">
+    <p class="label">Escanear ejemplar</p>
+    <h2 id="unidadPedidoProducto" style="font-size:18px; margin:0 0 4px;">-</h2>
+    <p style="font-size:13px; color:var(--ink-muted); margin:0 0 14px;" id="unidadPedidoRef">-</p>
+    <div id="readerPedido"></div>
+    <div id="mensajeUnidadPedido" style="font-size:13px; margin-bottom:10px;"></div>
+    <button type="button" id="btnCerrarUnidadPedido" style="width:100%; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
+  </div>
+</div>
 
 <div class="overlay" id="overlay">
   <div class="modal" id="modalCard">
@@ -1976,11 +2014,19 @@
     listaPedidos.innerHTML = filtrados.map((p) => {
       const estadoActual = p.estado || 'Pendiente de pago';
       const direccionCompleta = [p.direccion, p.ciudad, p.provincia, p.codigoPostal].filter(Boolean).join(', ');
+      const reservado = String(p.stockReservado || '').trim().toUpperCase() === 'SI';
+      const unidades = String(p.skuUnidad || '').trim();
+      const cantidadPedida = Number(p.cantidad) || 1;
+      const unidadesRegistradas = unidades ? unidades.split('|').length : 0;
+      const faltanUnidades = Math.max(0, cantidadPedida - unidadesRegistradas);
       return `
       <div class="pedido-card" data-pedido-id="${escaparHtml(p.pedidoId)}">
         <div class="fila-top">
           <span>${escaparHtml(p.pedidoId)} · ${escaparHtml(p.fecha || '')}</span>
-          <span class="estado-badge ${claseEstado(estadoActual)}">${escaparHtml(estadoActual)}</span>
+          <span>
+            <span class="estado-badge ${claseEstado(estadoActual)}">${escaparHtml(estadoActual)}</span>
+            <span class="chip-stock ${reservado ? 'reservado' : 'libre'}">${reservado ? 'stock reservado' : 'sin reservar'}</span>
+          </span>
         </div>
         <div class="cliente">${escaparHtml(p.nombreCliente || '(sin nombre)')}${p.metodoPago ? ` <span style="font-weight:400; color:var(--ink-muted); font-size:12px;">· ${escaparHtml(p.metodoPago)}</span>` : ''}</div>
         <div class="linea">${escaparHtml(p.producto || '')} · x${escaparHtml(String(p.cantidad || 1))} · $${escaparHtml(String(p.total || ''))}</div>
@@ -2006,12 +2052,38 @@
           <button type="button" class="guardar-pedido">Guardar</button>
           <div class="mensaje-pedido"></div>
         </div>
+
+        <div class="bloque-unidad">
+          <div class="titulo-unidad">Ejemplar que sale del local</div>
+          ${unidades ? `<div class="unidades-despachadas">✔ ${escaparHtml(unidades)}</div>` : ''}
+          ${faltanUnidades > 0 ? `
+          <div class="fila-unidad">
+            <input type="text" class="input-unidad" placeholder="SKU del ejemplar (o escaneá)" autocomplete="off">
+            <button type="button" class="btn-camara-unidad" title="Escanear con la cámara">📷</button>
+            <button type="button" class="registrar-unidad">Registrar</button>
+          </div>
+          <p style="font-size:12px; color:var(--ink-muted); margin:6px 0 0;">Falta${faltanUnidades > 1 ? 'n' : ''} ${faltanUnidades} de ${cantidadPedida}. No vuelve a descontar stock: ya se descontó al reservar.</p>
+          ` : `<p style="font-size:12px; color:var(--ink-muted); margin:0;">Pedido completo: ${cantidadPedida} de ${cantidadPedida} ejemplares registrados.</p>`}
+          <div class="mensaje-unidad"></div>
+        </div>
       </div>
     `;
     }).join('');
 
     listaPedidos.querySelectorAll('.pedido-card').forEach((card) => {
       const pedidoId = card.getAttribute('data-pedido-id');
+
+      const botonRegistrarUnidad = card.querySelector('.registrar-unidad');
+      if (botonRegistrarUnidad) {
+        const inputUnidad = card.querySelector('.input-unidad');
+        botonRegistrarUnidad.addEventListener('click', () => registrarUnidadPedido(card, pedidoId, inputUnidad.value));
+        inputUnidad.addEventListener('keydown', (evento) => {
+          // Un lector de código de barras de mano "tipea" el código y manda Enter.
+          if (evento.key === 'Enter') { evento.preventDefault(); registrarUnidadPedido(card, pedidoId, inputUnidad.value); }
+        });
+        card.querySelector('.btn-camara-unidad').addEventListener('click', () => abrirEscanerUnidad(card, pedidoId));
+      }
+
       card.querySelector('.guardar-pedido').addEventListener('click', async () => {
         const boton = card.querySelector('.guardar-pedido');
         const mensaje = card.querySelector('.mensaje-pedido');
@@ -2034,13 +2106,24 @@
           if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
           const pedido = pedidosCargados.find((p) => p.pedidoId === pedidoId);
-          if (pedido) { pedido.estado = estado; pedido.transportista = transportista; pedido.numeroSeguimiento = numeroSeguimiento; }
+          if (pedido) {
+            pedido.estado = estado;
+            pedido.transportista = transportista;
+            pedido.numeroSeguimiento = numeroSeguimiento;
+            if (data.stockReservado !== undefined) pedido.stockReservado = data.stockReservado;
+          }
 
           mensaje.className = 'mensaje-pedido';
           mensaje.style.color = 'var(--stamp-green)';
-          mensaje.textContent = '¡Guardado!';
+          mensaje.textContent = data.aviso ? `¡Guardado! ${data.aviso}` : '¡Guardado!';
           card.querySelector('.estado-badge').className = `estado-badge ${claseEstado(estado)}`;
           card.querySelector('.estado-badge').textContent = estado;
+          const chip = card.querySelector('.chip-stock');
+          if (chip) {
+            const reservadoAhora = String(data.stockReservado || '').trim().toUpperCase() === 'SI';
+            chip.className = `chip-stock ${reservadoAhora ? 'reservado' : 'libre'}`;
+            chip.textContent = reservadoAhora ? 'stock reservado' : 'sin reservar';
+          }
         } catch (err) {
           mensaje.style.color = 'var(--stamp-red)';
           mensaje.textContent = `No se pudo guardar: ${err.message}`;
@@ -2051,6 +2134,119 @@
       });
     });
   }
+
+  /* ------------------------------------------------------------
+   * Registrar el ejemplar fisico que sale del local para un pedido.
+   * El stock ya se descontó al reservar (cuando se confirmó el pago),
+   * asi que esto no vuelve a tocar STOCK: solo deja registrado en VENTAS
+   * QUE ejemplar concreto se fue, para trazabilidad.
+   * ------------------------------------------------------------ */
+  async function registrarUnidadPedido(card, pedidoId, skuCrudo){
+    const mensaje = card.querySelector('.mensaje-unidad');
+    const boton = card.querySelector('.registrar-unidad');
+    const sku = String(skuCrudo || '').trim();
+
+    if (!sku) {
+      mensaje.style.color = 'var(--stamp-red)';
+      mensaje.textContent = 'Escaneá o escribí el SKU del ejemplar.';
+      return;
+    }
+
+    if (boton) { boton.disabled = true; boton.textContent = 'Registrando...'; }
+    mensaje.style.color = 'var(--ink-muted)';
+    mensaje.textContent = 'Registrando...';
+
+    try {
+      const res = await fetch('/admin/pedidos/registrar-unidad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword, pedidoId, sku }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      const pedido = pedidosCargados.find((p) => p.pedidoId === pedidoId);
+      if (pedido) {
+        pedido.skuUnidad = data.skuUnidad || sku;
+        pedido.stockReservado = 'SI';
+      }
+      renderizarPedidos();
+    } catch (err) {
+      mensaje.style.color = 'var(--stamp-red)';
+      mensaje.textContent = err.message;
+      if (boton) { boton.disabled = false; boton.textContent = 'Registrar'; }
+    }
+  }
+
+  /* ------------------------------------------------------------
+   * Modal de camara para escanear el ejemplar del pedido. Usa una
+   * instancia propia de Html5Qrcode; si el escaner del panel "Escanear"
+   * estaba prendido, lo apaga mientras dura el modal (dos camaras a la
+   * vez fallan en la mayoria de los celulares) y lo vuelve a prender al
+   * cerrar.
+   * ------------------------------------------------------------ */
+  const overlayUnidadPedido = document.getElementById('overlayUnidadPedido');
+  const readerPedidoDiv = document.getElementById('readerPedido');
+  const mensajeUnidadPedido = document.getElementById('mensajeUnidadPedido');
+  const unidadPedidoProducto = document.getElementById('unidadPedidoProducto');
+  const unidadPedidoRef = document.getElementById('unidadPedidoRef');
+  let scannerPedido = null;
+  let escanerPrincipalEstabaPrendido = false;
+
+  async function abrirEscanerUnidad(card, pedidoId){
+    const pedido = pedidosCargados.find((p) => p.pedidoId === pedidoId);
+    unidadPedidoProducto.textContent = pedido ? (pedido.producto || '(sin nombre)') : '';
+    unidadPedidoRef.textContent = pedido ? `${pedido.skuGeneral || ''} · pedido ${pedidoId}` : pedidoId;
+    mensajeUnidadPedido.textContent = 'Apuntá al QR del ejemplar...';
+    mensajeUnidadPedido.style.color = 'var(--ink-muted)';
+    overlayUnidadPedido.classList.add('show');
+
+    escanerPrincipalEstabaPrendido = escanerIniciado;
+    if (scanner) {
+      try { await scanner.stop(); } catch (e) {}
+      scanner = null;
+      escanerIniciado = false;
+    }
+
+    scannerPedido = new Html5Qrcode('readerPedido', {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128],
+    });
+
+    let procesando = false;
+    scannerPedido.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: lado }; } },
+      async (textoLeido) => {
+        if (procesando) return;
+        procesando = true;
+        mensajeUnidadPedido.style.color = 'var(--ink-muted)';
+        mensajeUnidadPedido.textContent = `Leído: ${textoLeido}`;
+        await cerrarEscanerUnidad();
+        await registrarUnidadPedido(card, pedidoId, textoLeido);
+      },
+      () => {}
+    ).catch(() => {
+      mensajeUnidadPedido.style.color = 'var(--stamp-red)';
+      mensajeUnidadPedido.textContent = 'No se pudo abrir la cámara. Escribí el SKU a mano.';
+    });
+  }
+
+  async function cerrarEscanerUnidad(){
+    if (scannerPedido) {
+      try { await scannerPedido.stop(); } catch (e) {}
+      try { scannerPedido.clear(); } catch (e) {}
+      scannerPedido = null;
+    }
+    readerPedidoDiv.innerHTML = '';
+    overlayUnidadPedido.classList.remove('show');
+    if (escanerPrincipalEstabaPrendido) {
+      escanerPrincipalEstabaPrendido = false;
+      escanerIniciado = false;
+      iniciarEscanerSiHaceFalta();
+    }
+  }
+
+  document.getElementById('btnCerrarUnidadPedido').addEventListener('click', () => { cerrarEscanerUnidad(); });
 </script>
 </body>
 </html>
