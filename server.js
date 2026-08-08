@@ -38,10 +38,19 @@ const {
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
 const payway = require('./payway');
 const emailService = require('./email');
+const imagenes = require('./imagenes');
 const whatsapp = require('./whatsapp');
 
 const app = express();
 app.use(express.json());
+// Las fotos de producto tienen nombre unico (SKU + timestamp), asi que
+// nunca cambian de contenido: se pueden cachear fuerte en el navegador.
+// Con esto, la segunda visita al catalogo muestra las fotos al instante,
+// sin volver a bajarlas.
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
+  maxAge: '365d',
+  immutable: true,
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rutas amigables (sin ".html") ademas del acceso directo a los archivos.
@@ -799,17 +808,22 @@ app.post('/admin/producto/foto', (req, res) => {
         return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
       }
 
-      const fotoUrl = `/uploads/productos/${req.file.filename}`;
+      // Reescribimos la imagen a WEBP en dos tamaños (grande + miniatura)
+      // y nos quedamos con el nombre del archivo grande, que es el que va
+      // a la hoja Productos. Ver imagenes.js.
+      const nombreFinal = await imagenes.optimizarFotoSubida(req.file.path);
+      const fotoUrl = `/uploads/productos/${nombreFinal}`;
+
       const sheetsClient = google.sheets({ version: 'v4', auth });
       const resultado = await agregarFotoProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), fotoUrl);
 
       if (!resultado.encontrado) {
-        fs.unlink(req.file.path, () => {});
+        imagenes.borrarFotoYMiniatura(CARPETA_UPLOADS, nombreFinal);
         return res.status(404).json({ error: `No se encontró el producto con SKU general "${skuGeneral}".` });
       }
 
       if (resultado.limiteAlcanzado) {
-        fs.unlink(req.file.path, () => {});
+        imagenes.borrarFotoYMiniatura(CARPETA_UPLOADS, nombreFinal);
         return res.status(400).json({ error: 'Este producto ya tiene el máximo de 4 fotos. Borrá una antes de subir otra.' });
       }
 
@@ -847,14 +861,38 @@ app.post('/admin/producto/foto/eliminar', async (req, res) => {
     }
 
     if (resultado.fotoEliminada && resultado.fotoEliminada.startsWith('/uploads/productos/')) {
-      const rutaArchivo = path.join(__dirname, 'public', resultado.fotoEliminada);
-      fs.unlink(rutaArchivo, () => {}); // si no existe o falla, no pasa nada grave
+      // Borra la grande y su miniatura; si alguna no existe, no pasa nada.
+      imagenes.borrarFotoYMiniatura(CARPETA_UPLOADS, path.basename(resultado.fotoEliminada));
     }
 
     res.json({ ok: true, fotos: resultado.fotos });
   } catch (err) {
     console.error('Error borrando la foto del producto:', err.message);
     res.status(500).json({ error: 'No se pudo borrar la foto.' });
+  }
+});
+
+/* Genera las miniaturas que falten para las fotos subidas ANTES de que
+   existiera la optimizacion automatica. Se corre una sola vez desde el
+   panel admin; despues cada foto nueva ya sale optimizada sola. No toca
+   las fotos grandes ni sus URLs, asi que es seguro repetirlo. */
+app.post('/admin/fotos/optimizar', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!checkAdmin(password)) {
+      return res.status(401).json({ error: 'No autorizado.' });
+    }
+
+    const resumen = await imagenes.generarMiniaturasFaltantes(CARPETA_UPLOADS);
+
+    if (!resumen.sharpDisponible) {
+      return res.status(500).json({ error: 'El servidor no tiene disponible el optimizador de imágenes (sharp). Revisá los logs del deploy.' });
+    }
+
+    res.json({ ok: true, ...resumen });
+  } catch (err) {
+    console.error('Error optimizando las fotos existentes:', err.message);
+    res.status(500).json({ error: 'No se pudieron optimizar las fotos.' });
   }
 });
 
