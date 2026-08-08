@@ -471,6 +471,15 @@
     <hr class="separador-panel">
 
     <div class="campo">
+      <label>Fotos ya subidas</label>
+      <button class="btn-imprimir" id="btnOptimizarFotos" style="width:100%;">OPTIMIZAR FOTOS EXISTENTES</button>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">Genera la versión chica de las fotos que subiste antes, para que el catálogo cargue rápido. Se corre una sola vez; las fotos nuevas ya salen optimizadas solas.</p>
+      <div id="mensajeOptimizarFotos" style="font-size:13px; margin-top:8px;"></div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
       <label>Imprimir códigos</label>
       <div style="display:flex; gap:10px;">
         <button class="btn-imprimir" id="btnGenerarEtiquetasApp">IMPRIMIR</button>
@@ -1612,16 +1621,73 @@
 
   btnCerrarFotos.addEventListener('click', cerrarModalFotos);
 
+  /* ------------------------------------------------------------
+   * Achicar la foto ANTES de subirla.
+   *
+   * Una foto sacada con el celular pesa entre 3 y 8 MB y mide 4000px de
+   * ancho. Subir eso por datos móviles tarda muchísimo, y no sirve de
+   * nada: en la web nunca se muestra a más de 1600px. Acá la
+   * redimensionamos y la recomprimimos en el navegador, así lo que viaja
+   * son ~300 KB en vez de 5 MB. El servidor después la vuelve a procesar
+   * a WEBP y le genera la miniatura (ver imagenes.js).
+   *
+   * Si algo falla (formato raro, navegador viejo), se sube el archivo
+   * original tal cual y listo — no rompe nada.
+   * ------------------------------------------------------------ */
+  const ANCHO_MAX_SUBIDA = 1800;
+  const CALIDAD_SUBIDA = 0.85;
+
+  function achicarImagenParaSubir(archivo){
+    return new Promise((resolver) => {
+      // Los archivos ya chicos no ganan nada con esto.
+      if (!archivo.type.startsWith('image/') || archivo.size < 400 * 1024) return resolver(archivo);
+
+      const lector = new FileReader();
+      lector.onerror = () => resolver(archivo);
+      lector.onload = () => {
+        const imagen = new Image();
+        imagen.onerror = () => resolver(archivo);
+        imagen.onload = () => {
+          try {
+            const escala = Math.min(1, ANCHO_MAX_SUBIDA / Math.max(imagen.width, imagen.height));
+            const ancho = Math.round(imagen.width * escala);
+            const alto = Math.round(imagen.height * escala);
+
+            const lienzo = document.createElement('canvas');
+            lienzo.width = ancho;
+            lienzo.height = alto;
+            const contexto = lienzo.getContext('2d');
+            contexto.drawImage(imagen, 0, 0, ancho, alto);
+
+            lienzo.toBlob((blob) => {
+              // Si por lo que sea el resultado pesa más que el original,
+              // nos quedamos con el original.
+              if (!blob || blob.size >= archivo.size) return resolver(archivo);
+              resolver(new File([blob], archivo.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+            }, 'image/jpeg', CALIDAD_SUBIDA);
+          } catch (e) {
+            resolver(archivo);
+          }
+        };
+        imagen.src = lector.result;
+      };
+      lector.readAsDataURL(archivo);
+    });
+  }
+
   inputFotoOculto.addEventListener('change', async () => {
-    const archivo = inputFotoOculto.files && inputFotoOculto.files[0];
-    if (!archivo || !skuFotosActivo) return;
+    const archivoOriginal = inputFotoOculto.files && inputFotoOculto.files[0];
+    if (!archivoOriginal || !skuFotosActivo) return;
 
     subiendoFoto = true;
     const slotAgregar = document.getElementById('slotAgregarFoto');
     if (slotAgregar) slotAgregar.classList.add('subiendo');
-    mostrarMensajeFotos('Subiendo foto...', '');
+    mostrarMensajeFotos('Preparando la foto...', '');
 
     try {
+      const archivo = await achicarImagenParaSubir(archivoOriginal);
+      mostrarMensajeFotos(`Subiendo foto (${Math.round(archivo.size / 1024)} KB)...`, '');
+
       const formData = new FormData();
       formData.append('password', adminPassword);
       formData.append('skuGeneral', skuFotosActivo);
@@ -1955,6 +2021,42 @@
     } finally {
       btnCrearConfigCategoria.disabled = false;
       btnCrearConfigCategoria.textContent = 'Agregar categoría';
+    }
+  });
+
+  /* ------------------------------------------------------------
+   * Optimizar las fotos subidas antes de que existiera la generacion
+   * automatica de miniaturas. Solo crea los archivos que faltan: no
+   * modifica las fotos grandes ni sus URLs, asi que se puede repetir
+   * sin riesgo.
+   * ------------------------------------------------------------ */
+  const btnOptimizarFotos = document.getElementById('btnOptimizarFotos');
+  const mensajeOptimizarFotos = document.getElementById('mensajeOptimizarFotos');
+
+  btnOptimizarFotos.addEventListener('click', async () => {
+    btnOptimizarFotos.disabled = true;
+    const textoOriginal = btnOptimizarFotos.textContent;
+    btnOptimizarFotos.textContent = 'OPTIMIZANDO...';
+    mensajeOptimizarFotos.style.color = 'var(--ink-muted)';
+    mensajeOptimizarFotos.textContent = 'Puede tardar un rato si hay muchas fotos. No cierres esta pestaña.';
+
+    try {
+      const res = await fetch('/admin/fotos/optimizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      mensajeOptimizarFotos.style.color = 'var(--stamp-green)';
+      mensajeOptimizarFotos.textContent = `Listo: ${data.generadas} foto(s) optimizada(s), ${data.yaEstaban} ya lo estaban${data.errores ? `, ${data.errores} con error` : ''}.`;
+    } catch (err) {
+      mensajeOptimizarFotos.style.color = 'var(--stamp-red)';
+      mensajeOptimizarFotos.textContent = `No se pudo optimizar: ${err.message}`;
+    } finally {
+      btnOptimizarFotos.disabled = false;
+      btnOptimizarFotos.textContent = textoOriginal;
     }
   });
 
