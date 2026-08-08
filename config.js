@@ -79,6 +79,24 @@ module.exports = {
     ultimoNumeroSerie: 1, // B
   },
 
+  // Columnas de la hoja VENTAS (planilla de VENTAS). Cada fila es un
+  // escaneo de una unidad fisica que sale del local.
+  //
+  // La columna G (pedidoId) es la clave del sistema de reserva de stock:
+  // si tiene un numero de pedido, significa que esa unidad sale por una
+  // compra online cuyo stock YA se descontó al confirmarse el pago. En
+  // ese caso el procesador de ventas marca la fila como vendida pero NO
+  // vuelve a descontar (si no, se descontaria dos veces).
+  COLUMNAS_VENTAS: {
+    skuCompleto: 0,   // A: SKU de la unidad escaneada
+    fecha: 1,         // B
+    hora: 2,          // C
+    marca: 3,         // D: la completa el procesador ("Vendido ..." / "Duplicado, no contado")
+    precioVenta: 4,   // E: la completa el procesador
+    precioManual: 5,  // F: opcional, lo carga el admin al vender
+    pedidoId: 6,      // G: numero de pedido online, si esta unidad sale por un pedido web
+  },
+
   // Columnas de la hoja STOCK (en la planilla de VENTAS).
   // "Cantidad manual" es la que se suma a mano (o, como en este caso,
   // automaticamente al generar unidades); un trigger del lado de Google
@@ -151,7 +169,27 @@ module.exports = {
     // Columna nueva, agregada al final para no correr las columnas ya
     // existentes en Sheets de pedidos viejos.
     metodoPago: 20,          // U: "Payway" | "Transferencia"
+    // Reserva de stock: se pone "SI" cuando el pedido descontó su
+    // cantidad de la hoja STOCK (al confirmarse el pago), y se vacia si
+    // el pedido se cancela/rechaza y hay que devolver las unidades.
+    stockReservado: 21,      // V: "SI" | vacio
+    // SKU(s) de la unidad fisica concreta que se despachó para este
+    // pedido, cargados al escanear el ejemplar antes de que salga del
+    // local. Si el pedido es de mas de una unidad, van separados por " | ".
+    skuUnidad: 22,           // W
   },
+
+  // Estados de pedido en los que las unidades ya estan comprometidas y
+  // por lo tanto tienen que estar descontadas de STOCK. Al pasar a
+  // cualquiera de estos, la app reserva el stock; al salir de todos
+  // ellos (Cancelado, Pago rechazado, vuelta a Pendiente de pago), lo
+  // devuelve. Los textos tienen que coincidir EXACTO con los que usa el
+  // desplegable de estados en el panel admin y payway.js.
+  ESTADOS_PEDIDO_CON_STOCK_RESERVADO: [
+    'Pagado - Coordinar envío',
+    'Enviado',
+    'Entregado',
+  ],
 
   // Largo del bloque "numero de producto" (el NNNN del SKU general,
   // ej "0007" en LIB-INF-0007). Con 4, el numero 7 se transforma en "0007".
