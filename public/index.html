@@ -402,9 +402,25 @@
     return div.innerHTML;
   }
 
+  /* Las fotos subidas al servidor tienen una version chica generada
+     automaticamente (mismo nombre + "-thumb"), que es la que se usa en
+     las grillas: pesa la decima parte y en pantalla se ve igual, porque
+     ahi la foto ocupa 300px, no 1600. Las fotos viejas (subidas antes de
+     que existiera la optimizacion) no tienen thumb: para esas, el
+     onerror de la <img> cae sola a la version grande. Ver imagenes.js. */
+  function urlMiniaturaPublica(url){
+    const texto = String(url || '');
+    if (!texto || texto.indexOf('/uploads/productos/') === -1 || texto.indexOf('-thumb') !== -1) return texto;
+    const punto = texto.lastIndexOf('.');
+    if (punto <= 0) return texto;
+    return texto.slice(0, punto) + '-thumb' + texto.slice(punto);
+  }
+
   function fotoOPlaceholder(foto, alto){
-    if (foto) return `<img src="${escaparHtmlPublico(foto)}" alt="Foto del producto" loading="lazy">`;
-    return 'Sin foto';
+    if (!foto) return 'Sin foto';
+    const miniatura = urlMiniaturaPublica(foto);
+    const respaldo = encodeURI(foto);
+    return `<img src="${escaparHtmlPublico(miniatura)}" alt="Foto del producto" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${respaldo}';">`;
   }
 
   async function cargarCatalogoPublico(){
@@ -542,7 +558,7 @@
       <div class="miniaturas-detalle">
         ${fotos.map((url, indice) => `
           <button type="button" data-foto-indice="${indice}" class="${indice === 0 ? 'activa' : ''}">
-            <img src="${escaparHtmlPublico(url)}" alt="Miniatura ${indice + 1}">
+            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="Miniatura ${indice + 1}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
           </button>
         `).join('')}
       </div>
