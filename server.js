@@ -28,6 +28,7 @@ const {
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
   procesarVentasNuevas,
+  ajustarStockCantidad,
   crearPedido,
   getPedidos,
   getPedidoPorId,
@@ -909,6 +910,75 @@ app.post('/admin/producto/descripcion', async (req, res) => {
  *   llego.
  * ============================================================ */
 
+/* ------------------------------------------------------------
+ * RESERVA DE STOCK DE PEDIDOS ONLINE
+ * ------------------------------------------------------------
+ * Un pedido web se hace contra el SKU general (el comprador elige un
+ * producto, no un ejemplar puntual), asi que no podemos descontar una
+ * unidad fisica concreta hasta que alguien la agarre de la estanteria.
+ * Pero si esperamos hasta ese momento para tocar STOCK, el catalogo
+ * sigue ofreciendo online algo que ya esta vendido.
+ *
+ * Solucion: cuando el pedido pasa a un estado "comprometido" (pago
+ * confirmado en adelante) descontamos su cantidad de STOCK y marcamos
+ * el pedido con stockReservado = "SI". Si despues se cancela o se
+ * rechaza el pago, devolvemos esas unidades. Y cuando finalmente se
+ * escanea el ejemplar que sale del local, la fila de VENTAS lleva el
+ * numero de pedido en la columna G para que el procesador NO vuelva a
+ * descontar (ver procesarVentasNuevas en googleSheets.js).
+ * ------------------------------------------------------------ */
+
+function estadoReservaStock(estado) {
+  return config.ESTADOS_PEDIDO_CON_STOCK_RESERVADO.includes(String(estado || '').trim());
+}
+
+function tieneStockReservado(pedido) {
+  return String(pedido && pedido.stockReservado ? pedido.stockReservado : '').trim().toUpperCase() === 'SI';
+}
+
+/**
+ * Compara el estado que tenia el pedido contra el que va a tener y
+ * ajusta STOCK si hace falta. Devuelve { campos, aviso }: `campos` son
+ * los campos extra a guardar en la fila del pedido (stockReservado), y
+ * `aviso` un texto para mostrarle al admin si algo quedo raro.
+ */
+async function sincronizarStockPedido(sheetsClient, pedido, nuevoEstado) {
+  const debeReservar = estadoReservaStock(nuevoEstado);
+  const yaReservado = tieneStockReservado(pedido);
+
+  if (debeReservar === yaReservado) return { campos: {}, aviso: null };
+
+  const cantidad = Number(pedido.cantidad) || 1;
+  const skuGeneral = String(pedido.skuGeneral || '').trim();
+  if (!skuGeneral) {
+    return { campos: {}, aviso: 'El pedido no tiene SKU general, no se pudo tocar el stock.' };
+  }
+
+  const delta = debeReservar ? -cantidad : cantidad;
+  await ajustarStockCantidad(
+    sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_STOCK,
+    skuGeneral, delta, pedido.producto || '',
+  );
+
+  if (debeReservar) {
+    return {
+      campos: { stockReservado: 'SI' },
+      aviso: `Se reservaron ${cantidad} unidad(es) de ${skuGeneral}: ya no figuran disponibles en el catálogo.`,
+    };
+  }
+
+  // Se liberan las unidades. Si el ejemplar ya se habia escaneado como
+  // despachado, ese SKU de unidad quedo marcado "Vendido" en VENTAS y hay
+  // que revisarlo a mano (el sistema no puede saber si el ejemplar volvio).
+  const yaDespachado = String(pedido.skuUnidad || '').trim() !== '';
+  return {
+    campos: { stockReservado: '' },
+    aviso: yaDespachado
+      ? `Se devolvieron ${cantidad} unidad(es) de ${skuGeneral} al stock. OJO: este pedido ya tenía la unidad ${pedido.skuUnidad} escaneada como despachada — esa fila sigue marcada como vendida en VENTAS, revisala a mano si el ejemplar volvió.`
+      : `Se devolvieron ${cantidad} unidad(es) de ${skuGeneral} al stock.`,
+  };
+}
+
 app.post('/crear-pago', async (req, res) => {
   try {
     const {
@@ -975,6 +1045,11 @@ app.post('/crear-pago', async (req, res) => {
       pagoExternoId: '',
       notas: notas || '',
       metodoPago: metodoPago === 'payway' ? 'Payway' : 'Transferencia',
+      // El stock se reserva recien cuando el pago se confirma, no al
+      // iniciar el checkout (si no, un carrito abandonado congelaria
+      // unidades para siempre).
+      stockReservado: '',
+      skuUnidad: '',
     });
 
     if (metodoPago === 'payway') {
@@ -1038,7 +1113,12 @@ async function reconciliarPagoPayway(pagoExternoId) {
   const { numeroFila, pedido } = await getPedidoPorPagoExternoId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pagoExternoId);
   if (!numeroFila) return null;
 
-  await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedido.pedidoId, { estado: nuevoEstado });
+  const { campos } = await sincronizarStockPedido(sheetsClient, pedido, nuevoEstado);
+
+  await actualizarPedido(
+    sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedido.pedidoId,
+    { estado: nuevoEstado, ...campos },
+  );
   return { pedidoId: pedido.pedidoId, estado: nuevoEstado };
 }
 
@@ -1120,16 +1200,128 @@ app.post('/admin/pedidos/actualizar', async (req, res) => {
     if (notas !== undefined) camposActualizar.notas = notas;
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim());
+    if (!pedido) {
+      return res.status(404).json({ error: 'No se encontró ese pedido.' });
+    }
+
+    // Si cambia el estado, puede haber que reservar o devolver stock.
+    let aviso = null;
+    if (estado !== undefined) {
+      const resultado = await sincronizarStockPedido(sheetsClient, pedido, estado);
+      Object.assign(camposActualizar, resultado.campos);
+      aviso = resultado.aviso;
+    }
+
     const encontrado = await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim(), camposActualizar);
 
     if (!encontrado) {
       return res.status(404).json({ error: 'No se encontró ese pedido.' });
     }
 
-    res.json({ ok: true });
+    res.json({
+      ok: true,
+      aviso,
+      stockReservado: camposActualizar.stockReservado !== undefined
+        ? camposActualizar.stockReservado
+        : (pedido.stockReservado || ''),
+    });
   } catch (err) {
     console.error('Error actualizando el pedido:', err.message);
     res.status(500).json({ error: 'No se pudo actualizar el pedido.' });
+  }
+});
+
+/* Registra la unidad fisica concreta que sale del local para un pedido
+   online: se escanea el QR del ejemplar (SKU completo con numero de
+   serie) y esto (1) valida que el ejemplar sea del producto que se
+   compró, (2) valida que no se haya vendido ya, (3) lo anota en VENTAS
+   con el numero de pedido en la columna G — asi el procesador lo marca
+   como vendido pero NO descuenta stock, porque ya se descontó al
+   reservar — y (4) guarda el SKU de la unidad en la fila del pedido.
+
+   Si el pedido todavia no tenia stock reservado (caso tipico: una
+   transferencia que se despacha sin haber marcado antes "Pagado"), se
+   reserva en este momento, para que la unidad no quede sin descontar. */
+app.post('/admin/pedidos/registrar-unidad', async (req, res) => {
+  try {
+    const { password, pedidoId, sku } = req.body;
+    if (!checkAdmin(password)) {
+      return res.status(401).json({ error: 'No autorizado.' });
+    }
+    if (!pedidoId || !String(pedidoId).trim()) {
+      return res.status(400).json({ error: 'Falta el número de pedido.' });
+    }
+    if (!sku || !String(sku).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU de la unidad.' });
+    }
+
+    const skuLimpio = String(sku).trim();
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+
+    const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim());
+    if (!pedido) {
+      return res.status(404).json({ error: 'No se encontró ese pedido.' });
+    }
+
+    // 1) El ejemplar escaneado tiene que ser del producto comprado.
+    const skuGeneralEscaneado = extraerSkuGeneral(skuLimpio).toUpperCase();
+    const skuGeneralPedido = String(pedido.skuGeneral || '').trim().toUpperCase();
+    if (skuGeneralEscaneado !== skuGeneralPedido) {
+      return res.status(400).json({
+        error: `Ese ejemplar es de otro producto: escaneaste ${skuGeneralEscaneado} y el pedido es de ${skuGeneralPedido} (${pedido.producto || ''}).`,
+      });
+    }
+
+    // 2) Que no se haya vendido ya (ni en el local ni en otro pedido).
+    const ventasResp = await sheetsClient.spreadsheets.values.get({
+      spreadsheetId: config.SHEET_ID_VENTAS,
+      range: `${config.HOJA_VENTAS}!A:G`,
+    });
+    const colsVentas = config.COLUMNAS_VENTAS;
+    const filasVentas = ventasResp.data.values || [];
+    const skuNormalizado = skuLimpio.toLowerCase();
+    for (let i = 1; i < filasVentas.length; i++) {
+      const filaSku = filasVentas[i][colsVentas.skuCompleto]
+        ? String(filasVentas[i][colsVentas.skuCompleto]).trim().toLowerCase() : '';
+      if (filaSku !== skuNormalizado) continue;
+      const marca = filasVentas[i][colsVentas.marca] ? String(filasVentas[i][colsVentas.marca]).trim() : '';
+      const pedidoDeLaFila = filasVentas[i][colsVentas.pedidoId] ? String(filasVentas[i][colsVentas.pedidoId]).trim() : '';
+      if (marca.indexOf('Vendido') === 0 || pedidoDeLaFila) {
+        return res.status(400).json({
+          error: `Ese ejemplar (${skuLimpio}) ya figura vendido${pedidoDeLaFila ? ` en el pedido ${pedidoDeLaFila}` : ' en el local'}. Escaneá otro ejemplar del mismo producto.`,
+        });
+      }
+    }
+
+    // 3) Si el pedido no tenia stock reservado, lo reservamos ahora.
+    const camposActualizar = {};
+    let aviso = null;
+    if (!tieneStockReservado(pedido)) {
+      await ajustarStockCantidad(
+        sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_STOCK,
+        pedido.skuGeneral, -(Number(pedido.cantidad) || 1), pedido.producto || '',
+      );
+      camposActualizar.stockReservado = 'SI';
+      aviso = 'Este pedido no tenía el stock reservado (nunca se marcó como pagado), así que se descontó ahora.';
+    }
+
+    // 4) Anotamos la salida en VENTAS con el numero de pedido (columna G).
+    const { fecha, hora } = fechaYHoraActual();
+    await appendRow(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, [
+      skuLimpio, fecha, hora, '', '', '', String(pedidoId).trim(),
+    ]);
+
+    // 5) Y lo dejamos asentado en la fila del pedido.
+    const unidadesPrevias = String(pedido.skuUnidad || '').trim();
+    camposActualizar.skuUnidad = unidadesPrevias ? `${unidadesPrevias} | ${skuLimpio}` : skuLimpio;
+
+    await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim(), camposActualizar);
+
+    res.json({ ok: true, skuUnidad: camposActualizar.skuUnidad, aviso });
+  } catch (err) {
+    console.error('Error registrando la unidad del pedido:', err.message);
+    res.status(500).json({ error: 'No se pudo registrar la unidad.' });
   }
 });
 
