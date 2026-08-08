@@ -1156,11 +1156,14 @@ function formatearFechaHoraCorta(fecha, timezone) {
 }
 
 /**
- * Descuenta 1 a "Cantidad actual" en STOCK para un SKU corto (general).
- * Si no existe fila para ese SKU, crea una nueva con cantidad -1 (igual
- * que hacia el Apps Script), completando Nombre si lo tenemos.
+ * Suma `delta` a "Cantidad actual" en STOCK para un SKU corto (general).
+ * `delta` negativo descuenta (venta en el local, o reserva de un pedido
+ * online al confirmarse el pago) y positivo devuelve unidades (pedido
+ * cancelado / pago rechazado). Si no existe fila para ese SKU, crea una
+ * nueva con cantidad = delta (igual que hacia el Apps Script),
+ * completando Nombre si lo tenemos. Devuelve la cantidad resultante.
  */
-async function descontarStockVenta(sheetsClient, spreadsheetId, sheetNameStock, skuCorto, nombre) {
+async function ajustarStockCantidad(sheetsClient, spreadsheetId, sheetNameStock, skuCorto, delta, nombre) {
   const cols = config.COLUMNAS_STOCK;
   const range = `${sheetNameStock}!A:F`;
 
@@ -1173,7 +1176,7 @@ async function descontarStockVenta(sheetsClient, spreadsheetId, sheetNameStock, 
     const skuFila = fila[cols.skuGeneral] ? normalizarSkuTexto(fila[cols.skuGeneral]) : '';
     if (skuFila === skuNormalizado) {
       const cantidadActual = Number(fila[cols.cantidadActual]) || 0;
-      const nuevaCantidad = cantidadActual - 1;
+      const nuevaCantidad = cantidadActual + delta;
       const numeroFila = i + 1;
       const letraColumna = columnaALetra(cols.cantidadActual);
 
@@ -1184,19 +1187,30 @@ async function descontarStockVenta(sheetsClient, spreadsheetId, sheetNameStock, 
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [[nuevaCantidad]] },
       });
-      return;
+      return nuevaCantidad;
     }
   }
 
-  // No existia: creamos la fila nueva con cantidad -1 (igual que el Apps Script)
+  // No existia: creamos la fila nueva con la cantidad del ajuste (igual
+  // que el Apps Script, que creaba la fila en -1 al vender un SKU que
+  // todavia no figuraba en STOCK).
   const filaNueva = [];
   filaNueva[cols.skuGeneral] = skuCorto;
   filaNueva[cols.cantidadManual] = 0;
-  filaNueva[cols.cantidadActual] = -1;
+  filaNueva[cols.cantidadActual] = delta;
   if (nombre) filaNueva[cols.nombre] = nombre;
   for (let i = 0; i < filaNueva.length; i++) if (filaNueva[i] === undefined) filaNueva[i] = '';
 
   await appendRow(sheetsClient, spreadsheetId, sheetNameStock, filaNueva);
+  return delta;
+}
+
+/**
+ * Descuenta 1 a "Cantidad actual" en STOCK para un SKU corto (general).
+ * Atajo sobre ajustarStockCantidad; lo usa el procesador de ventas.
+ */
+async function descontarStockVenta(sheetsClient, spreadsheetId, sheetNameStock, skuCorto, nombre) {
+  return ajustarStockCantidad(sheetsClient, spreadsheetId, sheetNameStock, skuCorto, -1, nombre);
 }
 
 /**
@@ -1242,7 +1256,8 @@ async function buscarProductoParaVenta(sheetsClient, spreadsheetId, skuCorto) {
  */
 async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
   const sheetName = config.HOJA_VENTAS;
-  const range = `${sheetName}!A:F`;
+  const colsVentas = config.COLUMNAS_VENTAS;
+  const range = `${sheetName}!A:G`;
 
   const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
   const rows = response.data.values || [];
@@ -1252,8 +1267,8 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
   // Armamos el set de SKU completos ya marcados "Vendido" en cualquier fila
   const skusYaVendidos = new Set();
   for (let i = 1; i < rows.length; i++) {
-    const marcaExistente = rows[i][3] ? String(rows[i][3]).trim() : '';
-    const skuExistente = rows[i][0] ? normalizarSkuTexto(rows[i][0]) : '';
+    const marcaExistente = rows[i][colsVentas.marca] ? String(rows[i][colsVentas.marca]).trim() : '';
+    const skuExistente = rows[i][colsVentas.skuCompleto] ? normalizarSkuTexto(rows[i][colsVentas.skuCompleto]) : '';
     if (marcaExistente.indexOf('Vendido') === 0 && skuExistente !== '') {
       skusYaVendidos.add(skuExistente);
     }
@@ -1261,13 +1276,17 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
 
   let procesadas = 0;
   let duplicadas = 0;
-  const letraMarca = columnaALetra(3); // columna D
+  const letraMarca = columnaALetra(colsVentas.marca); // columna D
 
   for (let i = 1; i < rows.length; i++) {
     const filaReal = i + 1; // 1-indexado para la API
-    const skuCompleto = rows[i][0] ? String(rows[i][0]).trim() : '';
+    const skuCompleto = rows[i][colsVentas.skuCompleto] ? String(rows[i][colsVentas.skuCompleto]).trim() : '';
     const skuCompletoNormalizado = skuCompleto ? normalizarSkuTexto(skuCompleto) : '';
-    const marca = rows[i][3] ? String(rows[i][3]).trim() : '';
+    const marca = rows[i][colsVentas.marca] ? String(rows[i][colsVentas.marca]).trim() : '';
+    // Si la fila trae numero de pedido, esta unidad sale por una compra
+    // online que YA descontó su stock al confirmarse el pago (reserva).
+    // La marcamos como vendida igual, pero sin volver a tocar STOCK.
+    const pedidoIdFila = rows[i][colsVentas.pedidoId] ? String(rows[i][colsVentas.pedidoId]).trim() : '';
 
     if (skuCompleto === '') continue; // fila vacia
     if (marca !== '') continue; // ya tiene alguna marca, se ignora para siempre
@@ -1288,13 +1307,18 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
 
     // Si al vender se cargó un precio manual (columna F, ej. porque se
     // vendió más barato), ese precio tiene prioridad sobre el de catálogo.
-    const precioManualFila = rows[i][5] !== undefined && rows[i][5] !== '' ? rows[i][5] : null;
+    const precioManualFila = rows[i][colsVentas.precioManual] !== undefined && rows[i][colsVentas.precioManual] !== ''
+      ? rows[i][colsVentas.precioManual]
+      : null;
     const precioFinalVenta = precioManualFila !== null ? precioManualFila : datosProducto.precio;
 
-    await descontarStockVenta(sheetsClient, spreadsheetId, config.HOJA_STOCK, skuCorto, datosProducto.nombre);
+    if (!pedidoIdFila) {
+      await descontarStockVenta(sheetsClient, spreadsheetId, config.HOJA_STOCK, skuCorto, datosProducto.nombre);
+    }
 
     let textoMarca = `Vendido ${formatearFechaHoraCorta(new Date(), config.TIMEZONE)}`;
     if (datosProducto.nombre) textoMarca += ` - ${datosProducto.nombre}`;
+    if (pedidoIdFila) textoMarca += ` (pedido ${pedidoIdFila}, stock ya reservado)`;
 
     await sheetsClient.spreadsheets.values.update({
       spreadsheetId,
@@ -1306,7 +1330,7 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
     // Registramos el precio al que se vendió (columna E): el manual si se
     // cargó uno al vender, o si no el del catálogo (Productos) al momento
     // de procesar la venta.
-    const letraPrecioVenta = columnaALetra(4); // columna E
+    const letraPrecioVenta = columnaALetra(colsVentas.precioVenta); // columna E
     await sheetsClient.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!${letraPrecioVenta}${filaReal}`,
@@ -1347,6 +1371,7 @@ module.exports = {
   appendFilasImprimirApp,
   sumarCantidadManualStock,
   asegurarFilaStock,
+  ajustarStockCantidad,
   procesarVentasNuevas,
 
   crearPedido,
