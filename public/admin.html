@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg:#F6EFE4; --bg-alt:#EDE3D0; --ink:#3B1220; --ink-muted:#8C5B66;
@@ -390,6 +391,22 @@
   .chip-stock.reservado{ background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent); }
   .chip-stock.libre{ background:#fff; color:var(--ink-muted); border:1px solid var(--line); }
   #readerPedido{ width:100%; border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
+  .usuario-card{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:8px; background:var(--bg-alt);
+  }
+  .usuario-card .usuario-info{ min-width:0; }
+  .usuario-card .usuario-email{ font-weight:700; font-size:14px; color:var(--ink); word-break:break-all; }
+  .usuario-card .usuario-meta{ font-size:12px; color:var(--ink-muted); margin-top:2px; }
+  .usuario-card .usuario-acciones{ display:flex; gap:6px; flex-shrink:0; }
+  .usuario-card select{
+    padding:6px 8px; font-size:13px; border-radius:var(--radius); border:1px solid var(--line);
+  }
+  .usuario-card button.btn-quitar-usuario{
+    padding:6px 10px; font-size:12.5px; border-radius:var(--radius);
+    border:1px solid var(--stamp-red); background:#fff; color:var(--stamp-red); cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -397,11 +414,10 @@
 <div class="fullscreen" id="pantallaLogin">
   <p class="eyebrow">Acceso restringido</p>
   <h1>Modo admin</h1>
-  <p class="sub">Ingresá la contraseña</p>
+  <p class="sub">Iniciá sesión con tu cuenta de Google</p>
   <div class="login-box">
-    <input type="password" id="inputPassword" placeholder="Contraseña" autocomplete="off">
+    <div id="botonGoogleLogin" style="display:flex; justify-content:center; margin:4px 0;"></div>
     <div class="login-error" id="loginError"></div>
-    <button id="btnLoginConfirmar">Ingresar</button>
   </div>
   <a class="acceso-admin-link" href="/">← Volver al catálogo</a>
 </div>
@@ -409,6 +425,7 @@
 <div id="app">
   <header>
     <a class="volver-catalogo-header" href="/">← Volver al catálogo</a>
+    <span id="etiquetaUsuarioLogueado" style="font-size:12.5px; color:var(--ink-muted); font-family:'IBM Plex Mono', monospace;"></span>
     <button class="admin-link-header" id="btnCerrarSesion">Cerrar sesión</button>
   </header>
 
@@ -416,6 +433,7 @@
     <button class="activo" id="tabEscanear" type="button">Escanear</button>
     <button id="tabGenerarUnidades" type="button">Productos</button>
     <button id="tabPedidos" type="button">Pedidos</button>
+    <button id="tabUsuarios" type="button">Usuarios</button>
   </div>
 
   <div id="seccionEscanear">
@@ -526,6 +544,26 @@
     </div>
     <div id="listaPedidos">Cargando pedidos...</div>
   </div>
+
+  <div id="panelUsuarios" style="display:none; padding:16px 24px 40px;">
+    <div class="campo">
+      <label>Agregar / editar usuario</label>
+      <input type="text" id="inputUsuarioEmail" placeholder="Email de Google (ej: nombre@gmail.com)" style="margin-bottom:10px;" autocomplete="off">
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <button type="button" class="btn-modo-escaner activo" id="btnNivelUsuario1" data-nivel="1" style="flex:1;">Nivel 1 — Escanear y Pedidos</button>
+        <button type="button" class="btn-modo-escaner" id="btnNivelUsuario2" data-nivel="2" style="flex:1;">Nivel 2 — Todo</button>
+      </div>
+      <button class="btn-generar" id="btnGuardarUsuario">Guardar usuario</button>
+      <div id="mensajeUsuario" style="margin-top:10px;"></div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Usuarios con acceso</label>
+      <div id="listaUsuarios">Cargando usuarios...</div>
+    </div>
+  </div>
 </div>
 
 <input type="file" id="inputFotoOculto" accept="image/jpeg,image/png,image/webp" style="display:none;">
@@ -610,65 +648,141 @@
 
 <script>
 
-  let adminPassword = null;
+  // Sesión del panel admin. `adminToken` es el token firmado que devuelve
+  // el servidor tras verificar el login con Google — es lo que se manda
+  // en cada pedido de acá en más (nunca reenviamos nada de Google).
+  let adminToken = null;
+  let adminEmail = null;
+  let adminNivel = null;
+  let adminNombre = null;
+
   const appDiv = document.getElementById('app');
   const pantallaLogin = document.getElementById('pantallaLogin');
   const adminTabs = document.getElementById('adminTabs');
   const tabEscanear = document.getElementById('tabEscanear');
   const tabGenerarUnidades = document.getElementById('tabGenerarUnidades');
   const tabPedidos = document.getElementById('tabPedidos');
+  const tabUsuarios = document.getElementById('tabUsuarios');
   const seccionEscanear = document.getElementById('seccionEscanear');
   const panelGenerarUnidades = document.getElementById('panelGenerarUnidades');
   const panelPedidos = document.getElementById('panelPedidos');
+  const panelUsuarios = document.getElementById('panelUsuarios');
+  const etiquetaUsuarioLogueado = document.getElementById('etiquetaUsuarioLogueado');
 
-  const CLAVE_SESION_PASSWORD = 'admin_password';
+  const CLAVE_SESION = 'admin_sesion';
+
+  function esNivel2(){ return adminNivel === 2; }
 
   function guardarSesion(){
-    try { sessionStorage.setItem(CLAVE_SESION_PASSWORD, adminPassword || ''); } catch (e) {}
+    try {
+      sessionStorage.setItem(CLAVE_SESION, JSON.stringify({
+        token: adminToken, email: adminEmail, nivel: adminNivel, nombre: adminNombre,
+      }));
+    } catch (e) {}
   }
   function borrarSesion(){
-    try { sessionStorage.removeItem(CLAVE_SESION_PASSWORD); } catch (e) {}
+    try { sessionStorage.removeItem(CLAVE_SESION); } catch (e) {}
   }
   function restaurarSesion(){
     try {
-      const passwordGuardada = sessionStorage.getItem(CLAVE_SESION_PASSWORD);
-      if (passwordGuardada) {
-        adminPassword = passwordGuardada;
-        mostrarApp();
-        return true;
-      }
+      const guardada = sessionStorage.getItem(CLAVE_SESION);
+      if (!guardada) return false;
+      const datos = JSON.parse(guardada);
+      if (!datos || !datos.token) return false;
+      adminToken = datos.token;
+      adminEmail = datos.email;
+      adminNivel = datos.nivel;
+      adminNombre = datos.nombre;
+      mostrarApp();
+      return true;
     } catch (e) {}
     return false;
   }
 
-  async function intentarLoginAdmin(){
-    const password = document.getElementById('inputPassword').value;
+  /* Cualquier pedido al servidor que devuelva 401 ("Sesión inválida o
+     vencida") nos manda de vuelta al login. Esto cubre tanto el caso de
+     que se venza la sesión como el de que un admin nivel 2 te haya
+     quitado el acceso mientras estabas adentro. */
+  function sesionVencida(){
+    borrarSesion();
+    adminToken = null; adminEmail = null; adminNivel = null; adminNombre = null;
+    appDiv.classList.remove('show');
+    pantallaLogin.classList.remove('hidden');
+    document.getElementById('loginError').textContent = 'Tu sesión venció o ya no tenés acceso. Iniciá sesión de nuevo.';
+    renderizarBotonGoogle();
+  }
+
+  /* ------------------------------------------------------------
+   * LOGIN CON GOOGLE (Google Identity Services)
+   * ------------------------------------------------------------ */
+  // Interceptor global: cualquier pedido al servidor que devuelva 401
+  // ("Sesión inválida o vencida") nos manda de vuelta al login, sin
+  // tener que acordarse de revisarlo en cada una de las llamadas fetch
+  // del panel. Se excluye /admin-login-google porque ahí un 401 significa
+  // "cuenta no autorizada", no "sesión vencida" — ese caso ya muestra su
+  // propio mensaje en el formulario de login.
+  const fetchOriginal = window.fetch.bind(window);
+  window.fetch = async function fetchConControlDeSesion(...args){
+    const respuesta = await fetchOriginal(...args);
+    const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '';
+    if (respuesta.status === 401 && url.indexOf('/admin-login-google') === -1 && appDiv.classList.contains('show')) {
+      sesionVencida();
+    }
+    return respuesta;
+  };
+  let googleListo = false;
+
+  function renderizarBotonGoogle(){
+    const contenedor = document.getElementById('botonGoogleLogin');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    if (!googleListo) return;
+    google.accounts.id.renderButton(contenedor, { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill' });
+  }
+
+  async function alRecibirCredencialGoogle(respuesta){
     const errorDiv = document.getElementById('loginError');
     errorDiv.textContent = '';
-    if (!password) { errorDiv.textContent = 'Ingresá una contraseña.'; return; }
-
     try {
-      const res = await fetch('/admin-login', {
+      const res = await fetch('/admin-login-google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ idToken: respuesta.credential }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) { errorDiv.textContent = data.error || 'Contraseña incorrecta.'; return; }
+      if (!res.ok || !data.ok) { errorDiv.textContent = data.error || 'No se pudo iniciar sesión.'; return; }
 
-      adminPassword = password;
+      adminToken = data.token;
+      adminEmail = data.email;
+      adminNivel = data.nivel;
+      adminNombre = data.nombre;
       guardarSesion();
-      pantallaLogin.classList.add('hidden');
       mostrarApp();
     } catch (err) {
-      errorDiv.textContent = 'No se pudo verificar la contraseña. Revisá tu conexión.';
+      errorDiv.textContent = 'No se pudo verificar la cuenta de Google. Revisá tu conexión.';
     }
   }
 
-  document.getElementById('btnLoginConfirmar').addEventListener('click', intentarLoginAdmin);
-  document.getElementById('inputPassword').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') intentarLoginAdmin();
-  });
+  async function inicializarGoogleLogin(){
+    try {
+      const res = await fetch('/config-publico');
+      const data = await res.json();
+      if (!data.googleClientId) {
+        document.getElementById('loginError').textContent = 'El servidor no tiene configurado el login con Google (GOOGLE_OAUTH_CLIENT_ID).';
+        return;
+      }
+      if (typeof google === 'undefined' || !google.accounts) {
+        setTimeout(inicializarGoogleLogin, 300);
+        return;
+      }
+      google.accounts.id.initialize({ client_id: data.googleClientId, callback: alRecibirCredencialGoogle });
+      googleListo = true;
+      renderizarBotonGoogle();
+    } catch (err) {
+      document.getElementById('loginError').textContent = 'No se pudo cargar el login de Google.';
+    }
+  }
+  inicializarGoogleLogin();
 
   document.getElementById('btnCerrarSesion').addEventListener('click', () => {
     borrarSesion();
@@ -678,19 +792,35 @@
   function mostrarApp(){
     pantallaLogin.classList.add('hidden');
     appDiv.classList.add('show');
+    etiquetaUsuarioLogueado.textContent = `${adminNombre || adminEmail} · nivel ${adminNivel}`;
+
+    // Nivel 1 solo puede Escanear y gestionar Pedidos: ni la pestaña de
+    // Productos ni la de Usuarios existen para esa cuenta (ni siquiera
+    // se muestran — el servidor las rechaza igual si alguien intentara
+    // llamarlas directo, esto es solo la interfaz).
+    tabGenerarUnidades.style.display = esNivel2() ? '' : 'none';
+    tabUsuarios.style.display = esNivel2() ? '' : 'none';
+
     mostrarSeccionAdmin('escanear');
   }
 
   function mostrarSeccionAdmin(seccion){
+    // Nivel 1 no puede quedar parado en una seccion que no le corresponde
+    // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
+    if (!esNivel2() && (seccion === 'generar' || seccion === 'usuarios')) seccion = 'escanear';
+
     const esEscanear = seccion === 'escanear';
     const esPedidos = seccion === 'pedidos';
     const esGenerar = seccion === 'generar';
+    const esUsuarios = seccion === 'usuarios';
     tabEscanear.classList.toggle('activo', esEscanear);
     tabGenerarUnidades.classList.toggle('activo', esGenerar);
     tabPedidos.classList.toggle('activo', esPedidos);
+    tabUsuarios.classList.toggle('activo', esUsuarios);
     seccionEscanear.style.display = esEscanear ? 'block' : 'none';
     panelGenerarUnidades.style.display = esGenerar ? 'block' : 'none';
     panelPedidos.style.display = esPedidos ? 'block' : 'none';
+    panelUsuarios.style.display = esUsuarios ? 'block' : 'none';
 
     if (esGenerar) {
       if (!catalogoCargado) cargarCatalogo();
@@ -700,10 +830,14 @@
     if (esPedidos) {
       cargarPedidos();
     }
+    if (esUsuarios) {
+      cargarUsuarios();
+    }
   }
   tabEscanear.addEventListener('click', () => mostrarSeccionAdmin('escanear'));
   tabGenerarUnidades.addEventListener('click', () => mostrarSeccionAdmin('generar'));
   tabPedidos.addEventListener('click', () => mostrarSeccionAdmin('pedidos'));
+  tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
 
   document.getElementById('btnActivarCamara').addEventListener('click', () => {
     iniciarEscanerSiHaceFalta();
@@ -791,7 +925,7 @@
           const res = await fetch('/scan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sku, estado: 'Vendido', password: adminPassword })
+            body: JSON.stringify({ sku, estado: 'Vendido', token: adminToken })
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -831,7 +965,7 @@
     overlay.classList.add('show');
 
     try {
-      const res = await fetch(`/producto/${encodeURIComponent(sku)}?password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/producto/${encodeURIComponent(sku)}?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) {
         modalNombre.textContent = res.status === 409 ? 'Sin unidades disponibles' : 'No encontrado';
@@ -895,7 +1029,7 @@
     statusBar.className = 'status-bar';
     statusBar.textContent = `Guardando "${sku}"...`;
     try {
-      const body = { sku, estado, password: adminPassword };
+      const body = { sku, estado, token: adminToken };
       if (precioManual !== undefined && precioManual !== null && precioManual !== '' && !Number.isNaN(precioManual)) {
         body.precioManual = precioManual;
       }
@@ -942,7 +1076,7 @@
     }
 
     try {
-      const res = await fetch(`/admin/verificar-vendido?sku=${encodeURIComponent(sku)}&password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/admin/verificar-vendido?sku=${encodeURIComponent(sku)}&token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (res.ok && data.yaVendido) {
         statusBar.className = 'status-bar error';
@@ -1051,7 +1185,7 @@
     overlayAsociar.classList.add('show');
 
     const promesaCatalogo = catalogoCargado ? Promise.resolve() : cargarCatalogo();
-    const promesaCodigo = fetch(`/admin/codigo-barra/${encodeURIComponent(codigo)}?password=${encodeURIComponent(adminPassword)}`)
+    const promesaCodigo = fetch(`/admin/codigo-barra/${encodeURIComponent(codigo)}?token=${encodeURIComponent(adminToken)}`)
       .then((res) => res.json())
       .catch(() => null);
 
@@ -1065,7 +1199,7 @@
       asociacionActualTexto.innerHTML = `Ya asociado a: <strong>${escaparHtml(data.asociacion.producto || data.asociacion.skuGeneral)}</strong> (${escaparHtml(data.asociacion.skuGeneral)})<br><span style="color:var(--ink-muted);">Cargando precio y stock...</span>`;
 
       // No bloqueamos el modal por esto — se completa aparte apenas llega.
-      fetch(`/producto/${encodeURIComponent(data.asociacion.skuGeneral)}?password=${encodeURIComponent(adminPassword)}`)
+      fetch(`/producto/${encodeURIComponent(data.asociacion.skuGeneral)}?token=${encodeURIComponent(adminToken)}`)
         .then((res) => res.json())
         .then((info) => {
           if (skuYaAsociadoEnCurso !== data.asociacion.skuGeneral) return; // ya se escaneo otra cosa, no pisar
@@ -1123,12 +1257,12 @@
       const resAsociar = await fetch('/admin/codigo-barra', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, codigoBarra: codigoBarraEnCurso, skuGeneral }),
+        body: JSON.stringify({ token: adminToken, codigoBarra: codigoBarraEnCurso, skuGeneral }),
       });
       const dataAsociar = await resAsociar.json();
       if (!resAsociar.ok) throw new Error(dataAsociar.error || 'Error al asociar');
 
-      await sumarUnaUnidad(producto, 'Asociación código de barras');
+      await sumarUnaUnidad(producto);
       mensajeAsociar.className = 'checkout-mensaje ok';
       mensajeAsociar.textContent = `Listo: ${codigoBarraEnCurso} → ${producto.producto} (${producto.skuGeneral}). +1 unidad sumada.`;
       setTimeout(cerrarModalAsociar, 800);
@@ -1151,7 +1285,7 @@
     mensajeAsociar.className = 'checkout-mensaje';
     mensajeAsociar.textContent = 'Sumando unidad...';
     try {
-      await sumarUnaUnidad(producto, 'Conteo por código de barras');
+      await sumarUnaUnidad(producto);
       mensajeAsociar.className = 'checkout-mensaje ok';
       mensajeAsociar.textContent = `+1 unidad sumada a ${producto.producto} (${producto.skuGeneral}).`;
       setTimeout(cerrarModalAsociar, 500);
@@ -1164,19 +1298,21 @@
   /* Llama a /admin/generar-unidades con cantidad SIEMPRE en 1 — este
      flujo es a propósito "una unidad por escaneo", nunca un lote, para
      que contar físicamente el stock escaneando sea confiable. */
-  async function sumarUnaUnidad(producto, generadoPor){
+  async function sumarUnaUnidad(producto){
+    // El servidor anota SOLO el email de la sesión como "generado por"
+    // (columna H de HISTORICO_SKU) — no hace falta ni conviene mandar
+    // nada de eso desde acá.
     const res = await fetch('/admin/generar-unidades', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        password: adminPassword,
+        token: adminToken,
         skuGeneral: producto.skuGeneral,
         producto: producto.producto,
         categoria: producto.categoria,
         subcategoria: producto.subcategoria,
         precio: producto.precio,
         cantidad: 1,
-        generadoPor,
       }),
     });
     const data = await res.json();
@@ -1223,7 +1359,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          password: adminPassword, producto: nombre, categoria: elegido.categoria,
+          token: adminToken, producto: nombre, categoria: elegido.categoria,
           subcategoria: elegido.subcategoria, prefijoSku: elegido.prefijoSku, precio,
         }),
       });
@@ -1235,12 +1371,12 @@
       const resAsociar = await fetch('/admin/codigo-barra', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, codigoBarra: codigoBarraEnCurso, skuGeneral: dataCrear.producto.skuGeneral }),
+        body: JSON.stringify({ token: adminToken, codigoBarra: codigoBarraEnCurso, skuGeneral: dataCrear.producto.skuGeneral }),
       });
       const dataAsociar = await resAsociar.json();
       if (!resAsociar.ok) throw new Error(dataAsociar.error || 'El producto se creó, pero no se pudo asociar el código de barras');
 
-      await sumarUnaUnidad(dataCrear.producto, 'Producto nuevo desde código de barras');
+      await sumarUnaUnidad(dataCrear.producto);
 
       mensajeAsociar.className = 'checkout-mensaje ok';
       mensajeAsociar.textContent = `Producto creado (${dataCrear.producto.skuGeneral}), código asociado y +1 unidad sumada.`;
@@ -1332,7 +1468,7 @@
   async function cargarCatalogo(){
     listaProductos.innerHTML = '<div style="padding:12px; font-size:16px; color:var(--ink-muted);">Cargando catálogo...</div>';
     try {
-      const res = await fetch(`/admin/catalogo?password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/admin/catalogo?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar el catálogo');
       catalogoProductos = data.productos || [];
@@ -1521,14 +1657,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            password: adminPassword,
+            token: adminToken,
             skuGeneral: item.producto.skuGeneral,
             producto: item.producto.producto,
             categoria: item.producto.categoria,
             subcategoria: item.producto.subcategoria,
             precio: item.producto.precio,
             cantidad: Number(item.cantidad),
-            generadoPor: 'admin',
           })
         });
         const data = await res.json();
@@ -1689,7 +1824,7 @@
       mostrarMensajeFotos(`Subiendo foto (${Math.round(archivo.size / 1024)} KB)...`, '');
 
       const formData = new FormData();
-      formData.append('password', adminPassword);
+      formData.append('token', adminToken);
       formData.append('skuGeneral', skuFotosActivo);
       formData.append('foto', archivo);
 
@@ -1718,7 +1853,7 @@
       const res = await fetch('/admin/producto/foto/eliminar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, skuGeneral: skuFotosActivo, indice }),
+        body: JSON.stringify({ token: adminToken, skuGeneral: skuFotosActivo, indice }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -1743,7 +1878,7 @@
       const res = await fetch('/admin/producto/descripcion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, skuGeneral: skuFotosActivo, descripcion: textareaDescripcionProducto.value }),
+        body: JSON.stringify({ token: adminToken, skuGeneral: skuFotosActivo, descripcion: textareaDescripcionProducto.value }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -1782,7 +1917,7 @@
   async function cargarConfigCategorias(){
     selectCategoriaNueva.innerHTML = '<option value="">Cargando...</option>';
     try {
-      const res = await fetch(`/admin/config-categorias?password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/admin/config-categorias?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar Config');
       configCategorias = data.categorias || [];
@@ -1824,7 +1959,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          password: adminPassword, producto: nombre, categoria: elegido.categoria,
+          token: adminToken, producto: nombre, categoria: elegido.categoria,
           subcategoria: elegido.subcategoria, prefijoSku: elegido.prefijoSku, precio,
         })
       });
@@ -1853,7 +1988,7 @@
    * IMPRIMIR / LIMPIAR IMPRESORA
    * ------------------------------------------------------------ */
   document.getElementById('btnGenerarEtiquetasApp').addEventListener('click', () => {
-    const url = `/admin/etiquetas-qr-app?password=${encodeURIComponent(adminPassword)}&tipo=qr`;
+    const url = `/admin/etiquetas-qr-app?token=${encodeURIComponent(adminToken)}&tipo=qr`;
     window.open(url, '_blank');
   });
 
@@ -1870,7 +2005,7 @@
       const res = await fetch('/admin/vaciar-imprimir-app', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword }),
+        body: JSON.stringify({ token: adminToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -1891,7 +2026,7 @@
   async function cargarResumenGeneradosApp(){
     resumenGeneradosApp.textContent = 'Cargando...';
     try {
-      const res = await fetch(`/admin/imprimir-app-resumen?password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/admin/imprimir-app-resumen?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar el resumen');
       if (data.totalProductos === 0) {
@@ -1918,7 +2053,7 @@
   async function cargarConfigCategoriasLista(){
     listaConfigCategorias.innerHTML = '<div style="padding:12px; font-size:13px; color:var(--ink-muted);">Cargando...</div>';
     try {
-      const res = await fetch(`/admin/config-categorias?password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/admin/config-categorias?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar Config');
 
@@ -2000,7 +2135,7 @@
       const res = await fetch('/admin/crear-config-categoria', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, categoria, codigoCategoria, subcategoria, codigoSubcategoria })
+        body: JSON.stringify({ token: adminToken, categoria, codigoCategoria, subcategoria, codigoSubcategoria })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -2044,7 +2179,7 @@
       const res = await fetch('/admin/fotos/optimizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword }),
+        body: JSON.stringify({ token: adminToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -2085,7 +2220,7 @@
   async function cargarPedidos(){
     listaPedidos.innerHTML = '<p style="color:var(--ink-muted); font-size:14px;">Cargando pedidos...</p>';
     try {
-      const res = await fetch(`/admin/pedidos?password=${encodeURIComponent(adminPassword)}`);
+      const res = await fetch(`/admin/pedidos?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar los pedidos');
       pedidosCargados = data.pedidos || [];
@@ -2202,7 +2337,7 @@
           const res = await fetch('/admin/pedidos/actualizar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: adminPassword, pedidoId, estado, transportista, numeroSeguimiento }),
+            body: JSON.stringify({ token: adminToken, pedidoId, estado, transportista, numeroSeguimiento }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -2262,7 +2397,7 @@
       const res = await fetch('/admin/pedidos/registrar-unidad', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, pedidoId, sku }),
+        body: JSON.stringify({ token: adminToken, pedidoId, sku }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -2349,6 +2484,140 @@
   }
 
   document.getElementById('btnCerrarUnidadPedido').addEventListener('click', () => { cerrarEscanerUnidad(); });
+
+  /* ============================================================
+   *  PANEL: USUARIOS (solo nivel 2)
+   * ============================================================ */
+  const inputUsuarioEmail = document.getElementById('inputUsuarioEmail');
+  const btnNivelUsuario1 = document.getElementById('btnNivelUsuario1');
+  const btnNivelUsuario2 = document.getElementById('btnNivelUsuario2');
+  const btnGuardarUsuario = document.getElementById('btnGuardarUsuario');
+  const mensajeUsuario = document.getElementById('mensajeUsuario');
+  const listaUsuarios = document.getElementById('listaUsuarios');
+  let nivelElegidoNuevoUsuario = 1;
+
+  function elegirNivelNuevoUsuario(nivel){
+    nivelElegidoNuevoUsuario = nivel;
+    btnNivelUsuario1.classList.toggle('activo', nivel === 1);
+    btnNivelUsuario2.classList.toggle('activo', nivel === 2);
+  }
+  btnNivelUsuario1.addEventListener('click', () => elegirNivelNuevoUsuario(1));
+  btnNivelUsuario2.addEventListener('click', () => elegirNivelNuevoUsuario(2));
+
+  async function cargarUsuarios(){
+    listaUsuarios.innerHTML = '<p style="color:var(--ink-muted); font-size:14px;">Cargando usuarios...</p>';
+    try {
+      const res = await fetch(`/admin/usuarios?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar los usuarios');
+      renderizarUsuarios(data.usuarios || []);
+    } catch (err) {
+      listaUsuarios.innerHTML = `<p style="color:var(--stamp-red); font-size:14px;">No se pudo cargar: ${escaparHtml(err.message)}</p>`;
+    }
+  }
+
+  function renderizarUsuarios(usuarios){
+    if (usuarios.length === 0) {
+      listaUsuarios.innerHTML = '<p style="color:var(--ink-muted); font-size:14px;">Todavía no hay usuarios cargados.</p>';
+      return;
+    }
+
+    listaUsuarios.innerHTML = usuarios.map((u) => `
+      <div class="usuario-card" data-email="${escaparHtml(u.email)}">
+        <div class="usuario-info">
+          <div class="usuario-email">${escaparHtml(u.email)}${u.email === adminEmail ? ' <span style="color:var(--ink-muted); font-weight:400;">(vos)</span>' : ''}</div>
+          <div class="usuario-meta">${escaparHtml(u.nombre || 'sin nombre todavía')} · agregado ${escaparHtml(u.fechaAlta || '-')}${u.agregadoPor ? ` por ${escaparHtml(u.agregadoPor)}` : ''}</div>
+        </div>
+        <div class="usuario-acciones">
+          <select class="select-nivel-usuario">
+            <option value="1" ${u.nivel === 1 ? 'selected' : ''}>Nivel 1</option>
+            <option value="2" ${u.nivel === 2 ? 'selected' : ''}>Nivel 2</option>
+          </select>
+          <button type="button" class="btn-quitar-usuario" ${u.email === adminEmail ? 'disabled title="No podés quitarte el acceso a vos mismo"' : ''}>Quitar</button>
+        </div>
+      </div>
+    `).join('');
+
+    listaUsuarios.querySelectorAll('.usuario-card').forEach((card) => {
+      const email = card.getAttribute('data-email');
+
+      card.querySelector('.select-nivel-usuario').addEventListener('change', async (evento) => {
+        const nivelNuevo = Number(evento.target.value);
+        try {
+          const res = await fetch('/admin/usuarios/crear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, email, nivel: nivelNuevo }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+        } catch (err) {
+          alert(`No se pudo cambiar el nivel: ${err.message}`);
+          cargarUsuarios();
+        }
+      });
+
+      const botonQuitar = card.querySelector('.btn-quitar-usuario');
+      if (!botonQuitar.disabled) {
+        botonQuitar.addEventListener('click', async () => {
+          if (!confirm(`¿Quitarle el acceso a ${email}?`)) return;
+          botonQuitar.disabled = true;
+          botonQuitar.textContent = 'Quitando...';
+          try {
+            const res = await fetch('/admin/usuarios/eliminar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: adminToken, email }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error desconocido');
+            card.remove();
+          } catch (err) {
+            alert(`No se pudo quitar: ${err.message}`);
+            botonQuitar.disabled = false;
+            botonQuitar.textContent = 'Quitar';
+          }
+        });
+      }
+    });
+  }
+
+  elegirNivelNuevoUsuario(1);
+
+  btnGuardarUsuario.addEventListener('click', async () => {
+    const email = inputUsuarioEmail.value.trim();
+    mensajeUsuario.textContent = '';
+
+    if (!email || email.indexOf('@') === -1) {
+      mensajeUsuario.style.color = 'var(--stamp-red)';
+      mensajeUsuario.textContent = 'Ingresá un email válido.';
+      return;
+    }
+
+    btnGuardarUsuario.disabled = true;
+    btnGuardarUsuario.textContent = 'Guardando...';
+
+    try {
+      const res = await fetch('/admin/usuarios/crear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken, email, nivel: nivelElegidoNuevoUsuario }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      mensajeUsuario.style.color = 'var(--stamp-green)';
+      mensajeUsuario.textContent = `Listo: ${email} tiene acceso nivel ${nivelElegidoNuevoUsuario}. La primera vez que inicie sesión con Google va a quedar con ese nivel.`;
+      inputUsuarioEmail.value = '';
+      cargarUsuarios();
+    } catch (err) {
+      mensajeUsuario.style.color = 'var(--stamp-red)';
+      mensajeUsuario.textContent = `No se pudo guardar: ${err.message}`;
+    } finally {
+      btnGuardarUsuario.disabled = false;
+      btnGuardarUsuario.textContent = 'Guardar usuario';
+    }
+  });
 </script>
 </body>
 </html>
