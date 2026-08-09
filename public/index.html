@@ -490,9 +490,15 @@
       return;
     }
 
+    // Agrupamos por categoría normalizando a MAYÚSCULAS: así, si en algún
+    // producto la categoría quedó tipeada distinto (ej "Libros" en vez de
+    // "LIBROS"), no aparece como una pestaña aparte con los productos
+    // repartidos — se junta igual con el resto. El texto que se MUESTRA
+    // también sale ya en mayúsculas, consistente con el resto de las
+    // categorías (FIELTRO, LATA, VELAS, etc).
     const porCategoria = new Map();
     catalogoPublicoProductos.forEach((p, indiceGlobal) => {
-      const categoria = p.categoria || '(Sin categoría)';
+      const categoria = (p.categoria || '(Sin categoría)').trim().toUpperCase();
       if (!porCategoria.has(categoria)) porCategoria.set(categoria, []);
       porCategoria.get(categoria).push({ ...p, indiceGlobal });
     });
@@ -500,7 +506,7 @@
     const categoriasOrdenadas = Array.from(porCategoria.keys()).sort();
 
     if (!categoriaCatalogoActiva || !categoriasOrdenadas.includes(categoriaCatalogoActiva)) {
-      categoriaCatalogoActiva = categoriasOrdenadas.includes('Libros') ? 'Libros' : categoriasOrdenadas[0];
+      categoriaCatalogoActiva = categoriasOrdenadas.includes('LIBROS') ? 'LIBROS' : categoriasOrdenadas[0];
     }
 
     const tabsHtml = categoriasOrdenadas.map((categoria) => `
