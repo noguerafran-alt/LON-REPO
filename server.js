@@ -65,7 +65,12 @@ app.set('trust proxy', 1);
 // varios CDNs (fonts.googleapis.com, unpkg.com, accounts.google.com) y
 // una CSP genérica los bloquearía; si en algún momento se quiere sumar
 // una CSP a medida, hay que listar esos orígenes explícitamente.
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+// SE AGREGA crossOriginOpenerPolicy PARA PERMITIR POPUPS DE GOOGLE LOGIN
+app.use(helmet({ 
+  contentSecurityPolicy: false, 
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+}));
 
 app.use(express.json({
   limit: '2mb',
