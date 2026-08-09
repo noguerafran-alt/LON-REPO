@@ -47,6 +47,7 @@ module.exports = {
   HOJA_IMPRIMIR_APP: process.env.GOOGLE_IMPRIMIR_APP_SHEET_NAME || 'IMPRIMIR APP',  // usada SOLO por esta app: aca se anota cada unidad generada desde la web, para poder imprimir unicamente lo generado desde aca
   HOJA_CONFIG: process.env.GOOGLE_CONFIG_SHEET_NAME || 'Config',                    // categorias, subcategorias y prefijo de SKU (para crear productos nuevos)
   HOJA_CODIGOS_BARRA: process.env.GOOGLE_CODIGOS_BARRA_SHEET_NAME || 'CODIGOS_BARRA', // asociacion entre codigos de barra externos (ISBN, EAN, etc) y el SKU interno
+  HOJA_ADMIN_USERS: process.env.GOOGLE_ADMIN_USERS_SHEET_NAME || 'AdminUsers',    // usuarios autorizados a entrar al panel admin (login con Google), con su nivel de acceso
 
   /* ------------------------------------------------------------
    * 3) COLUMNAS — en que columna (0 = A, 1 = B, ...) esta cada dato.
@@ -138,6 +139,24 @@ module.exports = {
     fecha: 3,         // D: fecha en que se creo/actualizo la asociacion
   },
 
+  // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca
+  // de cuentas de Google que pueden entrar al panel admin, con su nivel
+  // de acceso:
+  //   Nivel 1: solo "Escanear" (vender) y "Pedidos". No puede entrar a
+  //            "Productos" (generar unidades, asociar codigos de barra,
+  //            fotos, categorias, etiquetas) — ni por la interfaz ni
+  //            llamando a esos endpoints directamente, se valida en el
+  //            servidor.
+  //   Nivel 2: acceso total, incluida la gestion de usuarios (agregar,
+  //            cambiar de nivel o quitar acceso a otras cuentas).
+  COLUMNAS_ADMIN_USERS: {
+    email: 0,       // A: cuenta de Google autorizada (en minuscula)
+    nivel: 1,       // B: 1 o 2
+    nombre: 2,      // C: nombre visible (lo trae Google al iniciar sesion la primera vez)
+    fechaAlta: 3,   // D
+    agregadoPor: 4, // E: email del nivel 2 que dio de alta esta cuenta ("(automatico)" para el owner inicial)
+  },
+
   // Columnas de la hoja PEDIDOS (planilla de VENTAS). Un pedido nace
   // cuando alguien inicia un pago (Payway o transferencia) desde el
   // catalogo, y se va actualizando: primero con el resultado del pago,
@@ -179,6 +198,19 @@ module.exports = {
     skuUnidad: 22,           // W
   },
 
+  // Todos los estados válidos de un pedido. El servidor valida contra
+  // esta lista antes de guardar (evita que se cargue un texto cualquiera
+  // por error, o por un pedido HTTP armado a mano). Los textos tienen
+  // que coincidir EXACTO con el desplegable del panel admin.
+  ESTADOS_PEDIDO: [
+    'Pendiente de pago',
+    'Pagado - Coordinar envío',
+    'Pago rechazado',
+    'Enviado',
+    'Entregado',
+    'Cancelado',
+  ],
+
   // Estados de pedido en los que las unidades ya estan comprometidas y
   // por lo tanto tienen que estar descontadas de STOCK. Al pasar a
   // cualquiera de estos, la app reserva el stock; al salir de todos
@@ -213,7 +245,49 @@ module.exports = {
    * 4) VARIOS
    * ------------------------------------------------------------ */
 
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Admin',
+  // ADMIN_PASSWORD queda solo como variable heredada, ya NO se usa para
+  // entrar al panel admin (reemplazada por Google OAuth + AdminUsers,
+  // ver seccion siguiente). No hace falta configurarla en instalaciones
+  // nuevas.
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '',
+
+  /* ------------------------------------------------------------
+   * LOGIN ADMIN CON GOOGLE (reemplaza la contraseña compartida)
+   * ------------------------------------------------------------
+   * El panel admin (/admin) ahora se entra con "Iniciar sesión con
+   * Google". El servidor verifica el token que devuelve Google, busca el
+   * email en la hoja AdminUsers para saber el nivel (1 o 2), y si esta
+   * autorizado le entrega una sesion propia (un token firmado, no la
+   * contraseña de Google) que el navegador manda en cada pedido.
+   * ------------------------------------------------------------ */
+
+  // ID de cliente OAuth de Google Cloud Console (tipo "Aplicacion web").
+  // Se pide una sola vez por instalacion, es publico (va al navegador),
+  // asi que no hace falta mantenerlo en secreto. Hay que agregar el
+  // dominio de la app (ej https://lon-philosophy.onrender.com) a
+  // "Origenes de JavaScript autorizados" en la config de ese cliente.
+  GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
+
+  // Cuenta de Google que SIEMPRE entra como nivel 2, exista o no todavia
+  // en la hoja AdminUsers. Es el "no te quedes afuera de tu propia app":
+  // la primera vez que este email inicia sesion, se agrega solo a
+  // AdminUsers como nivel 2 (asi despues aparece en la lista para
+  // gestionar como cualquier otro usuario).
+  ADMIN_SEED_EMAIL: (process.env.ADMIN_SEED_EMAIL || '').trim().toLowerCase(),
+
+  // Clave con la que se firman las sesiones del panel admin (HMAC, no
+  // es una contraseña que alguien escriba). IMPORTANTE: en produccion
+  // configurala en Render con un valor propio y secreto (por ejemplo
+  // corriendo `openssl rand -hex 32`) — si se queda con el valor por
+  // defecto, cualquiera que lea este archivo podria firmar sesiones
+  // falsas. Si cambia este valor, todas las sesiones activas se
+  // invalidan (todos tienen que volver a iniciar sesion).
+  SESSION_SECRET: process.env.SESSION_SECRET || 'CAMBIAR_ESTO_EN_RENDER',
+
+  // Cuanto dura una sesion del panel admin antes de pedir iniciar sesion
+  // de nuevo.
+  SESSION_DURACION_HORAS: Number(process.env.SESSION_DURACION_HORAS || 12),
+
 
   // Longitud del bloque de numero de serie (unidad) del SKU. Con 6,
   // "1" se transforma en "000001".
@@ -304,6 +378,13 @@ module.exports = {
   WHATSAPP_TOKEN: process.env.WHATSAPP_TOKEN || '',               // token de acceso permanente de la app de Meta
   WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID || '', // ID del numero de telefono de WhatsApp Business
   WHATSAPP_VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN || '', // string que vos inventás, se usa para verificar el webhook en Meta
+  // "App secret" de la app de Meta (Configuración básica de la app -> "Clave
+  // secreta"). Con esto se valida que cada mensaje entrante al webhook
+  // realmente viene de Meta (firma HMAC-SHA256 en el header
+  // X-Hub-Signature-256) y no de cualquiera que le pegue a la URL. Si se
+  // deja vacío, el webhook sigue funcionando pero SIN esa verificación
+  // (no recomendado para producción).
+  WHATSAPP_APP_SECRET: process.env.WHATSAPP_APP_SECRET || '',
   WHATSAPP_API_VERSION: process.env.WHATSAPP_API_VERSION || 'v20.0',
 
   // Opcional: si cargás una API key de Anthropic (Claude), el chatbot usa a
