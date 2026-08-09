@@ -947,6 +947,134 @@ async function asegurarFilaStock(sheetsClient, spreadsheetId, sheetName, { skuGe
  * y nombre apenas se lea el codigo por primera vez.
  */
 /* ============================================================
+ *  ADMIN USERS (login con Google + niveles de acceso)
+ * ============================================================ */
+
+function normalizarEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+/**
+ * Lee todos los usuarios autorizados de AdminUsers y los devuelve como
+ * array de objetos { numeroFila, email, nivel, nombre, fechaAlta, agregadoPor }.
+ * `nivel` se devuelve como numero (1 o 2); una fila con un valor invalido
+ * o vacio cae a nivel 1 (el mas restrictivo, nunca abrimos de mas por un
+ * dato mal cargado en la hoja).
+ */
+async function getAdminUsers(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_ADMIN_USERS;
+  const ultimaLetra = columnaALetra(Math.max(...Object.values(cols)));
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const usuarios = [];
+
+  // Saltamos la fila 1 (encabezado)
+  for (let i = 1; i < rows.length; i++) {
+    const fila = rows[i];
+    const email = fila[cols.email] ? normalizarEmail(fila[cols.email]) : '';
+    if (!email) continue;
+    const nivelNumero = Number(fila[cols.nivel]);
+    usuarios.push({
+      numeroFila: i + 1,
+      email,
+      nivel: nivelNumero === 2 ? 2 : 1,
+      nombre: fila[cols.nombre] ? String(fila[cols.nombre]).trim() : '',
+      fechaAlta: fila[cols.fechaAlta] || '',
+      agregadoPor: fila[cols.agregadoPor] || '',
+    });
+  }
+
+  return usuarios;
+}
+
+/**
+ * Busca un usuario por email (case-insensitive). Devuelve
+ * { numeroFila, usuario } o { numeroFila: null, usuario: null }.
+ */
+async function buscarAdminUserPorEmail(sheetsClient, spreadsheetId, sheetName, email) {
+  const usuarios = await getAdminUsers(sheetsClient, spreadsheetId, sheetName);
+  const emailNormalizado = normalizarEmail(email);
+  const encontrado = usuarios.find((u) => u.email === emailNormalizado);
+  return encontrado ? { numeroFila: encontrado.numeroFila, usuario: encontrado } : { numeroFila: null, usuario: null };
+}
+
+/**
+ * Crea o actualiza (upsert) un usuario del panel admin: si el email ya
+ * existe, actualiza nivel/nombre en la misma fila; si no, agrega una
+ * fila nueva. Se usa tanto para altas manuales desde el panel (nivel 2
+ * agregando a alguien) como para el alta automatica del ADMIN_SEED_EMAIL
+ * la primera vez que inicia sesion.
+ */
+async function crearOActualizarAdminUser(sheetsClient, spreadsheetId, sheetName, {
+  email, nivel, nombre, fecha, agregadoPor,
+}) {
+  const cols = config.COLUMNAS_ADMIN_USERS;
+  const emailNormalizado = normalizarEmail(email);
+  const { numeroFila, usuario } = await buscarAdminUserPorEmail(sheetsClient, spreadsheetId, sheetName, emailNormalizado);
+
+  const fila = new Array(Math.max(...Object.values(cols)) + 1).fill('');
+  fila[cols.email] = emailNormalizado;
+  fila[cols.nivel] = nivel === 2 ? 2 : 1;
+  // Si ya existia y no nos mandaron nombre nuevo, conservamos el que
+  // tenia (Google solo nos da el nombre en el momento del login).
+  fila[cols.nombre] = nombre !== undefined && nombre !== null && nombre !== ''
+    ? nombre
+    : (usuario ? usuario.nombre : '');
+  fila[cols.fechaAlta] = usuario ? usuario.fechaAlta : fecha;
+  fila[cols.agregadoPor] = usuario ? usuario.agregadoPor : (agregadoPor || '');
+
+  if (numeroFila) {
+    await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetName, numeroFila);
+    const ultimaLetra = columnaALetra(Math.max(...Object.values(cols)));
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!A${numeroFila}:${ultimaLetra}${numeroFila}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [fila] },
+    });
+  } else {
+    await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
+  }
+
+  return { email: emailNormalizado, nivel: fila[cols.nivel], nombre: fila[cols.nombre] };
+}
+
+/**
+ * Quita el acceso de un usuario (borra su fila de AdminUsers). No borra
+ * nada de lo que ese usuario haya generado antes (HISTORICO_SKU, VENTAS,
+ * etc quedan con su email tal cual, para no perder trazabilidad).
+ * Devuelve true si encontro y borro la fila, false si no existia.
+ */
+async function eliminarAdminUser(sheetsClient, spreadsheetId, sheetName, email) {
+  const { numeroFila } = await buscarAdminUserPorEmail(sheetsClient, spreadsheetId, sheetName, email);
+  if (!numeroFila) return false;
+
+  const metadata = await sheetsClient.spreadsheets.get({ spreadsheetId });
+  const hoja = metadata.data.sheets.find((h) => h.properties.title === sheetName);
+  if (!hoja) return false;
+
+  await sheetsClient.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId: hoja.properties.sheetId,
+            dimension: 'ROWS',
+            startIndex: numeroFila - 1,
+            endIndex: numeroFila,
+          },
+        },
+      }],
+    },
+  });
+
+  return true;
+}
+
+/* ============================================================
  *  PEDIDOS (pagos con Payway / transferencia + coordinacion de envio)
  * ============================================================ */
 
@@ -1373,6 +1501,11 @@ module.exports = {
   asegurarFilaStock,
   ajustarStockCantidad,
   procesarVentasNuevas,
+
+  getAdminUsers,
+  buscarAdminUserPorEmail,
+  crearOActualizarAdminUser,
+  eliminarAdminUser,
 
   crearPedido,
   getPedidos,
