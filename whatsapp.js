@@ -15,6 +15,7 @@
  *  5. Suscribite al campo "messages".
  * ============================================================ */
 
+const crypto = require('crypto');
 const config = require('./config');
 const {
   getStockPorSkuGeneral,
@@ -25,6 +26,36 @@ const {
 } = require('./googleSheets');
 
 const GRAPH_URL = `https://graph.facebook.com/${config.WHATSAPP_API_VERSION}`;
+
+/* ------------------------------------------------------------
+ * VERIFICACION DE FIRMA DE MENSAJES ENTRANTES (POST /webhook/whatsapp)
+ * Meta firma cada request con HMAC-SHA256 del cuerpo crudo, usando el
+ * "App secret" de la app, y lo manda en el header X-Hub-Signature-256
+ * como "sha256=<hex>". Sin esto, cualquiera que conozca la URL del
+ * webhook podría mandar mensajes falsos: le harían gastar cuota de la
+ * API de Claude (si está configurada) o, peor, podrían llegar a
+ * disparar respuestas automáticas de tu WhatsApp Business hacia
+ * cualquier numero.
+ *
+ * Devuelve true si la firma es válida, o si WHATSAPP_APP_SECRET no está
+ * configurado (caso en que no podemos verificar nada — se deja pasar
+ * para no romper instalaciones que todavía no la cargaron, pero
+ * conviene configurarla).
+ * ------------------------------------------------------------ */
+function verificarFirmaWebhook(cuerpoCrudo, headerFirma) {
+  if (!config.WHATSAPP_APP_SECRET) return true;
+  if (!headerFirma || !cuerpoCrudo) return false;
+
+  const firmaEsperada = 'sha256=' + crypto
+    .createHmac('sha256', config.WHATSAPP_APP_SECRET)
+    .update(cuerpoCrudo)
+    .digest('hex');
+
+  const bufRecibido = Buffer.from(String(headerFirma));
+  const bufEsperado = Buffer.from(firmaEsperada);
+  if (bufRecibido.length !== bufEsperado.length) return false;
+  return crypto.timingSafeEqual(bufRecibido, bufEsperado);
+}
 
 /* ------------------------------------------------------------
  * VERIFICACION DEL WEBHOOK (GET /webhook/whatsapp)
@@ -317,6 +348,7 @@ async function procesarEventoEntrante(sheetsClient, body) {
 
 module.exports = {
   verificarWebhook,
+  verificarFirmaWebhook,
   procesarEventoEntrante,
   enviarMensajeTexto,
   generarRespuesta,
