@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const multer = require('multer');
 const { google } = require('googleapis');
@@ -29,6 +30,10 @@ const {
   buscarSkuCompletoDisponible,
   procesarVentasNuevas,
   ajustarStockCantidad,
+  getAdminUsers,
+  buscarAdminUserPorEmail,
+  crearOActualizarAdminUser,
+  eliminarAdminUser,
   crearPedido,
   getPedidos,
   getPedidoPorId,
@@ -40,9 +45,36 @@ const payway = require('./payway');
 const emailService = require('./email');
 const imagenes = require('./imagenes');
 const whatsapp = require('./whatsapp');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { sanitizarTexto, esEmailValido, sanitizarTelefono, sanitizarCodigoPostal, enteroEnRango } = require('./validacion');
 
 const app = express();
-app.use(express.json());
+
+// Render (y la mayoría de los hostings) ponen la app detrás de un proxy
+// reverso: sin esto, TODAS las requests parecen venir de la IP interna
+// del proxy en vez de la del visitante real. Es crítico para que el
+// rate limiting de más abajo limite por visitante y no por "todo el
+// tráfico junto" (que se comportaría como si todos compartieran un
+// único límite global).
+app.set('trust proxy', 1);
+
+// Cabeceras de seguridad estándar (X-Content-Type-Options, quita
+// X-Powered-By para no anunciar que corremos Express, etc). `false` en
+// contentSecurityPolicy porque las páginas ya cargan scripts/estilos de
+// varios CDNs (fonts.googleapis.com, unpkg.com, accounts.google.com) y
+// una CSP genérica los bloquearía; si en algún momento se quiere sumar
+// una CSP a medida, hay que listar esos orígenes explícitamente.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
+app.use(express.json({
+  limit: '2mb',
+  // Guardamos el cuerpo crudo ANTES de parsearlo: hace falta tal cual
+  // (bytes exactos) para verificar la firma HMAC de Meta en el webhook
+  // de WhatsApp — si se recalcula desde el JSON ya parseado, la firma
+  // no coincide aunque el contenido sea "igual".
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 // Las fotos de producto tienen nombre unico (SKU + timestamp), asi que
 // nunca cambian de contenido: se pueden cachear fuerte en el navegador.
 // Con esto, la segunda visita al catalogo muestra las fotos al instante,
@@ -52,6 +84,55 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
   immutable: true,
 }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+/* ============================================================
+ *  RATE LIMITING
+ * ============================================================
+ * Varios niveles, de más laxo a más estricto, según qué tan caro o
+ * abusable es cada grupo de endpoints:
+ *
+ *  - limiteGeneral: red de seguridad para toda la API. Cubre casos que
+ *    no entran en ninguna categoría más específica de abajo.
+ *  - limiteLecturaPublica: catálogo, consulta de producto, config
+ *    pública — de lectura, sin login, pero igual conviene topearlas
+ *    para que no se puedan usar para tirar abajo el servidor o agotar
+ *    la cuota de la API de Google Sheets (que es compartida por toda
+ *    la app: si se agota, se cae para todo el mundo, no solo para quien
+ *    abusó).
+ *  - limiteEscrituraPublica: acciones públicas que cuestan algo real
+ *    (mandan un mail, crean un pedido, o gastan cuota de la API de
+ *    Claude en /chat-web) — bastante más estricto.
+ *  - limiteLogin: intentos de login. Google ya protege la cuenta en sí,
+ *    esto es para que no usen el endpoint para golpear el servidor o
+ *    la verificación de tokens de Google en loop.
+ *  - limiteAdmin: todo lo de /admin/* y /scan. Ya requieren sesión
+ *    válida, así que esto no es tanto "anti-abuso" como protección de
+ *    la cuota de Sheets ante un bug o un script que se vuelva loco.
+ *
+ * `standardHeaders: true` manda los headers RateLimit-* estándar (útil
+ * para que el frontend pueda mostrar "esperá un momento" si hiciera
+ * falta). `legacyHeaders: false` apaga los headers X-RateLimit-*
+ * viejos, redundantes con los estándar.
+ * ============================================================ */
+function crearLimitador(opciones) {
+  return rateLimit({
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas solicitudes. Esperá un momento y probá de nuevo.' },
+    ...opciones,
+  });
+}
+
+const limiteGeneral = crearLimitador({ windowMs: 15 * 60 * 1000, max: 600 });
+const limiteLecturaPublica = crearLimitador({ windowMs: 60 * 1000, max: 60 });
+const limiteEscrituraPublica = crearLimitador({ windowMs: 15 * 60 * 1000, max: 20 });
+const limiteLogin = crearLimitador({ windowMs: 15 * 60 * 1000, max: 15 });
+const limiteAdmin = crearLimitador({ windowMs: 60 * 1000, max: 120 });
+
+// Red de seguridad general primero (se aplica a todo); los límites más
+// específicos de abajo, montados sobre rutas puntuales, son ADEMÁS de
+// este, no en su reemplazo.
+app.use(limiteGeneral);
 
 // Rutas amigables (sin ".html") ademas del acceso directo a los archivos.
 app.get('/cliente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cliente.html')));
@@ -64,8 +145,14 @@ if (!config.SHEET_ID_VENTAS || config.SHEET_ID_VENTAS.startsWith('PONE_ACA')) {
 if (!config.SHEET_ID_PRODUCTOS || config.SHEET_ID_PRODUCTOS.startsWith('PONE_ACA')) {
   console.warn('⚠️  Falta configurar SHEET_ID_PRODUCTOS en config.js o en la variable de entorno.');
 }
-if (!config.ADMIN_PASSWORD) {
-  console.warn('⚠️  No configuraste ADMIN_PASSWORD — el modo admin no va a funcionar hasta que lo agregues.');
+if (!config.GOOGLE_OAUTH_CLIENT_ID) {
+  console.warn('⚠️  No configuraste GOOGLE_OAUTH_CLIENT_ID — el login del panel admin (Iniciar sesión con Google) no va a funcionar hasta que lo agregues.');
+}
+if (!config.ADMIN_SEED_EMAIL) {
+  console.warn('⚠️  No configuraste ADMIN_SEED_EMAIL — si la hoja AdminUsers está vacía, nadie va a poder entrar al panel admin.');
+}
+if (!process.env.SESSION_SECRET) {
+  console.warn('⚠️  No configuraste SESSION_SECRET en Render (queda el valor por defecto) — cambialo por uno propio y secreto, por ejemplo con `openssl rand -hex 32`.');
 }
 if (!config.PUBLIC_URL) {
   console.warn('⚠️  No configuraste PUBLIC_URL — los pagos con Payway y el webhook de WhatsApp no van a funcionar hasta que la agregues (ver README).');
@@ -92,9 +179,148 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
-function checkAdmin(password) {
-  return Boolean(config.ADMIN_PASSWORD) && password === config.ADMIN_PASSWORD;
+/* ============================================================
+ *  LOGIN ADMIN CON GOOGLE + SESIONES POR NIVEL
+ * ============================================================
+ * El panel admin ya NO usa una contraseña compartida. El navegador
+ * inicia sesión con Google (Google Identity Services, en admin.html),
+ * nos manda el "ID token" que eso le da, y acá:
+ *
+ *   1) verificamos ese token con Google (confirma que es una cuenta
+ *      real y que el token no está vencido ni manipulado),
+ *   2) buscamos el email en la hoja AdminUsers para saber el nivel
+ *      (1 o 2) — o lo damos de alta automático si es ADMIN_SEED_EMAIL,
+ *   3) le devolvemos NUESTRA propia sesión: un token firmado con
+ *      SESSION_SECRET que el navegador manda en cada pedido de ahí en
+ *      más. Nunca reenviamos el token de Google ni lo guardamos.
+ *
+ * Cada endpoint del panel exige una de estas dos cosas llamando a
+ * requiereSesion() (nivel 1 o 2: Escanear + Pedidos) o
+ * requiereNivel2() (Productos + gestión de usuarios). La atribución de
+ * "quién generó esto" sale SIEMPRE de esta sesión verificada en el
+ * servidor, nunca de un campo que mande el navegador.
+ * ============================================================ */
+
+const clienteGoogleOAuth = new google.auth.OAuth2(config.GOOGLE_OAUTH_CLIENT_ID);
+
+/** Firma una sesión de admin como "cuerpo.firma" (base64url + HMAC-SHA256). */
+function firmarSesionAdmin(payload) {
+  const cuerpo = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const firma = crypto.createHmac('sha256', config.SESSION_SECRET).update(cuerpo).digest('base64url');
+  return `${cuerpo}.${firma}`;
 }
+
+/** Verifica y decodifica un token de sesión. Devuelve null si es inválido,
+    fue firmado con otra clave, o ya venció. */
+function verificarSesionAdmin(token) {
+  if (!token || typeof token !== 'string' || token.indexOf('.') === -1) return null;
+  const [cuerpo, firma] = token.split('.');
+  if (!cuerpo || !firma) return null;
+
+  const firmaEsperada = crypto.createHmac('sha256', config.SESSION_SECRET).update(cuerpo).digest('base64url');
+  const bufFirma = Buffer.from(firma);
+  const bufEsperada = Buffer.from(firmaEsperada);
+  if (bufFirma.length !== bufEsperada.length || !crypto.timingSafeEqual(bufFirma, bufEsperada)) return null;
+
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(cuerpo, 'base64url').toString('utf8'));
+  } catch (err) {
+    return null;
+  }
+  if (!payload || !payload.exp || Date.now() > payload.exp) return null;
+  return payload; // { email, nivel, nombre, exp }
+}
+
+/** El token de sesión viaja como `token` en el body (POST) o en la
+    query string (GET). */
+function tokenDeLaRequest(req) {
+  if (req.body && req.body.token) return req.body.token;
+  if (req.query && req.query.token) return req.query.token;
+  return null;
+}
+
+/** Exige una sesión válida de CUALQUIER nivel (1 o 2). Si es inválida o
+    venció, responde 401 y devuelve null — el caller debe hacer
+    `if (!sesion) return;` inmediatamente después de llamar a esto. */
+function requiereSesion(req, res) {
+  const sesion = verificarSesionAdmin(tokenDeLaRequest(req));
+  if (!sesion) {
+    res.status(401).json({ error: 'Sesión inválida o vencida. Volvé a iniciar sesión.' });
+    return null;
+  }
+  return sesion;
+}
+
+/** Exige una sesión de nivel 2 (acceso total). Nivel 1 recibe 403 con un
+    mensaje claro de por qué no puede. */
+function requiereNivel2(req, res) {
+  const sesion = requiereSesion(req, res);
+  if (!sesion) return null;
+  if (sesion.nivel !== 2) {
+    res.status(403).json({ error: 'Esta acción es solo para usuarios de nivel 2.' });
+    return null;
+  }
+  return sesion;
+}
+
+app.post('/admin-login-google', limiteLogin, async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ error: 'Falta el token de Google.' });
+    }
+    if (!config.GOOGLE_OAUTH_CLIENT_ID) {
+      return res.status(500).json({ error: 'El servidor no tiene configurado GOOGLE_OAUTH_CLIENT_ID.' });
+    }
+
+    let payloadGoogle;
+    try {
+      const ticket = await clienteGoogleOAuth.verifyIdToken({ idToken, audience: config.GOOGLE_OAUTH_CLIENT_ID });
+      payloadGoogle = ticket.getPayload();
+    } catch (err) {
+      return res.status(401).json({ error: 'No se pudo verificar la cuenta de Google. Probá iniciar sesión de nuevo.' });
+    }
+
+    if (!payloadGoogle || !payloadGoogle.email || !payloadGoogle.email_verified) {
+      return res.status(401).json({ error: 'La cuenta de Google no tiene el email verificado.' });
+    }
+
+    const email = String(payloadGoogle.email).trim().toLowerCase();
+    const nombreGoogle = payloadGoogle.name || payloadGoogle.email;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { usuario } = await buscarAdminUserPorEmail(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ADMIN_USERS, email);
+
+    let nivel;
+    let nombre;
+
+    if (usuario) {
+      nivel = usuario.nivel;
+      nombre = usuario.nombre || nombreGoogle;
+    } else if (config.ADMIN_SEED_EMAIL && email === config.ADMIN_SEED_EMAIL) {
+      // Primera vez que entra el dueño de la cuenta semilla: lo damos de
+      // alta solo como nivel 2, para que despues aparezca en la lista de
+      // usuarios del panel igual que cualquier otro.
+      const { fecha, hora } = fechaYHoraActual();
+      await crearOActualizarAdminUser(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ADMIN_USERS, {
+        email, nivel: 2, nombre: nombreGoogle, fecha: `${fecha} ${hora}`, agregadoPor: '(automático)',
+      });
+      nivel = 2;
+      nombre = nombreGoogle;
+    } else {
+      return res.status(403).json({ error: 'Tu cuenta de Google no está autorizada para entrar al panel admin. Pedile a un administrador que te agregue.' });
+    }
+
+    const exp = Date.now() + config.SESSION_DURACION_HORAS * 60 * 60 * 1000;
+    const token = firmarSesionAdmin({ email, nivel, nombre, exp });
+
+    res.json({ ok: true, token, email, nivel, nombre, exp });
+  } catch (err) {
+    console.error('Error en el login con Google:', err.message);
+    res.status(500).json({ error: 'No se pudo iniciar sesión.' });
+  }
+});
 
 function fechaYHoraActual() {
   const now = new Date();
@@ -109,26 +335,11 @@ function generarPedidoId() {
 }
 
 /* ------------------------------------------------------------
- * LOGIN ADMIN
+ * CONSULTA PUBLICA DE PRODUCTO (precio, nombre, y stock si hay sesión)
  * ------------------------------------------------------------ */
-app.post('/admin-login', (req, res) => {
-  const { password } = req.body;
-  if (!config.ADMIN_PASSWORD) {
-    return res.status(500).json({ ok: false, error: 'El servidor no tiene configurada ADMIN_PASSWORD.' });
-  }
-  if (checkAdmin(password)) {
-    return res.json({ ok: true });
-  }
-  return res.status(401).json({ ok: false, error: 'Contraseña incorrecta.' });
-});
-
-/* ------------------------------------------------------------
- * CONSULTA PUBLICA DE PRODUCTO (precio, nombre, y stock si es admin)
- * ------------------------------------------------------------ */
-app.get('/producto/:sku', async (req, res) => {
+app.get('/producto/:sku', limiteLecturaPublica, async (req, res) => {
   try {
     const { sku } = req.params;
-    const { password } = req.query;
     if (!sku || !String(sku).trim()) {
       return res.status(400).json({ error: 'SKU vacío.' });
     }
@@ -191,7 +402,12 @@ app.get('/producto/:sku', async (req, res) => {
       esCodigoBarraExterno,
     };
 
-    if (checkAdmin(password)) {
+    // El stock solo se muestra si viene con una sesión de admin válida
+    // (cualquier nivel — nivel 1 lo necesita para vender). Acá no
+    // usamos requiereSesion() porque este endpoint es público (el
+    // catálogo lo consulta sin login): si no hay sesión, seguimos de
+    // largo devolviendo el resto de los datos igual.
+    if (verificarSesionAdmin(tokenDeLaRequest(req))) {
       const stock = await getStockPorSkuGeneral(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_STOCK, skuGeneral);
       producto.stock = stock;
     }
@@ -206,18 +422,25 @@ app.get('/producto/:sku', async (req, res) => {
 /* ------------------------------------------------------------
  * CONSULTA DE CLIENTE (sin login admin)
  * ------------------------------------------------------------ */
-app.post('/consulta', async (req, res) => {
+app.post('/consulta', limiteEscrituraPublica, async (req, res) => {
   try {
     const { sku, nombre, email, telefono } = req.body;
     // El SKU puede venir vacio: es el caso de "Dejanos tu contacto" sin
     // haber escaneado nada todavia (contacto general).
-    const skuLimpio = sku ? String(sku).trim() : '';
+    const skuLimpio = sanitizarTexto(sku, 80) || '(contacto general)';
+    const nombreLimpio = sanitizarTexto(nombre, 120);
+    const telefonoLimpio = sanitizarTelefono(telefono);
+
+    if (email && !esEmailValido(email)) {
+      return res.status(400).json({ error: 'El email no tiene un formato válido.' });
+    }
+    const emailLimpio = email ? sanitizarTexto(email, 254) : '';
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const { fecha, hora } = fechaYHoraActual();
 
     await appendRow(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_CONSULTAS, [
-      skuLimpio || '(contacto general)', nombre || '', email || '', telefono || '', fecha, hora,
+      skuLimpio, nombreLimpio, emailLimpio, telefonoLimpio, fecha, hora,
     ]);
 
     res.json({ ok: true });
@@ -236,12 +459,11 @@ app.post('/consulta', async (req, res) => {
 /* Verifica si un SKU completo ya fue marcado "Vendido" antes en VENTAS,
    para poder avisarle al admin antes de contarlo de nuevo (evita doble
    conteo si se escanea por error el mismo codigo dos veces). */
-app.get('/admin/verificar-vendido', async (req, res) => {
+app.get('/admin/verificar-vendido', limiteAdmin, async (req, res) => {
   try {
-    const { sku, password } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { sku } = req.query;
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
     if (!sku || !String(sku).trim()) {
       return res.status(400).json({ error: 'SKU vacío.' });
     }
@@ -273,13 +495,12 @@ app.get('/admin/verificar-vendido', async (req, res) => {
   }
 });
 
-app.post('/scan', async (req, res) => {
+app.post('/scan', limiteAdmin, async (req, res) => {
   try {
-    const { sku, password, precioManual } = req.body;
+    const { sku, precioManual } = req.body;
 
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado. Esta acción es solo para admin.' });
-    }
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
     if (!sku || !String(sku).trim()) {
       return res.status(400).json({ error: 'El código escaneado está vacío.' });
     }
@@ -310,12 +531,11 @@ app.post('/scan', async (req, res) => {
 
 /* Devuelve el catalogo completo de productos (para armar los filtros
    de categoria/subcategoria + buscador en el frontend). Requiere admin. */
-app.get('/admin/catalogo', async (req, res) => {
+app.get('/admin/catalogo', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const productos = await getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS);
@@ -329,12 +549,11 @@ app.get('/admin/catalogo', async (req, res) => {
 
 /* Devuelve las categorias/subcategorias/prefijos de SKU (hoja Config),
    para armar el formulario de "crear producto nuevo". Requiere admin. */
-app.get('/admin/config-categorias', async (req, res) => {
+app.get('/admin/config-categorias', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const categorias = await getConfigCategorias(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG);
@@ -349,12 +568,11 @@ app.get('/admin/config-categorias', async (req, res) => {
 /* Agrega una categoria/subcategoria nueva a la hoja Config (con su
    codigo y prefijo de SKU), para que quede disponible al crear
    productos nuevos. Requiere admin. */
-app.post('/admin/crear-config-categoria', async (req, res) => {
+app.post('/admin/crear-config-categoria', limiteAdmin, async (req, res) => {
   try {
-    const { password, categoria, codigoCategoria, subcategoria, codigoSubcategoria } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { categoria, codigoCategoria, subcategoria, codigoSubcategoria } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
     if (!categoria || !String(categoria).trim()) {
       return res.status(400).json({ error: 'Falta el nombre de la categoría.' });
     }
@@ -367,14 +585,24 @@ app.post('/admin/crear-config-categoria', async (req, res) => {
     if (!codigoSubcategoria || !String(codigoSubcategoria).trim()) {
       return res.status(400).json({ error: 'Falta el código de subcategoría (ej: INF).' });
     }
+    // Los códigos van directo al prefijo del SKU (ej "LIB-INF-0007"):
+    // solo letras y números, para no romper el formato ni el parseo de
+    // SKU en el resto de la app.
+    const REGEX_CODIGO = /^[a-zA-Z0-9]{1,10}$/;
+    if (!REGEX_CODIGO.test(String(codigoCategoria).trim())) {
+      return res.status(400).json({ error: 'El código de categoría solo puede tener letras y números (máx. 10 caracteres).' });
+    }
+    if (!REGEX_CODIGO.test(String(codigoSubcategoria).trim())) {
+      return res.status(400).json({ error: 'El código de subcategoría solo puede tener letras y números (máx. 10 caracteres).' });
+    }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
 
     const nueva = await crearCategoriaConfig(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG, {
-      categoria: String(categoria).trim(),
-      codigoCategoria: String(codigoCategoria).trim(),
-      subcategoria: String(subcategoria).trim(),
-      codigoSubcategoria: String(codigoSubcategoria).trim(),
+      categoria: sanitizarTexto(categoria, 80),
+      codigoCategoria: String(codigoCategoria).trim().toUpperCase(),
+      subcategoria: sanitizarTexto(subcategoria, 80),
+      codigoSubcategoria: String(codigoSubcategoria).trim().toUpperCase(),
     });
 
     res.json({ ok: true, categoria: nueva });
@@ -387,18 +615,25 @@ app.post('/admin/crear-config-categoria', async (req, res) => {
 /* Crea un producto nuevo en la hoja Productos (cuando el producto que se
    quiere generar todavia no existe en el catalogo). Calcula el siguiente
    numero de producto libre para el prefijo de SKU elegido. */
-app.post('/admin/crear-producto', async (req, res) => {
+app.post('/admin/crear-producto', limiteAdmin, async (req, res) => {
   try {
-    const { password, producto, categoria, subcategoria, prefijoSku, precio } = req.body;
+    const { producto, categoria, subcategoria, prefijoSku, precio } = req.body;
 
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
     if (!producto || !String(producto).trim()) {
       return res.status(400).json({ error: 'Falta el nombre del producto.' });
     }
     if (!prefijoSku || !String(prefijoSku).trim()) {
       return res.status(400).json({ error: 'Falta la categoría/subcategoría (prefijo de SKU).' });
+    }
+    let precioLimpio = '';
+    if (precio !== undefined && precio !== null && precio !== '') {
+      const precioNum = Number(precio);
+      if (!Number.isFinite(precioNum) || precioNum < 0) {
+        return res.status(400).json({ error: 'El precio tiene que ser un número mayor o igual a 0.' });
+      }
+      precioLimpio = precioNum;
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
@@ -406,11 +641,11 @@ app.post('/admin/crear-producto', async (req, res) => {
     const productoCreado = await crearProductoNuevo(sheetsClient, {
       spreadsheetId: config.SHEET_ID_PRODUCTOS,
       sheetNameProductos: config.HOJA_PRODUCTOS,
-      producto: String(producto).trim(),
-      categoria: categoria || '',
-      subcategoria: subcategoria || '',
-      prefijoSku: String(prefijoSku).trim(),
-      precio: precio || '',
+      producto: sanitizarTexto(producto, 200),
+      categoria: sanitizarTexto(categoria, 80),
+      subcategoria: sanitizarTexto(subcategoria, 80),
+      prefijoSku: String(prefijoSku).trim().toUpperCase(),
+      precio: precioLimpio,
     });
 
     res.json({ ok: true, producto: productoCreado });
@@ -426,12 +661,11 @@ app.post('/admin/crear-producto', async (req, res) => {
    fabrica, ej ISBN/EAN de un libro) ya esta asociado a un SKU interno.
    Se usa desde el modo "Asociar código de barras" del escáner. Requiere
    admin. */
-app.get('/admin/codigo-barra/:codigo', async (req, res) => {
+app.get('/admin/codigo-barra/:codigo', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const { asociacion } = await buscarAsociacionCodigoBarra(
@@ -447,18 +681,21 @@ app.get('/admin/codigo-barra/:codigo', async (req, res) => {
 
 /* Crea o actualiza la asociacion entre un codigo de barras externo y un
    SKU interno del catalogo. Requiere admin. */
-app.post('/admin/codigo-barra', async (req, res) => {
+app.post('/admin/codigo-barra', limiteAdmin, async (req, res) => {
   try {
-    const { password, codigoBarra, skuGeneral } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { codigoBarra, skuGeneral } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
     if (!codigoBarra || !String(codigoBarra).trim()) {
       return res.status(400).json({ error: 'Falta el código de barras.' });
     }
     if (!skuGeneral || !String(skuGeneral).trim()) {
       return res.status(400).json({ error: 'Falta el SKU interno a asociar.' });
     }
+    // Códigos de barra reales (ISBN/EAN/UPC) son numéricos; permitimos
+    // letras también por si algún código interno viejo las tiene, pero
+    // topeamos el largo para no aceptar texto libre disfrazado de código.
+    const codigoBarraLimpio = String(codigoBarra).trim().slice(0, 40);
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const catalogo = await getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS);
@@ -469,7 +706,7 @@ app.post('/admin/codigo-barra', async (req, res) => {
 
     const { fecha, hora } = fechaYHoraActual();
     await asociarCodigoBarra(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CODIGOS_BARRA, {
-      codigoBarra: String(codigoBarra).trim(),
+      codigoBarra: codigoBarraLimpio,
       skuGeneral: producto.skuGeneral,
       producto: producto.producto,
       fecha: `${fecha} ${hora}`,
@@ -482,13 +719,12 @@ app.post('/admin/codigo-barra', async (req, res) => {
   }
 });
 
-app.post('/admin/generar-unidades', async (req, res) => {
+app.post('/admin/generar-unidades', limiteAdmin, async (req, res) => {
   try {
-    const { password, skuGeneral, producto, categoria, subcategoria, precio, cantidad, generadoPor } = req.body;
+    const { skuGeneral, producto, categoria, subcategoria, precio, cantidad } = req.body;
 
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
     if (!skuGeneral || !String(skuGeneral).trim()) {
       return res.status(400).json({ error: 'Falta el SKU general del producto.' });
     }
@@ -511,7 +747,10 @@ app.post('/admin/generar-unidades', async (req, res) => {
       subcategoria: subcategoria || '',
       precio: precio || '',
       cantidad: cantidadNum,
-      generadoPor: generadoPor || '',
+      // El email de quien genera queda registrado en HISTORICO_SKU
+      // (columna H) tomado SIEMPRE de la sesión verificada en el
+      // servidor, nunca de un valor que mande el navegador.
+      generadoPor: sesion.email,
       fecha,
     });
 
@@ -524,12 +763,11 @@ app.post('/admin/generar-unidades', async (req, res) => {
 
 /* Borra todos los datos de la hoja IMPRIMIR APP (deja la fila 1 de
    encabezado intacta). Se usa despues de imprimir, para arrancar de cero. */
-app.post('/admin/vaciar-imprimir-app', async (req, res) => {
+app.post('/admin/vaciar-imprimir-app', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
 
@@ -548,7 +786,7 @@ app.post('/admin/vaciar-imprimir-app', async (req, res) => {
 /* Catalogo PUBLICO (sin contraseña): lista de productos con nombre,
    categoria, foto, si hay stock disponible y un precio de referencia
    (tomado de la hoja Productos). Se usa para la vista de "Catálogo". */
-app.get('/catalogo-publico', async (req, res) => {
+app.get('/catalogo-publico', limiteLecturaPublica, async (req, res) => {
   try {
     const sheetsClient = google.sheets({ version: 'v4', auth });
 
@@ -610,9 +848,11 @@ app.get('/catalogo-publico', async (req, res) => {
   }
 });
 
-/* Config publica minima que necesita el frontend del catálogo (nada
-   sensible): el numero de WhatsApp para armar el link del boton flotante. */
-app.get('/config-publico', (req, res) => {
+/* Config publica minima que necesita el frontend (nada sensible): el
+   numero de WhatsApp para el boton flotante del catalogo, y el ID de
+   cliente de Google OAuth (es publico por diseño, lo pide el botón
+   "Iniciar sesión con Google" del panel admin). */
+app.get('/config-publico', limiteLecturaPublica, (req, res) => {
   res.json({
     whatsappNumero: config.WHATSAPP_NUMERO_CONTACTO || '',
     transferencia: {
@@ -621,6 +861,7 @@ app.get('/config-publico', (req, res) => {
       cbu: config.TRANSFERENCIA_CBU || '',
       banco: config.TRANSFERENCIA_BANCO || '',
     },
+    googleClientId: config.GOOGLE_OAUTH_CLIENT_ID || '',
   });
 });
 
@@ -628,14 +869,19 @@ app.get('/config-publico', (req, res) => {
    chatbot de WhatsApp (generarRespuesta), asi las dos vias de contacto
    responden igual (palabra clave + Claude si esta configurado), sin
    necesidad de tener WhatsApp instalado. */
-app.post('/chat-web', async (req, res) => {
+app.post('/chat-web', limiteEscrituraPublica, async (req, res) => {
   try {
     const { mensaje } = req.body;
     if (!mensaje || !String(mensaje).trim()) {
       return res.status(400).json({ error: 'Mensaje vacío.' });
     }
+    // Tope de largo: sin esto, alguien podría mandar un mensaje enorme y
+    // hacer que cada request le cueste mucho más caro a la llamada de la
+    // API de Claude (si está configurada). Un mensaje de chat real nunca
+    // necesita más que esto.
+    const mensajeLimpio = String(mensaje).trim().slice(0, 1000);
     const sheetsClient = google.sheets({ version: 'v4', auth });
-    const respuesta = await whatsapp.generarRespuesta(sheetsClient, String(mensaje).trim(), '(chat web)');
+    const respuesta = await whatsapp.generarRespuesta(sheetsClient, mensajeLimpio, '(chat web)');
     res.json({ respuesta });
   } catch (err) {
     console.error('Error en el chat web:', err.message);
@@ -647,12 +893,11 @@ app.post('/chat-web', async (req, res) => {
    IMPRIMIR APP), agrupado por producto: cuantas unidades se generaron de
    cada uno. Se usa para mostrar el contador/lista de productos nuevos en
    el panel de "Generar unidades". */
-app.get('/admin/imprimir-app-resumen', async (req, res) => {
+app.get('/admin/imprimir-app-resumen', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const filas = await getFilasImprimir(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_IMPRIMIR_APP);
@@ -680,12 +925,11 @@ app.get('/admin/imprimir-app-resumen', async (req, res) => {
 
 /* Genera el PDF de etiquetas QR/codigo de barras a partir de la hoja
    IMPRIMIR (de la planilla de PRODUCTOS) y lo manda como descarga directa. */
-app.get('/admin/etiquetas-qr', async (req, res) => {
+app.get('/admin/etiquetas-qr', limiteAdmin, async (req, res) => {
   try {
-    const { password, tipo } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).send('No autorizado.');
-    }
+    const { tipo } = req.query;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
 
     const tipoElegido = tipo === 'barras' ? 'barras' : 'qr';
 
@@ -719,12 +963,11 @@ app.get('/admin/etiquetas-qr', async (req, res) => {
 /* Igual que /admin/etiquetas-qr, pero usa la hoja IMPRIMIR APP: solo
    contiene unidades generadas desde ESTA app web (ver generarUnidades),
    separado de lo que genera el script del lado de Google Sheets. */
-app.get('/admin/etiquetas-qr-app', async (req, res) => {
+app.get('/admin/etiquetas-qr-app', limiteAdmin, async (req, res) => {
   try {
-    const { password, tipo } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).send('No autorizado.');
-    }
+    const { tipo } = req.query;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
 
     const tipoElegido = tipo === 'barras' ? 'barras' : 'qr';
 
@@ -789,13 +1032,14 @@ const uploadFoto = multer({
   },
 });
 
-app.post('/admin/producto/foto', (req, res) => {
+app.post('/admin/producto/foto', limiteAdmin, (req, res) => {
   uploadFoto.single('foto')(req, res, async (errorSubida) => {
     try {
-      const { password, skuGeneral } = req.body;
-      if (!checkAdmin(password)) {
+      const { skuGeneral } = req.body;
+      const sesion = requiereNivel2(req, res);
+      if (!sesion) {
         if (req.file) fs.unlink(req.file.path, () => {});
-        return res.status(401).json({ error: 'No autorizado.' });
+        return;
       }
       if (errorSubida) {
         return res.status(400).json({ error: errorSubida.message || 'No se pudo subir la imagen.' });
@@ -839,12 +1083,11 @@ app.post('/admin/producto/foto', (req, res) => {
 /* Saca una foto puntual (por indice, 0 a 3) de la galeria de un producto.
    Si la foto era un archivo subido a este servidor (/uploads/productos/...),
    tambien lo borra del disco. Requiere admin. */
-app.post('/admin/producto/foto/eliminar', async (req, res) => {
+app.post('/admin/producto/foto/eliminar', limiteAdmin, async (req, res) => {
   try {
-    const { password, skuGeneral, indice } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { skuGeneral, indice } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
     if (!skuGeneral || !String(skuGeneral).trim()) {
       return res.status(400).json({ error: 'Falta el SKU general del producto.' });
     }
@@ -876,12 +1119,11 @@ app.post('/admin/producto/foto/eliminar', async (req, res) => {
    existiera la optimizacion automatica. Se corre una sola vez desde el
    panel admin; despues cada foto nueva ya sale optimizada sola. No toca
    las fotos grandes ni sus URLs, asi que es seguro repetirlo. */
-app.post('/admin/fotos/optimizar', async (req, res) => {
+app.post('/admin/fotos/optimizar', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
 
     const resumen = await imagenes.generarMiniaturasFaltantes(CARPETA_UPLOADS);
 
@@ -898,24 +1140,24 @@ app.post('/admin/fotos/optimizar', async (req, res) => {
 
 /* Actualiza la descripcion (texto libre) de un producto, mostrada en la
    pagina de detalle del catalogo publico. Requiere admin. */
-app.post('/admin/producto/descripcion', async (req, res) => {
+app.post('/admin/producto/descripcion', limiteAdmin, async (req, res) => {
   try {
-    const { password, skuGeneral, descripcion } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { skuGeneral, descripcion } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
     if (!skuGeneral || !String(skuGeneral).trim()) {
       return res.status(400).json({ error: 'Falta el SKU general del producto.' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
-    const encontrado = await actualizarDescripcionProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), String(descripcion || '').trim());
+    const descripcionLimpia = sanitizarTexto(descripcion, 2000);
+    const encontrado = await actualizarDescripcionProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, String(skuGeneral).trim(), descripcionLimpia);
 
     if (!encontrado) {
       return res.status(404).json({ error: `No se encontró el producto con SKU general "${skuGeneral}".` });
     }
 
-    res.json({ ok: true, descripcion: String(descripcion || '').trim() });
+    res.json({ ok: true, descripcion: descripcionLimpia });
   } catch (err) {
     console.error('Error actualizando la descripción del producto:', err.message);
     res.status(500).json({ error: 'No se pudo guardar la descripción.' });
@@ -1017,7 +1259,7 @@ async function sincronizarStockPedido(sheetsClient, pedido, nuevoEstado) {
   };
 }
 
-app.post('/crear-pago', async (req, res) => {
+app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
   try {
     const {
       skuGeneral, cantidad, nombre, email, telefono,
@@ -1031,12 +1273,17 @@ app.post('/crear-pago', async (req, res) => {
     if (!nombre || !String(nombre).trim()) {
       return res.status(400).json({ error: 'Falta el nombre del comprador.' });
     }
-    if (!email || !String(email).trim()) {
-      return res.status(400).json({ error: 'Falta el email del comprador (lo necesitamos para mandarte la confirmación del pedido).' });
+    if (!email || !esEmailValido(email)) {
+      return res.status(400).json({ error: 'Ingresá un email válido (lo necesitamos para mandarte la confirmación del pedido).' });
     }
-    const cantidadNum = Number(cantidad) || 1;
-    if (!Number.isInteger(cantidadNum) || cantidadNum <= 0) {
-      return res.status(400).json({ error: 'Cantidad invalida.' });
+    // Tope razonable: evita pedidos absurdos por error de tipeo o por un
+    // script automatizado, sin restringir compras normales de verdad.
+    let cantidadNum = 1;
+    if (cantidad !== undefined && cantidad !== null && cantidad !== '') {
+      cantidadNum = enteroEnRango(cantidad, 1, 100);
+      if (cantidadNum === null) {
+        return res.status(400).json({ error: 'La cantidad tiene que ser un número entero entre 1 y 100.' });
+      }
     }
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
@@ -1069,19 +1316,19 @@ app.post('/crear-pago', async (req, res) => {
       precio: precioNum,
       cantidad: cantidadNum,
       total,
-      nombreCliente: nombre,
-      emailCliente: email || '',
-      telefonoCliente: telefono || '',
-      direccion: direccion || '',
-      ciudad: ciudad || '',
-      provincia: provincia || '',
-      codigoPostal: codigoPostal || '',
+      nombreCliente: sanitizarTexto(nombre, 150),
+      emailCliente: sanitizarTexto(email, 254),
+      telefonoCliente: sanitizarTelefono(telefono),
+      direccion: sanitizarTexto(direccion, 250),
+      ciudad: sanitizarTexto(ciudad, 100),
+      provincia: sanitizarTexto(provincia, 100),
+      codigoPostal: sanitizarCodigoPostal(codigoPostal),
       metodoEnvio: metodoEnvio || 'Retiro en el local',
       estado: 'Pendiente de pago',
       transportista: '',
       numeroSeguimiento: '',
       pagoExternoId: '',
-      notas: notas || '',
+      notas: sanitizarTexto(notas, 500),
       metodoPago: metodoPago === 'payway' ? 'Payway' : 'Transferencia',
       // El stock se reserva recien cuando el pago se confirma, no al
       // iniciar el checkout (si no, un carrito abandonado congelaria
@@ -1202,12 +1449,11 @@ app.get('/verificar-pago-payway/:pedidoId', async (req, res) => {
   }
 });
 
-app.get('/admin/pedidos', async (req, res) => {
+app.get('/admin/pedidos', limiteAdmin, async (req, res) => {
   try {
-    const { password } = req.query;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
+
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const pedidos = await getPedidos(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS);
@@ -1221,21 +1467,23 @@ app.get('/admin/pedidos', async (req, res) => {
 
 /* Actualiza el estado de envio de un pedido (coordinar envio, marcar
    enviado con transportista + numero de seguimiento, entregado, etc). */
-app.post('/admin/pedidos/actualizar', async (req, res) => {
+app.post('/admin/pedidos/actualizar', limiteAdmin, async (req, res) => {
   try {
-    const { password, pedidoId, estado, transportista, numeroSeguimiento, notas } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { pedidoId, estado, transportista, numeroSeguimiento, notas } = req.body;
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
     if (!pedidoId || !String(pedidoId).trim()) {
       return res.status(400).json({ error: 'Falta el número de pedido.' });
+    }
+    if (estado !== undefined && !config.ESTADOS_PEDIDO.includes(estado)) {
+      return res.status(400).json({ error: 'Ese estado de pedido no es válido.' });
     }
 
     const camposActualizar = {};
     if (estado !== undefined) camposActualizar.estado = estado;
-    if (transportista !== undefined) camposActualizar.transportista = transportista;
-    if (numeroSeguimiento !== undefined) camposActualizar.numeroSeguimiento = numeroSeguimiento;
-    if (notas !== undefined) camposActualizar.notas = notas;
+    if (transportista !== undefined) camposActualizar.transportista = sanitizarTexto(transportista, 100);
+    if (numeroSeguimiento !== undefined) camposActualizar.numeroSeguimiento = sanitizarTexto(numeroSeguimiento, 100);
+    if (notas !== undefined) camposActualizar.notas = sanitizarTexto(notas, 500);
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim());
@@ -1281,12 +1529,11 @@ app.post('/admin/pedidos/actualizar', async (req, res) => {
    Si el pedido todavia no tenia stock reservado (caso tipico: una
    transferencia que se despacha sin haber marcado antes "Pagado"), se
    reserva en este momento, para que la unidad no quede sin descontar. */
-app.post('/admin/pedidos/registrar-unidad', async (req, res) => {
+app.post('/admin/pedidos/registrar-unidad', limiteAdmin, async (req, res) => {
   try {
-    const { password, pedidoId, sku } = req.body;
-    if (!checkAdmin(password)) {
-      return res.status(401).json({ error: 'No autorizado.' });
-    }
+    const { pedidoId, sku } = req.body;
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
     if (!pedidoId || !String(pedidoId).trim()) {
       return res.status(400).json({ error: 'Falta el número de pedido.' });
     }
@@ -1364,6 +1611,94 @@ app.post('/admin/pedidos/registrar-unidad', async (req, res) => {
 });
 
 /* ============================================================
+ *  SECCION ADMIN 4: USUARIOS DEL PANEL (solo nivel 2)
+ * ============================================================
+ * Alta, edición de nivel y baja de las cuentas de Google autorizadas a
+ * entrar al panel admin. Todo esto es exclusivo de nivel 2 — un nivel 1
+ * ni siquiera ve esta sección en la interfaz, y el servidor la rechaza
+ * igual si alguien intentara llamarla directo.
+ * ============================================================ */
+
+app.get('/admin/usuarios', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const usuarios = await getAdminUsers(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ADMIN_USERS);
+
+    res.json({ usuarios, emailPropio: sesion.email });
+  } catch (err) {
+    console.error('Error leyendo los usuarios del panel:', err.message);
+    res.status(500).json({ error: 'No se pudieron leer los usuarios.' });
+  }
+});
+
+/* Alta o edición de nivel de un usuario. Upsert por email: si ya existe,
+   actualiza el nivel; si no, lo agrega. */
+app.post('/admin/usuarios/crear', limiteAdmin, async (req, res) => {
+  try {
+    const { email, nivel } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const emailLimpio = String(email || '').trim().toLowerCase();
+    if (!emailLimpio || emailLimpio.indexOf('@') === -1) {
+      return res.status(400).json({ error: 'Ingresá un email válido.' });
+    }
+    const nivelNum = Number(nivel);
+    if (nivelNum !== 1 && nivelNum !== 2) {
+      return res.status(400).json({ error: 'El nivel tiene que ser 1 o 2.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { fecha, hora } = fechaYHoraActual();
+    const usuario = await crearOActualizarAdminUser(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ADMIN_USERS, {
+      email: emailLimpio,
+      nivel: nivelNum,
+      fecha: `${fecha} ${hora}`,
+      agregadoPor: sesion.email,
+    });
+
+    res.json({ ok: true, usuario });
+  } catch (err) {
+    console.error('Error guardando el usuario:', err.message);
+    res.status(500).json({ error: 'No se pudo guardar el usuario.' });
+  }
+});
+
+/* Quita el acceso de un usuario. No se puede auto-eliminar (para no
+   dejar la app sin ningún nivel 2 por accidente); si hace falta,
+   primero hay que darle nivel 2 a otra cuenta. */
+app.post('/admin/usuarios/eliminar', limiteAdmin, async (req, res) => {
+  try {
+    const { email } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const emailLimpio = String(email || '').trim().toLowerCase();
+    if (!emailLimpio) {
+      return res.status(400).json({ error: 'Falta el email del usuario a quitar.' });
+    }
+    if (emailLimpio === sesion.email) {
+      return res.status(400).json({ error: 'No podés quitarte el acceso a vos mismo. Pedile a otro nivel 2 que lo haga.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const encontrado = await eliminarAdminUser(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ADMIN_USERS, emailLimpio);
+
+    if (!encontrado) {
+      return res.status(404).json({ error: 'No se encontró ese usuario.' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error quitando el usuario:', err.message);
+    res.status(500).json({ error: 'No se pudo quitar el usuario.' });
+  }
+});
+
+/* ============================================================
  *  SECCION CHATBOT: WHATSAPP CLOUD API
  * ============================================================ */
 
@@ -1379,6 +1714,18 @@ app.get('/webhook/whatsapp', (req, res) => {
 // Mensajes entrantes. Respondemos 200 de inmediato (Meta espera una
 // respuesta rapida) y procesamos el mensaje despues, en segundo plano.
 app.post('/webhook/whatsapp', async (req, res) => {
+  // Verificamos que el request realmente venga de Meta ANTES de hacer
+  // nada con el contenido — si no, cualquiera que conozca esta URL
+  // podría hacerse pasar por un mensaje de WhatsApp entrante (gastando
+  // cuota de la API de Claude si está configurada, o disparando
+  // respuestas automáticas desde tu número de WhatsApp Business hacia
+  // quien sea). Ver whatsapp.js -> verificarFirmaWebhook.
+  const firmaValida = whatsapp.verificarFirmaWebhook(req.rawBody, req.get('X-Hub-Signature-256'));
+  if (!firmaValida) {
+    console.warn('⚠️  Webhook de WhatsApp descartado: firma inválida o ausente.');
+    return res.sendStatus(403);
+  }
+
   res.sendStatus(200);
 
   try {
@@ -1387,6 +1734,33 @@ app.post('/webhook/whatsapp', async (req, res) => {
   } catch (err) {
     console.error('Error procesando el webhook de WhatsApp:', err.message);
   }
+});
+
+/* ============================================================
+ *  404 Y MANEJADOR DE ERRORES GENÉRICO
+ * ============================================================
+ * Van al final, después de todas las rutas: Express los usa como
+ * último recurso.
+ *
+ *  - El 404 evita la página de error HTML por defecto de Express para
+ *    rutas que no existen (que en algunas versiones expone detalles del
+ *    stack/versión).
+ *  - El manejador de errores atrapa cualquier excepción que se haya
+ *    escapado de un `try/catch` de una ruta (o de un middleware, como
+ *    multer): sin esto, Express devolvería el mensaje y stack trace
+ *    real del error directo al navegador, lo cual puede filtrar detalles
+ *    internos (rutas de archivos, nombres de variables, etc) a
+ *    cualquiera que logre provocar un error.
+ * ============================================================ */
+app.use((req, res) => {
+  res.status(404).json({ error: 'No encontrado.' });
+});
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('Error no manejado:', err && err.message ? err.message : err);
+  if (res.headersSent) return next(err);
+  res.status(err && err.status ? err.status : 500).json({ error: 'Ocurrió un error inesperado en el servidor.' });
 });
 
 app.listen(config.PORT, () => {
