@@ -338,8 +338,8 @@
 
     <label>Método de pago</label>
     <div class="metodo-pago-opciones">
-      <label><input type="radio" name="metodoPago" value="payway" checked> Tarjeta (Payway)</label>
-      <label><input type="radio" name="metodoPago" value="transferencia"> Transferencia bancaria</label>
+      <label id="opcionPayway"><input type="radio" name="metodoPago" value="payway"> Tarjeta (Payway)</label>
+      <label><input type="radio" name="metodoPago" value="transferencia" checked> Transferencia bancaria</label>
     </div>
 
     <div id="panelTransferencia" class="panel-transferencia oculto">
@@ -757,9 +757,20 @@
     }
   }
 
+  // Payway todavía no está habilitado (falta confirmar el endpoint de hosted
+  // checkout con soporte). Cuando esté listo, cambiar esto a true: el radio
+  // de Payway vuelve a mostrarse solo, sin tocar nada más de este bloque.
+  const PAYWAY_HABILITADO = false;
+
+  const opcionPayway = document.getElementById('opcionPayway');
+  if (!PAYWAY_HABILITADO && opcionPayway) {
+    opcionPayway.style.display = 'none';
+  }
+
   function metodoPagoSeleccionado(){
+    if (!PAYWAY_HABILITADO) return 'transferencia';
     const el = document.querySelector('input[name="metodoPago"]:checked');
-    return el ? el.value : 'payway';
+    return el ? el.value : 'transferencia';
   }
 
   function calcularTotalCheckout(){
@@ -806,7 +817,7 @@
     document.getElementById('inputCPCheckout').value = '';
     document.getElementById('inputNotasCheckout').value = '';
     document.querySelector('input[name="metodoEnvio"][value="Retiro en el local"]').checked = true;
-    document.querySelector('input[name="metodoPago"][value="payway"]').checked = true;
+    document.querySelector(`input[name="metodoPago"][value="${PAYWAY_HABILITADO ? 'payway' : 'transferencia'}"]`).checked = true;
     camposDomicilio.classList.add('oculto');
     mensajeCheckout.textContent = '';
     mensajeCheckout.className = 'checkout-mensaje';
