@@ -67,8 +67,22 @@
     background:none; border:none; color:var(--ink-muted); font-family:'IBM Plex Mono', monospace;
     font-size:28px; cursor:pointer; padding:0; text-decoration:none; white-space:nowrap; line-height:1;
   }
+  .btn-volver-flecha{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; font-size:22px !important;
+    animation:volverFlechaFlotar 1.6s ease-in-out infinite;
+  }
+  .btn-volver-flecha:hover, .btn-volver-flecha:focus-visible{ animation-play-state:paused; transform:translateX(-4px); }
+  @keyframes volverFlechaFlotar{
+    0%, 100%{ transform:translateX(0); }
+    50%{ transform:translateX(-5px); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .btn-volver-flecha{ animation:none; }
+  }
   .barra-superior-catalogo{
-    display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; margin:12px 0 8px;
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px;
+    margin:-16px -24px 20px; padding:14px 24px; background:var(--bg-alt); border-bottom:1px solid var(--line);
   }
   .barra-superior-catalogo .volver{ justify-self:center; }
   .logo-barra-catalogo{ height:100px; width:auto; object-fit:contain; justify-self:center; }
@@ -274,7 +288,7 @@
   }
   @media (max-width: 600px){
     #vistaCatalogo{ padding:14px 16px 32px; }
-    .barra-superior-catalogo{ gap:6px; }
+    .barra-superior-catalogo{ gap:6px; margin:-14px -16px 16px; padding:12px 16px; }
     #vistaCatalogo .volver{ font-size:22px; }
     .logo-barra-catalogo{ height:60px; }
     .btn-icono-simetrico{ font-size:22px; }
@@ -375,7 +389,7 @@
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
-    <button class="volver" id="btnVolverDeDetalle">← Volver al catálogo</button>
+    <button class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
     <div id="catalogoDetalleContenido" style="margin-top:16px;"></div>
   </div>
 </div>
