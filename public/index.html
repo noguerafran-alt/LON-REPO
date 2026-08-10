@@ -14,6 +14,7 @@
     --stamp-red:#B14A2E; --stamp-red-soft:rgba(177,74,46,0.14);
     --field-bg:#FFFFFF; --field-text:#3B1220; --radius:3px;
     --bg-header:#5E1E2B; --header-text:#FFF3E5; --header-line:rgba(0,0,0,0.22);
+    --accent-terracota:#A8471F; --accent-terracota-soft:rgba(168,71,31,0.12);
   }
   *{ box-sizing:border-box; }
   body{
@@ -151,7 +152,8 @@
   .buscador-catalogo:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
   .seccion-categoria-catalogo{ margin-bottom:28px; }
   .titulo-categoria-catalogo{
-    font-family:'Fraunces', serif; font-weight:600; font-size:19px; color:var(--ink);
+    font-family:'Fraunces', serif; font-style:italic; font-weight:600; font-size:19px;
+    letter-spacing:0.02em; color:var(--accent-terracota);
     margin:0 0 12px;
   }
   .tabs-categorias-catalogo{
@@ -160,14 +162,23 @@
   .tab-categoria-catalogo{
     background:none; border:1px solid var(--line); color:var(--ink-muted);
     border-radius:var(--radius); padding:8px 14px; font-size:13px; font-family:'Archivo', sans-serif;
-    cursor:pointer;
+    cursor:pointer; transition:border-color 150ms ease, color 150ms ease, background 150ms ease;
   }
+  .tab-categoria-catalogo:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
   .tab-categoria-catalogo.activo{
-    background:var(--ink); color:var(--bg); border-color:var(--ink); font-weight:600;
+    background:var(--accent-terracota); color:#FFF3E5; border-color:var(--accent-terracota); font-weight:600;
   }
   .item-catalogo-publico{
     border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
     display:flex; flex-direction:column;
+    transition:border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  }
+  .item-catalogo-publico:hover{
+    border-color:var(--accent-terracota); box-shadow:0 6px 18px rgba(59,18,32,0.12); transform:translateY(-2px);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .item-catalogo-publico{ transition:none; }
+    .item-catalogo-publico:hover{ transform:none; }
   }
   .item-catalogo-publico .foto-item{
     width:100%; aspect-ratio:1/1; background:var(--bg-alt); position:relative;
