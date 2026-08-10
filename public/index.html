@@ -13,6 +13,7 @@
     --stamp-green:#2F7D4F; --stamp-green-soft:rgba(47,125,79,0.14);
     --stamp-red:#B14A2E; --stamp-red-soft:rgba(177,74,46,0.14);
     --field-bg:#FFFFFF; --field-text:#3B1220; --radius:3px;
+    --bg-header:#5E1E2B; --header-text:#FFF3E5; --header-line:rgba(0,0,0,0.22);
   }
   *{ box-sizing:border-box; }
   body{
@@ -82,14 +83,18 @@
   }
   .barra-superior-catalogo{
     display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px;
-    margin:-16px -24px 20px; padding:14px 24px; background:var(--bg-alt); border-bottom:1px solid var(--line);
+    margin:-16px -24px 20px; padding:14px 24px; background:var(--bg-header); border-bottom:1px solid var(--header-line);
   }
-  .barra-superior-catalogo .volver{ justify-self:center; }
-  .logo-barra-catalogo{ height:100px; width:auto; object-fit:contain; justify-self:center; }
+  .barra-superior-catalogo .volver{ justify-self:center; color:var(--header-text); }
+  .logo-barra-catalogo{
+    height:100px; width:auto; object-fit:contain; justify-self:center;
+    filter:brightness(0) invert(1); opacity:.92;
+  }
   .btn-icono-simetrico{
     background:none; border:none; color:var(--ink-muted); cursor:pointer; padding:0;
     font-size:28px; line-height:1; justify-self:center;
   }
+  .barra-superior-catalogo .btn-icono-simetrico{ color:var(--header-text); }
 
   .flotantes-contacto{
     position:fixed; right:18px; bottom:18px; z-index:60;
