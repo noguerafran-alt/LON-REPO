@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Escanear producto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://unpkg.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
@@ -85,7 +86,7 @@
     margin-bottom:16px; color:var(--field-text);
   }
   .login-box input::placeholder{ color:#9a9488; }
-  .login-box input:focus{ outline:none; border-color:var(--accent); }
+  .login-box input:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
   .opcional-tag{ text-transform:none; letter-spacing:0; font-weight:400; }
   .login-box button{
     width:100%; padding:14px; font-size:15px; font-weight:600; font-family:'Archivo', sans-serif;
@@ -260,7 +261,7 @@
 </div>
 
 <div class="footer-legal">
-  © 2026 NFL Data Analysis — Todos los derechos reservados · Software licenciado para uso exclusivo de LON Philosophy
+  © 2026 FLN Data Analysis — Todos los derechos reservados · Software licenciado para uso exclusivo de LON Philosophy
   · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a>
 </div>
 
