@@ -535,6 +535,8 @@
       <input type="text" id="inputPrecioProductoNuevo" placeholder="Ej: 45000" style="margin-bottom:10px;">
       <label for="inputProveedorProductoNuevo">Proveedor <span style="text-transform:none; font-weight:400;">(uso interno, no se muestra a los clientes)</span></label>
       <input type="text" id="inputProveedorProductoNuevo" placeholder="Ej: Distribuidora ABC" style="margin-bottom:10px;">
+      <label for="inputFotoProductoNuevo">Foto (opcional)</label>
+      <input type="file" id="inputFotoProductoNuevo" accept="image/jpeg,image/png,image/webp" style="margin-bottom:10px;">
       <button class="btn-generar" id="btnCrearProductoConfirmar">Crear producto y continuar</button>
       <div id="mensajeCrearProducto" style="margin-top:10px;"></div>
     </div>
@@ -709,6 +711,8 @@
       <input type="text" id="inputNombreProductoNuevoAsociar" placeholder="Nombre del producto" style="margin-bottom:10px;">
       <label>Precio</label>
       <input type="text" id="inputPrecioProductoNuevoAsociar" placeholder="Ej: 45000" style="margin-bottom:10px;">
+      <label for="inputFotoProductoNuevoAsociar">Foto (opcional)</label>
+      <input type="file" id="inputFotoProductoNuevoAsociar" accept="image/jpeg,image/png,image/webp" style="margin-bottom:10px;">
       <button class="btn-generar" id="btnCrearProductoConfirmarAsociar">Crear, asociar y sumar 1 unidad</button>
     </div>
 
@@ -1261,6 +1265,7 @@
   const selectCategoriaNuevaAsociar = document.getElementById('selectCategoriaNuevaAsociar');
   const inputNombreProductoNuevoAsociar = document.getElementById('inputNombreProductoNuevoAsociar');
   const inputPrecioProductoNuevoAsociar = document.getElementById('inputPrecioProductoNuevoAsociar');
+  const inputFotoProductoNuevoAsociar = document.getElementById('inputFotoProductoNuevoAsociar');
   const btnCrearProductoConfirmarAsociar = document.getElementById('btnCrearProductoConfirmarAsociar');
   const mensajeAsociar = document.getElementById('mensajeAsociar');
   const btnCerrarAsociar = document.getElementById('btnCerrarAsociar');
@@ -1476,8 +1481,20 @@
 
       await sumarUnaUnidad(dataCrear.producto);
 
+      let mensajeFotoAsociar = '';
+      const archivoFotoAsociar = inputFotoProductoNuevoAsociar.files && inputFotoProductoNuevoAsociar.files[0];
+      if (archivoFotoAsociar) {
+        try {
+          await subirFotoProducto(dataCrear.producto.skuGeneral, archivoFotoAsociar);
+          mensajeFotoAsociar = ' Foto subida.';
+        } catch (errFoto) {
+          mensajeFotoAsociar = ` No se pudo subir la foto: ${errFoto.message}`;
+        }
+      }
+
       mensajeAsociar.className = 'checkout-mensaje ok';
-      mensajeAsociar.textContent = `Producto creado (${dataCrear.producto.skuGeneral}), código asociado y +1 unidad sumada.`;
+      mensajeAsociar.textContent = `Producto creado (${dataCrear.producto.skuGeneral}), código asociado y +1 unidad sumada.${mensajeFotoAsociar}`;
+      inputFotoProductoNuevoAsociar.value = '';
       setTimeout(cerrarModalAsociar, 1000);
     } catch (err) {
       mensajeAsociar.className = 'checkout-mensaje error';
@@ -1493,6 +1510,7 @@
     formCrearProductoAsociar.style.display = 'none';
     inputNombreProductoNuevoAsociar.value = '';
     inputPrecioProductoNuevoAsociar.value = '';
+    inputFotoProductoNuevoAsociar.value = '';
     selectCategoriaNuevaAsociar.value = '';
     codigoBarraEnCurso = null;
     skuYaAsociadoEnCurso = null;
@@ -2117,6 +2135,23 @@
     }
   });
 
+  /* Sube (y achica) una foto para un SKU general puntual — se usa al
+     crear un producto nuevo, para no tener que ir a buscarlo después en
+     la lista y recién ahí cargarle la foto. Devuelve el array de fotos
+     resultante, o lanza si falla. */
+  async function subirFotoProducto(skuGeneral, archivoOriginal){
+    const archivo = await achicarImagenParaSubir(archivoOriginal);
+    const formData = new FormData();
+    formData.append('token', adminToken);
+    formData.append('skuGeneral', skuGeneral);
+    formData.append('foto', archivo);
+
+    const res = await fetch('/admin/producto/foto', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error desconocido');
+    return data.fotos;
+  }
+
   async function eliminarFotoDelProducto(indice){
     if (!skuFotosActivo) return;
     if (!confirm('¿Borrar esta foto?')) return;
@@ -2179,6 +2214,7 @@
   const inputNombreProductoNuevo = document.getElementById('inputNombreProductoNuevo');
   const inputPrecioProductoNuevo = document.getElementById('inputPrecioProductoNuevo');
   const inputProveedorProductoNuevo = document.getElementById('inputProveedorProductoNuevo');
+  const inputFotoProductoNuevo = document.getElementById('inputFotoProductoNuevo');
   const btnCrearProductoConfirmar = document.getElementById('btnCrearProductoConfirmar');
   const mensajeCrearProducto = document.getElementById('mensajeCrearProducto');
 
@@ -2246,9 +2282,23 @@
       mensajeCrearProducto.textContent = `Producto creado: ${data.producto.skuGeneral}`;
       elegirProducto(data.producto);
 
+      const archivoFoto = inputFotoProductoNuevo.files && inputFotoProductoNuevo.files[0];
+      if (archivoFoto) {
+        mensajeCrearProducto.textContent = `Producto creado: ${data.producto.skuGeneral}. Subiendo foto...`;
+        try {
+          const fotos = await subirFotoProducto(data.producto.skuGeneral, archivoFoto);
+          data.producto.fotos = fotos;
+          data.producto.foto = fotos[0] || '';
+          mensajeCrearProducto.textContent = `Producto creado con foto: ${data.producto.skuGeneral}`;
+        } catch (errFoto) {
+          mensajeCrearProducto.textContent = `Producto creado (${data.producto.skuGeneral}), pero no se pudo subir la foto: ${errFoto.message}`;
+        }
+      }
+
       inputNombreProductoNuevo.value = '';
       inputPrecioProductoNuevo.value = '';
       inputProveedorProductoNuevo.value = '';
+      inputFotoProductoNuevo.value = '';
       selectCategoriaNueva.value = '';
       formCrearProducto.style.display = 'none';
     } catch (err) {
