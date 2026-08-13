@@ -350,6 +350,24 @@
   .badge-stock.disponible{ color:var(--stamp-green); background:var(--stamp-green-soft); border:1px solid var(--stamp-green); }
   .badge-stock.agotado{ color:var(--stamp-red); background:var(--stamp-red-soft); border:1px solid var(--stamp-red); }
 
+  .fila-catalogo-completo{
+    margin-top:8px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--bg-alt); display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .fila-catalogo-completo .info{ flex:1; min-width:160px; font-size:15px; }
+  .fila-catalogo-completo .info .nombre{ font-weight:600; color:var(--ink); }
+  .fila-catalogo-completo .info .meta{ font-family:'IBM Plex Mono', monospace; font-size:15px; color:var(--ink-muted); margin-top:3px; }
+  .fila-catalogo-completo .input-precio-fila{
+    width:100px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--field-bg); color:var(--field-text);
+  }
+  .fila-catalogo-completo button{
+    background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
+    padding:8px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
+  }
+  .fila-catalogo-completo button:disabled{ opacity:.5; cursor:default; }
+  .fila-catalogo-completo .mensaje-precio-completo{ font-size:12.5px; flex-basis:100%; }
+
   .btn-imprimir{
     flex:1; padding:14px; font-size:15px; font-weight:700; font-family:'Archivo', sans-serif;
     border:1px solid var(--accent); border-radius:var(--radius); background:none; color:var(--accent);
@@ -1693,6 +1711,10 @@
         if (item) item.precio = evento.target.value;
       });
       fila.querySelector('.input-proveedor-fila').addEventListener('input', (evento) => {
+        const inicio = evento.target.selectionStart;
+        const fin = evento.target.selectionEnd;
+        evento.target.value = evento.target.value.toUpperCase();
+        evento.target.setSelectionRange(inicio, fin);
         const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
         if (item) item.proveedor = evento.target.value;
       });
@@ -2192,6 +2214,21 @@
   limitarInputCategoria(document.getElementById('inputSubcategoriaNueva'), { conEspacios: true });
   limitarInputCategoria(document.getElementById('inputCodigoSubcategoriaNueva'), { maxLength: 3 });
 
+  /* El nombre de un producto nuevo se escribe siempre en MAYÚSCULAS
+     (a diferencia de categoría/subcategoría, acá no se le sacan
+     números ni signos — solo se fuerza el mayúsculas). */
+  function forzarMayusculas(input){
+    input.addEventListener('input', () => {
+      const inicio = input.selectionStart;
+      const fin = input.selectionEnd;
+      input.value = input.value.toUpperCase();
+      input.setSelectionRange(inicio, fin);
+    });
+  }
+  forzarMayusculas(document.getElementById('inputNombreProductoNuevo'));
+  forzarMayusculas(document.getElementById('inputNombreProductoNuevoAsociar'));
+  forzarMayusculas(document.getElementById('inputProveedorProductoNuevo'));
+
   btnCrearConfigCategoria.addEventListener('click', async () => {
     const categoria = document.getElementById('inputCategoriaNueva').value.trim();
     const codigoCategoria = document.getElementById('inputCodigoCategoriaNueva').value.trim();
@@ -2336,15 +2373,59 @@
     }
 
     listaCatalogoCompleto.innerHTML = filtrados.map((p) => `
-      <div class="item-producto" style="cursor:default;">
+      <div class="fila-catalogo-completo" data-sku="${escaparHtml(p.skuGeneral)}">
         ${p.foto ? `<img class="foto-mini" src="${escaparHtml(p.foto)}" alt="">` : '<div class="foto-mini-vacia">—</div>'}
-        <div class="lista-producto-info">
-          <span class="lista-producto-nombre">${escaparHtml(p.nombre || '(sin nombre)')}</span>
-          <span class="lista-producto-meta">${escaparHtml(p.skuGeneral)} · ${escaparHtml(p.categoria)}${p.precio ? ' · $' + escaparHtml(String(p.precio)) : ''}</span>
+        <div class="info">
+          <div class="nombre">${escaparHtml(p.nombre || '(sin nombre)')}</div>
+          <div class="meta">${escaparHtml(p.skuGeneral)} · ${escaparHtml(p.categoria)}</div>
         </div>
+        <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(p.precio != null ? String(p.precio) : '')}">
+        <button type="button" class="btn-guardar-precio-completo">Guardar</button>
         <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
+        <span class="mensaje-precio-completo"></span>
       </div>
     `).join('');
+
+    listaCatalogoCompleto.querySelectorAll('.fila-catalogo-completo').forEach((fila) => {
+      const skuGeneral = fila.getAttribute('data-sku');
+      const input = fila.querySelector('.input-precio-fila');
+      const boton = fila.querySelector('.btn-guardar-precio-completo');
+      const mensaje = fila.querySelector('.mensaje-precio-completo');
+
+      boton.addEventListener('click', async () => {
+        const precioNum = Number(input.value);
+        mensaje.textContent = '';
+        mensaje.style.color = '';
+        if (!Number.isFinite(precioNum) || precioNum < 0 || input.value.trim() === '') {
+          mensaje.textContent = 'Precio inválido.';
+          mensaje.style.color = 'var(--stamp-red)';
+          return;
+        }
+
+        boton.disabled = true;
+        boton.textContent = 'Guardando...';
+        try {
+          const res = await fetch('/admin/producto-precio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, skuGeneral, precio: precioNum }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+          const producto = catalogoCompletoAdmin.find((prod) => prod.skuGeneral === skuGeneral);
+          if (producto) producto.precio = precioNum;
+          mensaje.textContent = 'Guardado ✓';
+          mensaje.style.color = 'var(--stamp-green)';
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+        } finally {
+          boton.disabled = false;
+          boton.textContent = 'Guardar';
+        }
+      });
+    });
   }
 
   inputBuscarCatalogoCompleto.addEventListener('input', renderizarListaCatalogoCompleto);

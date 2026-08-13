@@ -970,6 +970,39 @@ app.post('/admin/categoria-nombre-visible', limiteAdmin, async (req, res) => {
   }
 });
 
+/* Actualiza el precio de un producto existente por SKU general, sin
+   pasar por "Generar unidades" (no genera stock nuevo). Se usa desde
+   "Catálogo completo" en la pestaña Catálogo del admin, para poder
+   corregir precios de productos con o sin stock. Requiere admin nivel 2. */
+app.post('/admin/producto-precio', limiteAdmin, async (req, res) => {
+  try {
+    const { skuGeneral, precio } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+    const precioNum = Number(precio);
+    if (!Number.isFinite(precioNum) || precioNum < 0) {
+      return res.status(400).json({ error: 'El precio tiene que ser un número mayor o igual a 0.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const encontrado = await actualizarPrecioProducto(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS,
+      String(skuGeneral).trim(), precioNum,
+    );
+    if (!encontrado) {
+      return res.status(404).json({ error: 'No se encontró ese producto en el catálogo.' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error actualizando el precio del producto:', err.message);
+    res.status(500).json({ error: 'No se pudo actualizar el precio.' });
+  }
+});
+
 /* Config publica minima que necesita el frontend (nada sensible): el
    numero de WhatsApp para el boton flotante del catalogo, y el ID de
    cliente de Google OAuth (es publico por diseño, lo pide el botón
