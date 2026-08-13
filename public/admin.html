@@ -439,7 +439,7 @@
   }
   .chip-stock.reservado{ background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent); }
   .chip-stock.libre{ background:#fff; color:var(--ink-muted); border:1px solid var(--line); }
-  #readerPedido{ width:100%; border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
+  #readerPedido, #readerCodigoBarraGenerar{ width:100%; border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
   .usuario-card{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
     padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius);
@@ -503,7 +503,10 @@
   <div id="panelGenerarUnidades" style="display:none;">
     <div class="campo">
       <label for="inputCodigoBarraGenerar">Código de barras del producto que entra</label>
-      <input type="text" id="inputCodigoBarraGenerar" placeholder="Escaneá o tipeá el código y apretá Enter..." inputmode="numeric" autocomplete="off">
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="inputCodigoBarraGenerar" placeholder="Escaneá o tipeá el código y apretá Enter..." inputmode="numeric" autocomplete="off" style="flex:1;">
+        <button type="button" id="btnCamaraCodigoBarraGenerar" title="Escanear con la cámara" style="flex:0 0 auto; padding:0 16px; border-radius:var(--radius); border:1px solid var(--accent); background:none; color:var(--accent); font-size:20px; cursor:pointer;">📷</button>
+      </div>
       <p id="mensajeCodigoBarraGenerar" style="font-size:12.5px; color:var(--ink-muted); margin:6px 0 0; min-height:1em;"></p>
       <p style="font-size:12.5px; color:var(--ink-muted); margin:4px 0 0;">Es para asociar el código de fábrica (no es único por unidad) al SKU interno de LON — elegís vos cuántas unidades entran, no hace falta escanear cada ejemplar.</p>
     </div>
@@ -641,6 +644,16 @@
 </div>
 
 <input type="file" id="inputFotoOculto" accept="image/jpeg,image/png,image/webp" style="display:none;">
+
+<div class="overlay" id="overlayCodigoBarraGenerar">
+  <div class="modal modal-asociar" id="modalCodigoBarraGenerar">
+    <p class="label">Escanear código de barras</p>
+    <p style="font-size:13px; color:var(--ink-muted); margin:0 0 14px;">Apuntá al código de barras de fábrica del producto (una sola vez, no por unidad).</p>
+    <div id="readerCodigoBarraGenerar"></div>
+    <div id="mensajeCamaraCodigoBarraGenerar" style="font-size:13px; margin-bottom:10px;"></div>
+    <button type="button" id="btnCerrarCamaraCodigoBarraGenerar" style="width:100%; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
+  </div>
+</div>
 
 <div class="overlay" id="overlayUnidadPedido">
   <div class="modal modal-asociar" id="modalUnidadPedido">
@@ -1735,6 +1748,75 @@
       buscarCodigoBarraGenerar();
     }
   });
+
+  /* Cámara para leer el código de barras acá mismo (además de poder
+     tipearlo o usar un lector físico). Usa su propia instancia de
+     Html5Qrcode, igual que el escáner de "Escanear ejemplar" en
+     Pedidos: si el escáner del panel "Escanear" estaba prendido, lo
+     pausa mientras dura este modal y lo vuelve a prender al cerrar. */
+  const overlayCodigoBarraGenerar = document.getElementById('overlayCodigoBarraGenerar');
+  const readerCodigoBarraGenerarDiv = document.getElementById('readerCodigoBarraGenerar');
+  const mensajeCamaraCodigoBarraGenerar = document.getElementById('mensajeCamaraCodigoBarraGenerar');
+  const btnCamaraCodigoBarraGenerar = document.getElementById('btnCamaraCodigoBarraGenerar');
+  const btnCerrarCamaraCodigoBarraGenerar = document.getElementById('btnCerrarCamaraCodigoBarraGenerar');
+  let scannerCodigoBarraGenerar = null;
+  let escanerPrincipalEstabaPrendidoCodigoBarra = false;
+
+  btnCamaraCodigoBarraGenerar.addEventListener('click', async () => {
+    mensajeCamaraCodigoBarraGenerar.style.color = 'var(--ink-muted)';
+    mensajeCamaraCodigoBarraGenerar.textContent = 'Apuntá al código de barras...';
+    overlayCodigoBarraGenerar.classList.add('show');
+
+    escanerPrincipalEstabaPrendidoCodigoBarra = escanerIniciado;
+    if (scanner) {
+      try { await scanner.stop(); } catch (e) {}
+      scanner = null;
+      escanerIniciado = false;
+    }
+
+    scannerCodigoBarraGenerar = new Html5Qrcode('readerCodigoBarraGenerar', {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93, Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E, Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.ITF,
+      ],
+    });
+
+    let procesando = false;
+    scannerCodigoBarraGenerar.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: Math.floor(lado * 0.6) }; } },
+      async (textoLeido) => {
+        if (procesando) return;
+        procesando = true;
+        await cerrarCamaraCodigoBarraGenerar();
+        inputCodigoBarraGenerar.value = textoLeido;
+        buscarCodigoBarraGenerar();
+      },
+      () => {}
+    ).catch(() => {
+      mensajeCamaraCodigoBarraGenerar.style.color = 'var(--stamp-red)';
+      mensajeCamaraCodigoBarraGenerar.textContent = 'No se pudo abrir la cámara. Escribí el código a mano.';
+    });
+  });
+
+  async function cerrarCamaraCodigoBarraGenerar(){
+    if (scannerCodigoBarraGenerar) {
+      try { await scannerCodigoBarraGenerar.stop(); } catch (e) {}
+      try { scannerCodigoBarraGenerar.clear(); } catch (e) {}
+      scannerCodigoBarraGenerar = null;
+    }
+    readerCodigoBarraGenerarDiv.innerHTML = '';
+    overlayCodigoBarraGenerar.classList.remove('show');
+    if (escanerPrincipalEstabaPrendidoCodigoBarra) {
+      escanerPrincipalEstabaPrendidoCodigoBarra = false;
+      escanerIniciado = false;
+      iniciarEscanerSiHaceFalta();
+    }
+  }
+  btnCerrarCamaraCodigoBarraGenerar.addEventListener('click', () => { cerrarCamaraCodigoBarraGenerar(); });
 
   /* ------------------------------------------------------------
    * Restock por escaneo: se escanea un ejemplar ya impreso de un
