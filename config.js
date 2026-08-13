@@ -73,6 +73,7 @@ module.exports = {
     // ControlDeStock.gs.js / README.
     ultimaModificacionPrecio: 7,
     descripcion: 8,     // I: descripcion libre del producto (opcional), se muestra en la pagina de detalle del catalogo publico
+    proveedor: 9,       // J: proveedor del producto (opcional, uso interno — nunca se muestra en el catalogo publico)
   },
 
   COLUMNAS_CONTADOR_UNIDADES: {

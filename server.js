@@ -28,6 +28,7 @@ const {
   eliminarFotoProducto,
   actualizarDescripcionProducto,
   actualizarPrecioProducto,
+  actualizarProveedorProducto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
@@ -625,7 +626,7 @@ app.post('/admin/crear-config-categoria', limiteAdmin, async (req, res) => {
    numero de producto libre para el prefijo de SKU elegido. */
 app.post('/admin/crear-producto', limiteAdmin, async (req, res) => {
   try {
-    const { producto, categoria, subcategoria, prefijoSku, precio } = req.body;
+    const { producto, categoria, subcategoria, prefijoSku, precio, proveedor } = req.body;
 
     const sesion = requiereNivel2(req, res);
     if (!sesion) return;
@@ -654,6 +655,7 @@ app.post('/admin/crear-producto', limiteAdmin, async (req, res) => {
       subcategoria: sanitizarTexto(subcategoria, 80),
       prefijoSku: String(prefijoSku).trim().toUpperCase(),
       precio: precioLimpio,
+      proveedor: sanitizarTexto(proveedor || '', 120),
     });
 
     res.json({ ok: true, producto: productoCreado });
@@ -729,7 +731,7 @@ app.post('/admin/codigo-barra', limiteAdmin, async (req, res) => {
 
 app.post('/admin/generar-unidades', limiteAdmin, async (req, res) => {
   try {
-    const { skuGeneral, producto, categoria, subcategoria, precio, cantidad } = req.body;
+    const { skuGeneral, producto, categoria, subcategoria, precio, proveedor, cantidad } = req.body;
 
     const sesion = requiereNivel2(req, res);
     if (!sesion) return;
@@ -768,6 +770,11 @@ app.post('/admin/generar-unidades', limiteAdmin, async (req, res) => {
       // Productos) para que el catalogo quede con el precio nuevo.
       precio !== undefined && precio !== null && String(precio).trim() !== ''
         ? actualizarPrecioProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, skuGeneralLimpio, precio)
+        : Promise.resolve(),
+      // Mismo criterio para el proveedor: dato interno, nunca se mezcla
+      // con el nombre del producto ni se muestra en el catalogo publico.
+      proveedor !== undefined && proveedor !== null
+        ? actualizarProveedorProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, skuGeneralLimpio, sanitizarTexto(proveedor, 120))
         : Promise.resolve(),
     ]);
 

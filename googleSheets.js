@@ -266,7 +266,7 @@ function parsearFotos(valorCrudo) {
  */
 async function getCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
   const cols = config.COLUMNAS_PRODUCTOS;
-  const maxIndice = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.ultimaModificacionPrecio, cols.descripcion);
+  const maxIndice = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.ultimaModificacionPrecio, cols.descripcion, cols.proveedor);
   const ultimaLetra = columnaALetra(maxIndice);
   const range = `${sheetName}!A:${ultimaLetra}`;
 
@@ -296,6 +296,7 @@ async function getCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
       fotos,
       descripcion: row[cols.descripcion] ? String(row[cols.descripcion]).trim() : '',
       ultimaModificacionPrecio: row[cols.ultimaModificacionPrecio] ? String(row[cols.ultimaModificacionPrecio]).trim() : '',
+      proveedor: row[cols.proveedor] ? String(row[cols.proveedor]).trim() : '',
     });
   }
 
@@ -627,14 +628,14 @@ async function actualizarNombreVisibleCategoria(sheetsClient, spreadsheetId, she
  * fila (Producto, Categoria, Subcategoria, SKU general, Precio, Foto) y
  * devuelve los datos del producto recien creado.
  */
-async function crearProductoNuevo(sheetsClient, { spreadsheetId, sheetNameProductos, producto, categoria, subcategoria, prefijoSku, precio }) {
+async function crearProductoNuevo(sheetsClient, { spreadsheetId, sheetNameProductos, producto, categoria, subcategoria, prefijoSku, precio, proveedor }) {
   const largo = config.LARGO_NUMERO_PRODUCTO;
   const siguienteNumero = await getSiguienteNumeroProducto(sheetsClient, spreadsheetId, sheetNameProductos, prefijoSku);
   const numeroTexto = String(siguienteNumero).padStart(largo, '0');
   const skuGeneral = `${prefijoSku}-${numeroTexto}`;
 
   const cols = config.COLUMNAS_PRODUCTOS;
-  const cantidadColumnas = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto) + 1;
+  const cantidadColumnas = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.proveedor) + 1;
   const fila = new Array(cantidadColumnas).fill('');
   fila[cols.producto] = producto;
   fila[cols.categoria] = categoria;
@@ -642,6 +643,7 @@ async function crearProductoNuevo(sheetsClient, { spreadsheetId, sheetNameProduc
   fila[cols.skuGeneral] = skuGeneral;
   fila[cols.precio] = precio;
   fila[cols.foto] = '';
+  fila[cols.proveedor] = proveedor || '';
 
   await appendRow(sheetsClient, spreadsheetId, sheetNameProductos, fila);
 
@@ -651,7 +653,7 @@ async function crearProductoNuevo(sheetsClient, { spreadsheetId, sheetNameProduc
     skuGeneral, nombre: producto, categoria,
   });
 
-  return { producto, categoria, subcategoria, skuGeneral, precio, foto: '' };
+  return { producto, categoria, subcategoria, skuGeneral, precio, foto: '', proveedor: proveedor || '' };
 }
 
 /**
@@ -778,6 +780,31 @@ async function actualizarPrecioProducto(sheetsClient, spreadsheetId, sheetNamePr
     range: `${sheetNameProductos}!${letraPrecio}${numeroFila}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[precio]] },
+  });
+
+  return true;
+}
+
+/**
+ * Actualiza el proveedor (columna J) de un producto en la hoja
+ * Productos, buscandolo por SKU general. Es un dato de uso interno
+ * (compras/reposicion) — nunca se muestra en el catalogo publico.
+ * Devuelve true si lo encontro y actualizo, false si el SKU general no
+ * existe en la hoja.
+ */
+async function actualizarProveedorProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, proveedor) {
+  const cols = config.COLUMNAS_PRODUCTOS;
+  const { numeroFila } = await buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral);
+  if (!numeroFila) return false;
+
+  await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetNameProductos, numeroFila);
+  const letraProveedor = columnaALetra(cols.proveedor);
+
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetNameProductos}!${letraProveedor}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[proveedor || '']] },
   });
 
   return true;
@@ -1587,6 +1614,7 @@ module.exports = {
   eliminarFotoProducto,
   actualizarDescripcionProducto,
   actualizarPrecioProducto,
+  actualizarProveedorProducto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,

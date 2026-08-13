@@ -302,6 +302,7 @@
     background:var(--field-bg); color:var(--field-text);
   }
   .fila-seleccionado .input-precio-fila{ width:100px; }
+  .fila-seleccionado .input-proveedor-fila{ width:140px; }
   .fila-seleccionado button.quitar{ background:none; border:none; color:var(--stamp-red); font-size:18px; line-height:1; cursor:pointer; padding:4px 8px; }
 
   .acceso-admin-link{
@@ -505,6 +506,8 @@
       <input type="text" id="inputNombreProductoNuevo" placeholder="Nombre del producto" style="margin-bottom:10px;">
       <label for="inputPrecioProductoNuevo">Precio</label>
       <input type="text" id="inputPrecioProductoNuevo" placeholder="Ej: 45000" style="margin-bottom:10px;">
+      <label for="inputProveedorProductoNuevo">Proveedor <span style="text-transform:none; font-weight:400;">(uso interno, no se muestra a los clientes)</span></label>
+      <input type="text" id="inputProveedorProductoNuevo" placeholder="Ej: Distribuidora ABC" style="margin-bottom:10px;">
       <button class="btn-generar" id="btnCrearProductoConfirmar">Crear producto y continuar</button>
       <div id="mensajeCrearProducto" style="margin-top:10px;"></div>
     </div>
@@ -1606,7 +1609,11 @@
   function elegirProducto(producto){
     const yaEsta = productosSeleccionados.some((s) => s.producto.skuGeneral === producto.skuGeneral);
     if (yaEsta) return;
-    productosSeleccionados.unshift({ producto, cantidad: '', precio: producto.precio != null ? String(producto.precio) : '' });
+    productosSeleccionados.unshift({
+      producto, cantidad: '',
+      precio: producto.precio != null ? String(producto.precio) : '',
+      proveedor: producto.proveedor || '',
+    });
     renderizarProductosSeleccionados();
   }
 
@@ -1673,6 +1680,7 @@
           <div class="meta">${escaparHtml(s.producto.skuGeneral)} · ${escaparHtml(s.producto.categoria)}${s.producto.subcategoria ? ' / ' + escaparHtml(s.producto.subcategoria) : ''}</div>
         </div>
         <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(String(s.precio))}">
+        <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(s.proveedor || '')}">
         <input type="number" class="input-cantidad-fila" min="1" step="1" placeholder="Cant." value="${escaparHtml(String(s.cantidad))}">
         <button type="button" class="quitar" title="Quitar">×</button>
       </div>
@@ -1683,6 +1691,10 @@
       fila.querySelector('.input-precio-fila').addEventListener('input', (evento) => {
         const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
         if (item) item.precio = evento.target.value;
+      });
+      fila.querySelector('.input-proveedor-fila').addEventListener('input', (evento) => {
+        const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
+        if (item) item.proveedor = evento.target.value;
       });
       fila.querySelector('.input-cantidad-fila').addEventListener('input', (evento) => {
         const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
@@ -1726,6 +1738,7 @@
             categoria: item.producto.categoria,
             subcategoria: item.producto.subcategoria,
             precio: item.precio !== '' && item.precio != null ? Number(item.precio) : item.producto.precio,
+            proveedor: item.proveedor || '',
             cantidad: Number(item.cantidad),
           })
         });
@@ -1968,6 +1981,7 @@
   const selectCategoriaNueva = document.getElementById('selectCategoriaNueva');
   const inputNombreProductoNuevo = document.getElementById('inputNombreProductoNuevo');
   const inputPrecioProductoNuevo = document.getElementById('inputPrecioProductoNuevo');
+  const inputProveedorProductoNuevo = document.getElementById('inputProveedorProductoNuevo');
   const btnCrearProductoConfirmar = document.getElementById('btnCrearProductoConfirmar');
   const mensajeCrearProducto = document.getElementById('mensajeCrearProducto');
 
@@ -1998,6 +2012,7 @@
     const indice = selectCategoriaNueva.value;
     const nombre = inputNombreProductoNuevo.value.trim();
     const precio = inputPrecioProductoNuevo.value.trim();
+    const proveedor = inputProveedorProductoNuevo.value.trim();
 
     mensajeCrearProducto.className = 'mensaje-generacion';
     mensajeCrearProducto.textContent = '';
@@ -2023,7 +2038,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           token: adminToken, producto: nombre, categoria: elegido.categoria,
-          subcategoria: elegido.subcategoria, prefijoSku: elegido.prefijoSku, precio,
+          subcategoria: elegido.subcategoria, prefijoSku: elegido.prefijoSku, precio, proveedor,
         })
       });
       const data = await res.json();
@@ -2036,6 +2051,7 @@
 
       inputNombreProductoNuevo.value = '';
       inputPrecioProductoNuevo.value = '';
+      inputProveedorProductoNuevo.value = '';
       selectCategoriaNueva.value = '';
       formCrearProducto.style.display = 'none';
     } catch (err) {
