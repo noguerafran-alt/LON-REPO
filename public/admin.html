@@ -502,6 +502,12 @@
 
   <div id="panelGenerarUnidades" style="display:none;">
     <div class="campo">
+      <label for="inputCodigoBarraGenerar">Código de barras del producto que entra</label>
+      <input type="text" id="inputCodigoBarraGenerar" placeholder="Escaneá o tipeá el código y apretá Enter..." inputmode="numeric" autocomplete="off">
+      <p id="mensajeCodigoBarraGenerar" style="font-size:12.5px; color:var(--ink-muted); margin:6px 0 0; min-height:1em;"></p>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:4px 0 0;">Es para asociar el código de fábrica (no es único por unidad) al SKU interno de LON — elegís vos cuántas unidades entran, no hace falta escanear cada ejemplar.</p>
+    </div>
+    <div class="campo">
       <label for="selectCategoria">Categoría</label>
       <select id="selectCategoria"><option value="">Todas las categorías</option></select>
     </div>
@@ -1531,6 +1537,8 @@
 
   const selectCategoria = document.getElementById('selectCategoria');
   const selectSubcategoria = document.getElementById('selectSubcategoria');
+  const inputCodigoBarraGenerar = document.getElementById('inputCodigoBarraGenerar');
+  const mensajeCodigoBarraGenerar = document.getElementById('mensajeCodigoBarraGenerar');
   const inputBuscarProducto = document.getElementById('inputBuscarProducto');
   const listaProductos = document.getElementById('listaProductos');
   const productosSeleccionadosBox = document.getElementById('productosSeleccionadosBox');
@@ -1626,14 +1634,107 @@
 
   function elegirProducto(producto){
     const yaEsta = productosSeleccionados.some((s) => s.producto.skuGeneral === producto.skuGeneral);
-    if (yaEsta) return;
-    productosSeleccionados.unshift({
-      producto, cantidad: '',
-      precio: producto.precio != null ? String(producto.precio) : '',
-      proveedor: producto.proveedor || '',
-    });
-    renderizarProductosSeleccionados();
+    if (!yaEsta) {
+      productosSeleccionados.unshift({
+        producto, cantidad: '',
+        precio: producto.precio != null ? String(producto.precio) : '',
+        proveedor: producto.proveedor || '',
+      });
+      renderizarProductosSeleccionados();
+    }
+
+    // Si había un código de barras esperando asociarse (se escaneó/tipeó
+    // arriba y todavía no tenía SKU), este es el producto elegido para
+    // esa asociación — se guarda ahora, sin sumar ninguna unidad todavía
+    // (eso lo decide el admin a mano, más abajo).
+    if (codigoBarraPendienteAsociar) {
+      asociarCodigoBarraPendiente(producto.skuGeneral);
+    }
+
+    enfocarCantidadDe(producto.skuGeneral);
   }
+
+  function enfocarCantidadDe(skuGeneral){
+    setTimeout(() => {
+      const fila = listaProductosSeleccionados.querySelector(`.fila-seleccionado[data-sku="${CSS.escape(skuGeneral)}"] .input-cantidad-fila`);
+      if (fila) {
+        fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        fila.focus();
+      }
+    }, 100);
+  }
+
+  /* ------------------------------------------------------------
+   * Código de barras del producto que entra: se asocia UNA VEZ al SKU
+   * interno (el código de fábrica no es único por unidad, así que nunca
+   * se escanea ejemplar por ejemplar acá) — la cantidad que entró se
+   * elige a mano en la fila de "Productos seleccionados".
+   * ------------------------------------------------------------ */
+  let codigoBarraPendienteAsociar = null;
+
+  async function buscarCodigoBarraGenerar(){
+    const codigo = inputCodigoBarraGenerar.value.trim();
+    if (!codigo) return;
+
+    mensajeCodigoBarraGenerar.textContent = 'Buscando...';
+    mensajeCodigoBarraGenerar.style.color = 'var(--ink-muted)';
+    codigoBarraPendienteAsociar = null;
+
+    if (!catalogoCargado) await cargarCatalogo();
+
+    try {
+      const res = await fetch(`/admin/codigo-barra/${encodeURIComponent(codigo)}?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al buscar el código');
+
+      if (data.asociado && data.asociacion) {
+        const producto = catalogoProductos.find((p) => p.skuGeneral === data.asociacion.skuGeneral);
+        inputCodigoBarraGenerar.value = '';
+        if (producto) {
+          elegirProducto(producto);
+          mensajeCodigoBarraGenerar.textContent = `Ya asociado a ${producto.producto} (${producto.skuGeneral}) — agregado abajo, poné la cantidad.`;
+          mensajeCodigoBarraGenerar.style.color = 'var(--stamp-green)';
+        } else {
+          mensajeCodigoBarraGenerar.textContent = `Asociado a ${data.asociacion.skuGeneral}, pero no está en el catálogo cargado.`;
+          mensajeCodigoBarraGenerar.style.color = 'var(--stamp-red)';
+        }
+      } else {
+        codigoBarraPendienteAsociar = codigo;
+        mensajeCodigoBarraGenerar.textContent = `Código nuevo: buscá el producto abajo (o creá uno) y se asocia solo al elegirlo.`;
+        mensajeCodigoBarraGenerar.style.color = 'var(--accent)';
+        inputBuscarProducto.focus();
+      }
+    } catch (err) {
+      mensajeCodigoBarraGenerar.textContent = `No se pudo buscar: ${err.message}`;
+      mensajeCodigoBarraGenerar.style.color = 'var(--stamp-red)';
+    }
+  }
+
+  async function asociarCodigoBarraPendiente(skuGeneral){
+    const codigo = codigoBarraPendienteAsociar;
+    codigoBarraPendienteAsociar = null;
+    try {
+      const res = await fetch('/admin/codigo-barra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken, codigoBarra: codigo, skuGeneral }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al asociar');
+      mensajeCodigoBarraGenerar.textContent = `Código "${codigo}" asociado a ${skuGeneral}.`;
+      mensajeCodigoBarraGenerar.style.color = 'var(--stamp-green)';
+    } catch (err) {
+      mensajeCodigoBarraGenerar.textContent = `El producto se agregó, pero no se pudo asociar el código: ${err.message}`;
+      mensajeCodigoBarraGenerar.style.color = 'var(--stamp-red)';
+    }
+  }
+
+  inputCodigoBarraGenerar.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Enter') {
+      evento.preventDefault();
+      buscarCodigoBarraGenerar();
+    }
+  });
 
   /* ------------------------------------------------------------
    * Restock por escaneo: se escanea un ejemplar ya impreso de un
@@ -1668,14 +1769,6 @@
 
     mensajeGeneracion.innerHTML = '';
     elegirProducto(producto);
-
-    setTimeout(() => {
-      const fila = listaProductosSeleccionados.querySelector(`.fila-seleccionado[data-sku="${CSS.escape(producto.skuGeneral)}"] .input-cantidad-fila`);
-      if (fila) {
-        fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        fila.focus();
-      }
-    }, 100);
   }
 
   function quitarProductoSeleccionado(skuGeneral){
