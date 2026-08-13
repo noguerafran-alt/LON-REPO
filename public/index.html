@@ -413,7 +413,7 @@
   <div class="barra-superior-catalogo">
     <a class="volver" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">📷</a>
     <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
-      <img src="/logo2.png" alt="LON" class="logo-barra-catalogo">
+      <img src="/logo-catalogo.svg" alt="LON" class="logo-barra-catalogo">
     </a>
     <button class="btn-icono-simetrico" id="btnMostrarContacto" title="Dejanos tu contacto" aria-label="Dejanos tu contacto">✉️</button>
   </div>
@@ -588,10 +588,17 @@
     // también sale ya en mayúsculas, consistente con el resto de las
     // categorías (FIELTRO, LATA, VELAS, etc).
     const porCategoria = new Map();
+    const nombreVisiblePorCategoria = new Map();
     catalogoPublicoProductos.forEach((p, indiceGlobal) => {
       const categoria = (p.categoria || '(Sin categoría)').trim().toUpperCase();
       if (!porCategoria.has(categoria)) porCategoria.set(categoria, []);
       porCategoria.get(categoria).push({ ...p, indiceGlobal });
+      // El nombre que se MUESTRA puede ser distinto al interno (editable
+      // desde el admin en "Editar catálogo"); si no se cargó ninguno,
+      // cae a la categoría tal cual, en mayúsculas.
+      if (!nombreVisiblePorCategoria.has(categoria)) {
+        nombreVisiblePorCategoria.set(categoria, (p.categoriaVisible || '').trim() || categoria);
+      }
     });
 
     const categoriasOrdenadas = Array.from(porCategoria.keys()).sort();
@@ -601,12 +608,12 @@
     }
 
     const tabsHtml = categoriasOrdenadas.map((categoria) => `
-      <button type="button" class="tab-categoria-catalogo${categoria === categoriaCatalogoActiva ? ' activo' : ''}" data-categoria="${escaparHtmlPublico(categoria)}">${escaparHtmlPublico(categoria)}</button>
+      <button type="button" class="tab-categoria-catalogo${categoria === categoriaCatalogoActiva ? ' activo' : ''}" data-categoria="${escaparHtmlPublico(categoria)}">${escaparHtmlPublico(nombreVisiblePorCategoria.get(categoria))}</button>
     `).join('');
 
     const productosDeCategoria = ordenarPorDisponibilidad(porCategoria.get(categoriaCatalogoActiva) || []);
     const gridHtml = `
-      <h3 class="titulo-categoria-catalogo">${escaparHtmlPublico(categoriaCatalogoActiva)}</h3>
+      <h3 class="titulo-categoria-catalogo">${escaparHtmlPublico(nombreVisiblePorCategoria.get(categoriaCatalogoActiva))}</h3>
       <div class="grilla-catalogo-publico">
         ${productosDeCategoria.map((p) => `
           <div class="item-catalogo-publico">
@@ -666,7 +673,7 @@
         <div class="foto-detalle" id="fotoPrincipalDetalle">${fotos.length ? `<img src="${escaparHtmlPublico(fotos[0])}" alt="Foto del producto">` : mockupPlaceholder(producto.categoria)}</div>
         ${miniaturasHtml}
         <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
-        <div class="meta">${escaparHtmlPublico(producto.categoria || '')}</div>
+        <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
         <div class="meta">${producto.disponible ? 'En stock' : 'Sin stock'}</div>
         ${producto.precio ? `<div class="precio">$${escaparHtmlPublico(String(producto.precio))}</div>` : ''}
         <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>Comprar</button>

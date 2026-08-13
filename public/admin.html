@@ -214,17 +214,19 @@
   .btn-generar-desde-escaneo{ border-color:var(--accent); color:var(--accent); }
   .btn-generar-desde-escaneo:hover{ background:var(--accent-soft); }
 
-  #panelGenerarUnidades{ padding:16px 24px 40px; overflow-y:auto; flex:1; }
-  #panelGenerarUnidades .campo{ margin-bottom:14px; }
-  #panelGenerarUnidades label{
+  #panelGenerarUnidades, #panelCatalogo{ padding:16px 24px 40px; overflow-y:auto; flex:1; }
+  #panelGenerarUnidades .campo, #panelCatalogo .campo{ margin-bottom:14px; }
+  #panelGenerarUnidades label, #panelCatalogo label{
     display:block; font-family:'IBM Plex Mono', monospace; font-size:15px; letter-spacing:0.08em;
     text-transform:uppercase; color:var(--ink-muted); margin:0 0 6px 1px; font-weight:700;
   }
-  #panelGenerarUnidades select, #panelGenerarUnidades input[type="text"], #panelGenerarUnidades input[type="number"]{
+  #panelGenerarUnidades select, #panelGenerarUnidades input[type="text"], #panelGenerarUnidades input[type="number"],
+  #panelCatalogo select, #panelCatalogo input[type="text"], #panelCatalogo input[type="number"]{
     width:100%; padding:12px 14px; font-size:16px; font-family:'Archivo', sans-serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
   }
-  #panelGenerarUnidades select:focus, #panelGenerarUnidades input:focus{ outline:none; border-color:var(--accent); }
+  #panelGenerarUnidades select:focus, #panelGenerarUnidades input:focus,
+  #panelCatalogo select:focus, #panelCatalogo input:focus{ outline:none; border-color:var(--accent); }
 
   .lista-productos{
     max-height:220px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--radius);
@@ -299,6 +301,7 @@
     width:80px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
     background:var(--field-bg); color:var(--field-text);
   }
+  .fila-seleccionado .input-precio-fila{ width:100px; }
   .fila-seleccionado button.quitar{ background:none; border:none; color:var(--stamp-red); font-size:18px; line-height:1; cursor:pointer; padding:4px 8px; }
 
   .acceso-admin-link{
@@ -321,6 +324,30 @@
   .mensaje-generacion.error{ background:var(--stamp-red-soft); border:1px solid var(--stamp-red); color:var(--stamp-red); }
 
   .separador-panel{ border:none; border-top:1px solid var(--line); margin:26px 0; }
+
+  .fila-categoria-visible{
+    margin-top:8px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--bg-alt); display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .fila-categoria-visible .categoria-interna{
+    flex:0 0 140px; font-family:'IBM Plex Mono', monospace; font-size:15px; color:var(--ink-muted);
+  }
+  .fila-categoria-visible input[type="text"]{
+    flex:1; min-width:140px; padding:8px 10px; font-size:15px; border-radius:var(--radius);
+    border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
+  }
+  .fila-categoria-visible button{
+    background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
+    padding:8px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
+  }
+  .fila-categoria-visible button:disabled{ opacity:.5; cursor:default; }
+
+  .badge-stock{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; padding:2px 8px; border-radius:20px;
+    flex-shrink:0; white-space:nowrap;
+  }
+  .badge-stock.disponible{ color:var(--stamp-green); background:var(--stamp-green-soft); border:1px solid var(--stamp-green); }
+  .badge-stock.agotado{ color:var(--stamp-red); background:var(--stamp-red-soft); border:1px solid var(--stamp-red); }
 
   .btn-imprimir{
     flex:1; padding:14px; font-size:15px; font-weight:700; font-family:'Archivo', sans-serif;
@@ -435,6 +462,7 @@
   <div class="admin-tabs" id="adminTabs">
     <button class="activo" id="tabEscanear" type="button">Escanear</button>
     <button id="tabGenerarUnidades" type="button">Productos</button>
+    <button id="tabCatalogo" type="button">Catálogo</button>
     <button id="tabPedidos" type="button">Pedidos</button>
     <button id="tabUsuarios" type="button">Usuarios</button>
   </div>
@@ -534,6 +562,22 @@
         <button class="btn-generar" id="btnCrearConfigCategoria">Agregar categoría</button>
         <div id="mensajeConfigCategoria" style="margin-top:10px;"></div>
       </div>
+    </div>
+  </div>
+
+  <div id="panelCatalogo" style="display:none;">
+    <div class="campo">
+      <label>Nombres de categorías (catálogo público)</label>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Así se llama cada categoría puertas adentro (SKU, filtros del admin) y así podés mostrarla distinto a los clientes en el catálogo. Dejalo vacío para mostrar la categoría tal cual.</p>
+      <div id="listaCategoriasVisibles">Cargando categorías...</div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Catálogo completo (incluye sin stock)</label>
+      <input type="text" id="inputBuscarCatalogoCompleto" placeholder="Nombre o SKU del producto..." style="margin-bottom:6px;">
+      <div class="lista-productos" id="listaCatalogoCompleto" style="max-height:420px;"></div>
     </div>
   </div>
 
@@ -664,10 +708,12 @@
   const adminTabs = document.getElementById('adminTabs');
   const tabEscanear = document.getElementById('tabEscanear');
   const tabGenerarUnidades = document.getElementById('tabGenerarUnidades');
+  const tabCatalogo = document.getElementById('tabCatalogo');
   const tabPedidos = document.getElementById('tabPedidos');
   const tabUsuarios = document.getElementById('tabUsuarios');
   const seccionEscanear = document.getElementById('seccionEscanear');
   const panelGenerarUnidades = document.getElementById('panelGenerarUnidades');
+  const panelCatalogo = document.getElementById('panelCatalogo');
   const panelPedidos = document.getElementById('panelPedidos');
   const panelUsuarios = document.getElementById('panelUsuarios');
   const etiquetaUsuarioLogueado = document.getElementById('etiquetaUsuarioLogueado');
@@ -678,17 +724,17 @@
 
   function guardarSesion(){
     try {
-      sessionStorage.setItem(CLAVE_SESION, JSON.stringify({
+      localStorage.setItem(CLAVE_SESION, JSON.stringify({
         token: adminToken, email: adminEmail, nivel: adminNivel, nombre: adminNombre,
       }));
     } catch (e) {}
   }
   function borrarSesion(){
-    try { sessionStorage.removeItem(CLAVE_SESION); } catch (e) {}
+    try { localStorage.removeItem(CLAVE_SESION); } catch (e) {}
   }
   function restaurarSesion(){
     try {
-      const guardada = sessionStorage.getItem(CLAVE_SESION);
+      const guardada = localStorage.getItem(CLAVE_SESION);
       if (!guardada) return false;
       const datos = JSON.parse(guardada);
       if (!datos || !datos.token) return false;
@@ -802,6 +848,7 @@
     // se muestran — el servidor las rechaza igual si alguien intentara
     // llamarlas directo, esto es solo la interfaz).
     tabGenerarUnidades.style.display = esNivel2() ? '' : 'none';
+    tabCatalogo.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
     mostrarSeccionAdmin('escanear');
@@ -810,18 +857,21 @@
   function mostrarSeccionAdmin(seccion){
     // Nivel 1 no puede quedar parado en una seccion que no le corresponde
     // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
-    if (!esNivel2() && (seccion === 'generar' || seccion === 'usuarios')) seccion = 'escanear';
+    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'usuarios')) seccion = 'escanear';
 
     const esEscanear = seccion === 'escanear';
     const esPedidos = seccion === 'pedidos';
     const esGenerar = seccion === 'generar';
+    const esCatalogo = seccion === 'catalogo';
     const esUsuarios = seccion === 'usuarios';
     tabEscanear.classList.toggle('activo', esEscanear);
     tabGenerarUnidades.classList.toggle('activo', esGenerar);
+    tabCatalogo.classList.toggle('activo', esCatalogo);
     tabPedidos.classList.toggle('activo', esPedidos);
     tabUsuarios.classList.toggle('activo', esUsuarios);
     seccionEscanear.style.display = esEscanear ? 'block' : 'none';
     panelGenerarUnidades.style.display = esGenerar ? 'block' : 'none';
+    panelCatalogo.style.display = esCatalogo ? 'block' : 'none';
     panelPedidos.style.display = esPedidos ? 'block' : 'none';
     panelUsuarios.style.display = esUsuarios ? 'block' : 'none';
 
@@ -829,6 +879,10 @@
       if (!catalogoCargado) cargarCatalogo();
       cargarResumenGeneradosApp();
       cargarConfigCategoriasLista();
+    }
+    if (esCatalogo) {
+      cargarCategoriasVisibles();
+      cargarCatalogoCompletoAdmin();
     }
     if (esPedidos) {
       cargarPedidos();
@@ -839,6 +893,7 @@
   }
   tabEscanear.addEventListener('click', () => mostrarSeccionAdmin('escanear'));
   tabGenerarUnidades.addEventListener('click', () => mostrarSeccionAdmin('generar'));
+  tabCatalogo.addEventListener('click', () => mostrarSeccionAdmin('catalogo'));
   tabPedidos.addEventListener('click', () => mostrarSeccionAdmin('pedidos'));
   tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
 
@@ -1551,7 +1606,7 @@
   function elegirProducto(producto){
     const yaEsta = productosSeleccionados.some((s) => s.producto.skuGeneral === producto.skuGeneral);
     if (yaEsta) return;
-    productosSeleccionados.push({ producto, cantidad: '' });
+    productosSeleccionados.unshift({ producto, cantidad: '', precio: producto.precio != null ? String(producto.precio) : '' });
     renderizarProductosSeleccionados();
   }
 
@@ -1615,8 +1670,9 @@
       <div class="fila-seleccionado" data-sku="${escaparHtml(s.producto.skuGeneral)}">
         <div class="info">
           <div class="nombre">${escaparHtml(s.producto.producto || '(sin nombre)')}</div>
-          <div class="meta">${escaparHtml(s.producto.skuGeneral)} · ${escaparHtml(s.producto.categoria)}${s.producto.subcategoria ? ' / ' + escaparHtml(s.producto.subcategoria) : ''}${s.producto.precio ? ' · $' + escaparHtml(String(s.producto.precio)) : ''}</div>
+          <div class="meta">${escaparHtml(s.producto.skuGeneral)} · ${escaparHtml(s.producto.categoria)}${s.producto.subcategoria ? ' / ' + escaparHtml(s.producto.subcategoria) : ''}</div>
         </div>
+        <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(String(s.precio))}">
         <input type="number" class="input-cantidad-fila" min="1" step="1" placeholder="Cant." value="${escaparHtml(String(s.cantidad))}">
         <button type="button" class="quitar" title="Quitar">×</button>
       </div>
@@ -1624,6 +1680,10 @@
 
     listaProductosSeleccionados.querySelectorAll('.fila-seleccionado').forEach((fila) => {
       const skuGeneral = fila.getAttribute('data-sku');
+      fila.querySelector('.input-precio-fila').addEventListener('input', (evento) => {
+        const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
+        if (item) item.precio = evento.target.value;
+      });
       fila.querySelector('.input-cantidad-fila').addEventListener('input', (evento) => {
         const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
         if (item) item.cantidad = evento.target.value;
@@ -1665,7 +1725,7 @@
             producto: item.producto.producto,
             categoria: item.producto.categoria,
             subcategoria: item.producto.subcategoria,
-            precio: item.producto.precio,
+            precio: item.precio !== '' && item.precio != null ? Number(item.precio) : item.producto.precio,
             cantidad: Number(item.cantidad),
           })
         });
@@ -2161,6 +2221,117 @@
       btnCrearConfigCategoria.textContent = 'Agregar categoría';
     }
   });
+
+  /* ------------------------------------------------------------
+   * PANEL: CATÁLOGO — nombres de categorías que ven los clientes, y
+   * vista de solo lectura del catálogo completo (incluye sin stock).
+   * ------------------------------------------------------------ */
+  const listaCategoriasVisibles = document.getElementById('listaCategoriasVisibles');
+
+  async function cargarCategoriasVisibles(){
+    listaCategoriasVisibles.innerHTML = '<div style="padding:12px; font-size:13px; color:var(--ink-muted);">Cargando...</div>';
+    try {
+      const res = await fetch(`/admin/categorias-nombres?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar categorías');
+      renderizarListaCategoriasVisibles(data.categorias || []);
+    } catch (err) {
+      listaCategoriasVisibles.innerHTML = `<div style="padding:12px; font-size:13px; color:var(--stamp-red);">No se pudo cargar: ${err.message}</div>`;
+    }
+  }
+
+  function renderizarListaCategoriasVisibles(categorias){
+    if (categorias.length === 0) {
+      listaCategoriasVisibles.innerHTML = '<div style="padding:12px; font-size:13px; color:var(--ink-muted);">Todavía no hay categorías con productos.</div>';
+      return;
+    }
+
+    listaCategoriasVisibles.innerHTML = categorias.map((c) => `
+      <div class="fila-categoria-visible" data-categoria="${escaparHtml(c.categoria)}">
+        <span class="categoria-interna">${escaparHtml(c.categoria)}</span>
+        <input type="text" class="input-nombre-visible" placeholder="Nombre para clientes (igual que arriba si lo dejás vacío)" value="${escaparHtml(c.nombreVisible || '')}" maxlength="80">
+        <button type="button" class="btn-guardar-nombre-visible">Guardar</button>
+        <span class="mensaje-nombre-visible" style="font-size:12.5px;"></span>
+      </div>
+    `).join('');
+
+    listaCategoriasVisibles.querySelectorAll('.fila-categoria-visible').forEach((fila) => {
+      const categoria = fila.getAttribute('data-categoria');
+      const input = fila.querySelector('.input-nombre-visible');
+      const boton = fila.querySelector('.btn-guardar-nombre-visible');
+      const mensaje = fila.querySelector('.mensaje-nombre-visible');
+
+      boton.addEventListener('click', async () => {
+        boton.disabled = true;
+        boton.textContent = 'Guardando...';
+        mensaje.textContent = '';
+        mensaje.style.color = '';
+        try {
+          const res = await fetch('/admin/categoria-nombre-visible', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, categoria, nombreVisible: input.value.trim() }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+          mensaje.textContent = 'Guardado ✓';
+          mensaje.style.color = 'var(--stamp-green)';
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+        } finally {
+          boton.disabled = false;
+          boton.textContent = 'Guardar';
+        }
+      });
+    });
+  }
+
+  const listaCatalogoCompleto = document.getElementById('listaCatalogoCompleto');
+  const inputBuscarCatalogoCompleto = document.getElementById('inputBuscarCatalogoCompleto');
+  let catalogoCompletoAdmin = [];
+
+  async function cargarCatalogoCompletoAdmin(){
+    listaCatalogoCompleto.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Cargando catálogo...</div>';
+    try {
+      const res = await fetch(`/admin/catalogo-completo?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar el catálogo');
+      catalogoCompletoAdmin = data.productos || [];
+      renderizarListaCatalogoCompleto();
+    } catch (err) {
+      listaCatalogoCompleto.innerHTML = `<div style="padding:12px; font-size:15px; color:var(--stamp-red);">No se pudo cargar: ${err.message}</div>`;
+    }
+  }
+
+  function renderizarListaCatalogoCompleto(){
+    const busqueda = inputBuscarCatalogoCompleto.value.trim().toLowerCase();
+    const filtrados = busqueda
+      ? catalogoCompletoAdmin.filter((p) => (p.nombre || '').toLowerCase().includes(busqueda) || (p.skuGeneral || '').toLowerCase().includes(busqueda))
+      : catalogoCompletoAdmin;
+
+    if (catalogoCompletoAdmin.length === 0) {
+      listaCatalogoCompleto.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Todavía no hay productos cargados.</div>';
+      return;
+    }
+    if (filtrados.length === 0) {
+      listaCatalogoCompleto.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">No se encontraron productos.</div>';
+      return;
+    }
+
+    listaCatalogoCompleto.innerHTML = filtrados.map((p) => `
+      <div class="item-producto" style="cursor:default;">
+        ${p.foto ? `<img class="foto-mini" src="${escaparHtml(p.foto)}" alt="">` : '<div class="foto-mini-vacia">—</div>'}
+        <div class="lista-producto-info">
+          <span class="lista-producto-nombre">${escaparHtml(p.nombre || '(sin nombre)')}</span>
+          <span class="lista-producto-meta">${escaparHtml(p.skuGeneral)} · ${escaparHtml(p.categoria)}${p.precio ? ' · $' + escaparHtml(String(p.precio)) : ''}</span>
+        </div>
+        <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
+      </div>
+    `).join('');
+  }
+
+  inputBuscarCatalogoCompleto.addEventListener('input', renderizarListaCatalogoCompleto);
 
   /* ------------------------------------------------------------
    * Optimizar las fotos subidas antes de que existiera la generacion

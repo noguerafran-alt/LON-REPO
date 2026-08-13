@@ -21,10 +21,13 @@ const {
   generarUnidades,
   getConfigCategorias,
   crearCategoriaConfig,
+  getNombresVisiblesCategorias,
+  actualizarNombreVisibleCategoria,
   crearProductoNuevo,
   agregarFotoProducto,
   eliminarFotoProducto,
   actualizarDescripcionProducto,
+  actualizarPrecioProducto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
@@ -743,21 +746,30 @@ app.post('/admin/generar-unidades', limiteAdmin, async (req, res) => {
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const { fecha } = fechaYHoraActual();
+    const skuGeneralLimpio = String(skuGeneral).trim();
 
-    const skusGenerados = await generarUnidades(sheetsClient, {
-      spreadsheetId: config.SHEET_ID_PRODUCTOS,
-      skuGeneral: String(skuGeneral).trim(),
-      producto: producto || '',
-      categoria: categoria || '',
-      subcategoria: subcategoria || '',
-      precio: precio || '',
-      cantidad: cantidadNum,
-      // El email de quien genera queda registrado en HISTORICO_SKU
-      // (columna H) tomado SIEMPRE de la sesión verificada en el
-      // servidor, nunca de un valor que mande el navegador.
-      generadoPor: sesion.email,
-      fecha,
-    });
+    const [skusGenerados] = await Promise.all([
+      generarUnidades(sheetsClient, {
+        spreadsheetId: config.SHEET_ID_PRODUCTOS,
+        skuGeneral: skuGeneralLimpio,
+        producto: producto || '',
+        categoria: categoria || '',
+        subcategoria: subcategoria || '',
+        precio: precio || '',
+        cantidad: cantidadNum,
+        // El email de quien genera queda registrado en HISTORICO_SKU
+        // (columna H) tomado SIEMPRE de la sesión verificada en el
+        // servidor, nunca de un valor que mande el navegador.
+        generadoPor: sesion.email,
+        fecha,
+      }),
+      // Si desde "Generar unidades" se edito el precio del producto ya
+      // existente, lo actualizamos tambien en la ficha maestra (hoja
+      // Productos) para que el catalogo quede con el precio nuevo.
+      precio !== undefined && precio !== null && String(precio).trim() !== ''
+        ? actualizarPrecioProducto(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS, skuGeneralLimpio, precio)
+        : Promise.resolve(),
+    ]);
 
     res.json({ ok: true, skusGenerados });
   } catch (err) {
@@ -788,68 +800,166 @@ app.post('/admin/vaciar-imprimir-app', limiteAdmin, async (req, res) => {
   }
 });
 
+/* Arma la lista de productos con nombre, categoria (interna y la que ven
+   los clientes), foto, stock y precio de referencia, cruzando la hoja
+   STOCK (planilla de VENTAS) con Productos y Config (planilla de
+   PRODUCTOS). Con soloConStock=true (catálogo público) se descartan los
+   productos sin unidades disponibles; con false (catálogo del admin) se
+   devuelven todos, con la cantidad real. */
+async function construirCatalogoConStock(sheetsClient, { soloConStock }) {
+  const stockResp = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId: config.SHEET_ID_VENTAS,
+    range: `${config.HOJA_STOCK}!A:F`,
+  });
+  const [catalogoProductos, nombresVisiblesCategorias] = await Promise.all([
+    getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS),
+    getNombresVisiblesCategorias(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG),
+  ]);
+
+  const stockRows = stockResp.data.values || [];
+
+  // Precio y foto de referencia por SKU general, tomados de la hoja
+  // Productos (fuente autoritativa/actualizada, no PRECIOS que guarda
+  // precio por unidad individual y puede quedar viejo).
+  const precioPorSkuGeneral = {};
+  const fotoPorSkuGeneral = {};
+  const fotosPorSkuGeneral = {};
+  const descripcionPorSkuGeneral = {};
+  catalogoProductos.forEach((p) => {
+    if (p.skuGeneral && p.precio !== '' && p.precio !== undefined) {
+      precioPorSkuGeneral[p.skuGeneral] = p.precio;
+    }
+    if (p.skuGeneral && p.foto) {
+      fotoPorSkuGeneral[p.skuGeneral] = p.foto;
+    }
+    if (p.skuGeneral) {
+      fotosPorSkuGeneral[p.skuGeneral] = p.fotos || [];
+      descripcionPorSkuGeneral[p.skuGeneral] = p.descripcion || '';
+    }
+  });
+
+  const cols = config.COLUMNAS_STOCK;
+  const productos = [];
+  for (let i = 1; i < stockRows.length; i++) {
+    const row = stockRows[i];
+    const skuGeneral = row[cols.skuGeneral] ? String(row[cols.skuGeneral]).trim() : '';
+    if (!skuGeneral) continue;
+
+    const nombre = row[cols.nombre] ? String(row[cols.nombre]).trim() : '';
+    const categoria = row[cols.categoria] ? String(row[cols.categoria]).trim() : '';
+    const cantidadActual = Number(row[cols.cantidadActual]) || 0;
+
+    // El catálogo público solo debe mostrar productos con stock
+    // disponible — si no hay unidades, ni siquiera lo listamos. El
+    // catálogo del admin (soloConStock=false) los quiere ver igual.
+    if (soloConStock && cantidadActual <= 0) continue;
+
+    productos.push({
+      skuGeneral,
+      nombre: nombre || '(sin nombre)',
+      categoria,
+      categoriaVisible: nombresVisiblesCategorias[categoria.toUpperCase()] || categoria,
+      disponible: cantidadActual > 0,
+      cantidad: cantidadActual,
+      precio: precioPorSkuGeneral[skuGeneral] || null,
+      foto: fotoPorSkuGeneral[skuGeneral] || null,
+      fotos: fotosPorSkuGeneral[skuGeneral] || [],
+      descripcion: descripcionPorSkuGeneral[skuGeneral] || '',
+    });
+  }
+
+  return productos;
+}
+
 /* Catalogo PUBLICO (sin contraseña): lista de productos con nombre,
    categoria, foto, si hay stock disponible y un precio de referencia
    (tomado de la hoja Productos). Se usa para la vista de "Catálogo". */
 app.get('/catalogo-publico', limiteLecturaPublica, async (req, res) => {
   try {
     const sheetsClient = google.sheets({ version: 'v4', auth });
-
-    const stockResp = await sheetsClient.spreadsheets.values.get({
-      spreadsheetId: config.SHEET_ID_VENTAS,
-      range: `${config.HOJA_STOCK}!A:F`,
-    });
-    const catalogoProductos = await getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS);
-
-    const stockRows = stockResp.data.values || [];
-
-    // Precio y foto de referencia por SKU general, tomados de la hoja
-    // Productos (fuente autoritativa/actualizada, no PRECIOS que guarda
-    // precio por unidad individual y puede quedar viejo).
-    const precioPorSkuGeneral = {};
-    const fotoPorSkuGeneral = {};
-    const fotosPorSkuGeneral = {};
-    const descripcionPorSkuGeneral = {};
-    catalogoProductos.forEach((p) => {
-      if (p.skuGeneral && p.precio !== '' && p.precio !== undefined) {
-        precioPorSkuGeneral[p.skuGeneral] = p.precio;
-      }
-      if (p.skuGeneral && p.foto) {
-        fotoPorSkuGeneral[p.skuGeneral] = p.foto;
-      }
-      if (p.skuGeneral) {
-        fotosPorSkuGeneral[p.skuGeneral] = p.fotos || [];
-        descripcionPorSkuGeneral[p.skuGeneral] = p.descripcion || '';
-      }
-    });
-
-    const cols = config.COLUMNAS_STOCK;
-    const productos = [];
-    for (let i = 1; i < stockRows.length; i++) {
-      const row = stockRows[i];
-      const skuGeneral = row[cols.skuGeneral] ? String(row[cols.skuGeneral]).trim() : '';
-      if (!skuGeneral) continue;
-
-      const nombre = row[cols.nombre] ? String(row[cols.nombre]).trim() : '';
-      const categoria = row[cols.categoria] ? String(row[cols.categoria]).trim() : '';
-      const cantidadActual = Number(row[cols.cantidadActual]) || 0;
-
-      productos.push({
-        skuGeneral,
-        nombre: nombre || '(sin nombre)',
-        categoria,
-        disponible: cantidadActual > 0,
-        precio: precioPorSkuGeneral[skuGeneral] || null,
-        foto: fotoPorSkuGeneral[skuGeneral] || null,
-        fotos: fotosPorSkuGeneral[skuGeneral] || [],
-        descripcion: descripcionPorSkuGeneral[skuGeneral] || '',
-      });
-    }
-
+    const productos = await construirCatalogoConStock(sheetsClient, { soloConStock: true });
     res.json({ productos });
   } catch (err) {
     console.error('Error leyendo el catálogo público:', err.message);
     res.status(500).json({ error: 'No se pudo cargar el catálogo.' });
+  }
+});
+
+/* Catalogo COMPLETO para el panel admin: mismo shape que el público,
+   pero incluye los productos sin stock (con su cantidad real) para que
+   se pueda ver y auditar todo el catálogo desde "Editar catálogo".
+   Requiere admin nivel 2. */
+app.get('/admin/catalogo-completo', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const productos = await construirCatalogoConStock(sheetsClient, { soloConStock: false });
+    res.json({ productos });
+  } catch (err) {
+    console.error('Error leyendo el catálogo completo (admin):', err.message);
+    res.status(500).json({ error: 'No se pudo cargar el catálogo.' });
+  }
+});
+
+/* Nombres de categorias tal como estan en el catalogo (union de lo que
+   aparece en STOCK/Productos), junto con el nombre visible para
+   clientes ya cargado en Config (si hay). Se usa para armar la lista de
+   "Editar catálogo" > nombres de categorías. Requiere admin nivel 2. */
+app.get('/admin/categorias-nombres', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const [productos, nombresVisibles] = await Promise.all([
+      construirCatalogoConStock(sheetsClient, { soloConStock: false }),
+      getNombresVisiblesCategorias(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG),
+    ]);
+
+    const categoriasUnicas = new Map();
+    productos.forEach((p) => {
+      if (!p.categoria) return;
+      const clave = p.categoria.toUpperCase();
+      if (!categoriasUnicas.has(clave)) {
+        categoriasUnicas.set(clave, {
+          categoria: p.categoria,
+          nombreVisible: nombresVisibles[clave] || '',
+        });
+      }
+    });
+
+    res.json({ categorias: Array.from(categoriasUnicas.values()).sort((a, b) => a.categoria.localeCompare(b.categoria)) });
+  } catch (err) {
+    console.error('Error leyendo nombres de categorías:', err.message);
+    res.status(500).json({ error: 'No se pudieron cargar las categorías.' });
+  }
+});
+
+/* Actualiza el nombre que ven los clientes para una categoría (hoja
+   Config, columna G). No cambia la categoría interna (la que usan los
+   SKU y los filtros del admin), solo cómo se muestra en el catálogo
+   público. Requiere admin nivel 2. */
+app.post('/admin/categoria-nombre-visible', limiteAdmin, async (req, res) => {
+  try {
+    const { categoria, nombreVisible } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!categoria || !String(categoria).trim()) {
+      return res.status(400).json({ error: 'Falta la categoría a renombrar.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    await actualizarNombreVisibleCategoria(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG,
+      String(categoria).trim(), sanitizarTexto(nombreVisible || '', 80),
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error actualizando nombre visible de categoría:', err.message);
+    res.status(500).json({ error: 'No se pudo actualizar el nombre.' });
   }
 });
 

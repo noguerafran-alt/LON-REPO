@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 950" role="img" aria-label="LON">
+  <!-- L -->
+  <g fill="#000000">
+    <path d="M175 560
+             L175 120
+             L245 120
+             L245 500
+             L440 500
+             L440 470
+             L470 470
+             L470 560
+             Z"/>
+  </g>
+
+  <!-- N -->
+  <g fill="#000000">
+    <!-- left bar with top/bottom serif feet -->
+    <path d="M1105 120 L1195 120 L1195 145 L1170 145 L1170 535 L1195 535 L1195 560 L1105 560 L1105 535 L1130 535 L1130 145 L1105 145 Z"/>
+    <!-- right bar with top/bottom serif feet -->
+    <path d="M1395 120 L1485 120 L1485 145 L1460 145 L1460 535 L1485 535 L1485 560 L1395 560 L1395 535 L1420 535 L1420 145 L1395 145 Z"/>
+    <!-- diagonal stroke, top-left to bottom-right -->
+    <path d="M1170 150 L1225 150 L1420 530 L1365 530 Z"/>
+  </g>
+
+  <!-- Scarab (replaces O) -->
+  <g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">
+    <!-- head lobes with center cleft -->
+    <path d="M715 260
+             C 715 205, 755 175, 800 175
+             C 845 175, 885 205, 885 260"
+          stroke-width="14" fill="none"/>
+    <!-- small antenna nubs -->
+    <circle cx="742" cy="188" r="9" fill="#000000" stroke="none"/>
+    <circle cx="858" cy="188" r="9" fill="#000000" stroke="none"/>
+
+    <!-- outer body shield -->
+    <path d="M715 260
+             C 630 275, 585 340, 585 415
+             C 585 520, 660 610, 800 660
+             C 940 610, 1015 520, 1015 415
+             C 1015 340, 970 275, 885 260"
+          stroke-width="16" fill="none"/>
+
+    <!-- center suture line -->
+    <path d="M800 250 L800 655" stroke-width="12"/>
+
+    <!-- left fan lines -->
+    <path d="M800 420 C 760 400, 715 380, 668 355" stroke-width="7"/>
+    <path d="M800 440 C 755 430, 705 415, 650 400" stroke-width="7"/>
+    <path d="M800 460 C 748 458, 695 452, 636 448" stroke-width="7"/>
+    <path d="M800 480 C 748 485, 693 492, 636 500" stroke-width="7"/>
+    <path d="M800 500 C 752 512, 703 528, 655 548" stroke-width="7"/>
+    <path d="M800 518 C 758 538, 715 560, 675 588" stroke-width="7"/>
+    <path d="M800 534 C 765 558, 728 585, 698 615" stroke-width="7"/>
+
+    <!-- right fan lines (mirrored) -->
+    <path d="M800 420 C 840 400, 885 380, 932 355" stroke-width="7"/>
+    <path d="M800 440 C 845 430, 895 415, 950 400" stroke-width="7"/>
+    <path d="M800 460 C 852 458, 905 452, 964 448" stroke-width="7"/>
+    <path d="M800 480 C 852 485, 907 492, 964 500" stroke-width="7"/>
+    <path d="M800 500 C 848 512, 897 528, 945 548" stroke-width="7"/>
+    <path d="M800 518 C 842 538, 885 560, 925 588" stroke-width="7"/>
+    <path d="M800 534 C 835 558, 872 585, 902 615" stroke-width="7"/>
+  </g>
+</svg>

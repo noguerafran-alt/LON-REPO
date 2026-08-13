@@ -121,6 +121,7 @@ module.exports = {
     codigoSubcategoria: 3, // D
     clave: 4,            // E: "Categoria|Subcategoria" (no se usa desde la app)
     prefijoSku: 5,        // F: ej "LIB-INF"
+    nombreVisibleCategoria: 6, // G: nombre que ven los clientes en el catalogo (opcional; si esta vacio se usa la categoria tal cual)
     // Lista aparte (H, I) que alimenta el desplegable de categorias en
     // Google Sheets. Cuando se crea una categoria nueva, si el nombre
     // todavia no esta en esta lista, se agrega tambien aca.
@@ -286,7 +287,7 @@ module.exports = {
 
   // Cuanto dura una sesion del panel admin antes de pedir iniciar sesion
   // de nuevo.
-  SESSION_DURACION_HORAS: Number(process.env.SESSION_DURACION_HORAS || 12),
+  SESSION_DURACION_HORAS: Number(process.env.SESSION_DURACION_HORAS || 24 * 30),
 
 
   // Longitud del bloque de numero de serie (unidad) del SKU. Con 6,

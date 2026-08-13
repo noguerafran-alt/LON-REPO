@@ -556,6 +556,72 @@ async function getSiguienteNumeroProducto(sheetsClient, spreadsheetId, sheetName
 }
 
 /**
+ * Lee la hoja Config y arma un mapa CATEGORIA (en mayusculas) -> nombre
+ * que ven los clientes en el catalogo publico (columna G, opcional). Si
+ * una categoria no tiene nombre visible cargado, no aparece en el mapa
+ * — el llamador usa la categoria tal cual como resultado.
+ */
+async function getNombresVisiblesCategorias(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_CONFIG;
+  const ultimaLetra = columnaALetra(cols.nombreVisibleCategoria);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const mapa = {};
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const categoria = row[cols.categoria] ? String(row[cols.categoria]).trim() : '';
+    if (!categoria) continue;
+    const clave = categoria.toUpperCase();
+    const nombreVisible = row[cols.nombreVisibleCategoria] ? String(row[cols.nombreVisibleCategoria]).trim() : '';
+    if (nombreVisible && !mapa[clave]) mapa[clave] = nombreVisible;
+  }
+
+  return mapa;
+}
+
+/**
+ * Actualiza el nombre que ven los clientes para una categoria (columna G
+ * de la hoja Config). Si ya hay filas con esa categoria (una por cada
+ * subcategoria), actualiza la columna G en todas para que quede
+ * consistente; si la categoria todavia no tiene ninguna fila en Config,
+ * agrega una fila nueva solo con la categoria y el nombre visible.
+ */
+async function actualizarNombreVisibleCategoria(sheetsClient, spreadsheetId, sheetName, categoria, nombreVisible) {
+  const cols = config.COLUMNAS_CONFIG;
+  const ultimaLetra = columnaALetra(cols.nombreVisibleCategoria);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const categoriaNormalizada = String(categoria).trim().toUpperCase();
+  const letraNombreVisible = columnaALetra(cols.nombreVisibleCategoria);
+
+  const filasAActualizar = [];
+  for (let i = 1; i < rows.length; i++) {
+    const categoriaFila = rows[i][cols.categoria] ? String(rows[i][cols.categoria]).trim().toUpperCase() : '';
+    if (categoriaFila === categoriaNormalizada) filasAActualizar.push(i + 1);
+  }
+
+  if (filasAActualizar.length === 0) {
+    const fila = new Array(cols.nombreVisibleCategoria + 1).fill('');
+    fila[cols.categoria] = String(categoria).trim();
+    fila[cols.nombreVisibleCategoria] = nombreVisible;
+    await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
+    return;
+  }
+
+  await Promise.all(filasAActualizar.map((numeroFila) => sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!${letraNombreVisible}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[nombreVisible]] },
+  })));
+}
+
+/**
  * Crea un producto nuevo en la hoja Productos: calcula el siguiente numero
  * de producto libre para el prefijo dado, arma el SKU general, agrega la
  * fila (Producto, Categoria, Subcategoria, SKU general, Precio, Foto) y
@@ -687,6 +753,31 @@ async function actualizarDescripcionProducto(sheetsClient, spreadsheetId, sheetN
     range: `${sheetNameProductos}!${letraDescripcion}${numeroFila}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[descripcion || '']] },
+  });
+
+  return true;
+}
+
+/**
+ * Actualiza el precio (columna Precio) de un producto en la hoja
+ * Productos, buscandolo por SKU general. Devuelve true si lo encontro y
+ * actualizo, false si el SKU general no existe en la hoja.
+ * Se usa desde "Generar unidades" cuando se edita el precio de un
+ * producto ya existente antes de cargar mas stock.
+ */
+async function actualizarPrecioProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, precio) {
+  const cols = config.COLUMNAS_PRODUCTOS;
+  const { numeroFila } = await buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral);
+  if (!numeroFila) return false;
+
+  await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetNameProductos, numeroFila);
+  const letraPrecio = columnaALetra(cols.precio);
+
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetNameProductos}!${letraPrecio}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[precio]] },
   });
 
   return true;
@@ -1487,12 +1578,15 @@ module.exports = {
   generarUnidades,
   getConfigCategorias,
   crearCategoriaConfig,
+  getNombresVisiblesCategorias,
+  actualizarNombreVisibleCategoria,
   getSiguienteNumeroProducto,
   crearProductoNuevo,
   buscarFilaProductoPorSkuGeneral,
   agregarFotoProducto,
   eliminarFotoProducto,
   actualizarDescripcionProducto,
+  actualizarPrecioProducto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
