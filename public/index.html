@@ -43,6 +43,10 @@
      arriba en vez de centrarla para que siempre se pueda ver y scrollear
      todo el contenido. */
   #pantallaCheckout{ justify-content:flex-start; padding-top:90px; }
+  /* Estas 3 pantallas tienen el mismo header fijo arriba (~78px de alto);
+     con solo el padding:28px por defecto de .fullscreen, el contenido
+     quedaba pegado justo debajo. */
+  #pantallaCarrito, #pantallaLoginCliente, #pantallaContacto{ justify-content:flex-start; padding-top:90px; }
   .barra-superior-catalogo.barra-superior-fullscreen{
     position:absolute; top:0; left:0; right:0; margin:0; padding:14px 24px;
   }
