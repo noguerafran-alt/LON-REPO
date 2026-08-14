@@ -10,7 +10,6 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@imgly/background-removal-node": "^1.4.5",
     "bwip-js": "^4.3.2",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
@@ -21,6 +20,6 @@
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.15.0",
     "qrcode": "^1.5.4",
-    "sharp": "~0.32.4"
+    "sharp": "^0.35.3"
   }
 }

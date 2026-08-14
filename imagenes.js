@@ -32,19 +32,6 @@ try {
   console.warn('⚠️  No se pudo cargar sharp — las fotos se van a guardar sin optimizar. Detalle:', err.message);
 }
 
-/* Quitar el fondo corre 100% local (un modelo de IA que viaja adentro
-   del paquete, sin mandar la foto a ningun servicio externo ni pagar
-   por imagen) — por eso pesa bastante y tarda unos segundos por foto,
-   a cambio de no depender de una API paga. Si el paquete no esta
-   instalado o falla en tiempo de ejecucion, seguimos subiendo la foto
-   tal cual (igual que con sharp). */
-let quitarFondoLib = null;
-try {
-  quitarFondoLib = require('@imgly/background-removal-node');
-} catch (err) {
-  console.warn('⚠️  No se pudo cargar el removedor de fondo — las fotos de producto se suben sin ese paso. Detalle:', err.message);
-}
-
 /* Medidas de salida. Se pueden ajustar por variable de entorno sin tocar
    el codigo. El ancho grande esta pensado para que se vea nitido en una
    pantalla retina de escritorio; el thumb, para la grilla del catalogo. */
@@ -54,23 +41,6 @@ const ANCHO_MAX_THUMB = Number(process.env.FOTO_THUMB_ANCHO || 600);
 const CALIDAD_THUMB = Number(process.env.FOTO_THUMB_CALIDAD || 70);
 
 const SUFIJO_THUMB = '-thumb';
-
-/* Modelo de segmentacion: 'small' es el mas liviano y rapido (el que
-   usamos por default, pensado para un servidor con recursos
-   limitados); 'medium'/'large' recortan mejor pero tardan mas y usan
-   mas memoria. Se puede subir por variable de entorno si hace falta
-   mas calidad y el servidor aguanta. */
-const MODELO_QUITAR_FONDO = process.env.FOTO_MODELO_QUITAR_FONDO || 'small';
-// Aire blanco alrededor del producto, como fraccion del lado del
-// lienzo final (0.14 = 14% de margen de cada lado).
-const MARGEN_QUITAR_FONDO = Number(process.env.FOTO_MARGEN_QUITAR_FONDO || 0.14);
-
-function mimePorExtension(ruta) {
-  const ext = path.extname(ruta).toLowerCase();
-  if (ext === '.png') return 'image/png';
-  if (ext === '.webp') return 'image/webp';
-  return 'image/jpeg';
-}
 
 /**
  * Dada la URL/nombre de la foto grande, devuelve la de su miniatura.
@@ -93,67 +63,6 @@ function urlMiniatura(url) {
 
 function estaDisponible() {
   return Boolean(sharp);
-}
-
-function estaDisponibleQuitarFondo() {
-  return Boolean(sharp && quitarFondoLib);
-}
-
-/**
- * Le saca el fondo a una foto de producto con un modelo de IA que corre
- * en el propio servidor (sin mandar la imagen a ningun servicio
- * externo), recorta el resultado al contorno real del producto (le saca
- * el margen transparente que deja el modelo) y lo centra sobre un
- * fondo blanco cuadrado, con un poco de aire alrededor.
- *
- * Devuelve la ruta de un archivo PNG nuevo (mismo directorio que el
- * original, sufijo "-fondoblanco.png") listo para pasarle a
- * `optimizarFotoSubida`. Si la libreria no esta disponible o algo sale
- * mal (foto rota, memoria insuficiente, etc), devuelve null — el
- * llamador debe seguir con el archivo original tal cual, nunca bloquear
- * la subida por esto.
- */
-async function quitarFondoYCentrar(rutaOriginal) {
-  if (!estaDisponibleQuitarFondo()) return null;
-
-  try {
-    const bufferOriginal = fs.readFileSync(rutaOriginal);
-    const blobOriginal = new Blob([bufferOriginal], { type: mimePorExtension(rutaOriginal) });
-
-    const resultado = await quitarFondoLib.removeBackground(blobOriginal, {
-      model: MODELO_QUITAR_FONDO,
-      output: { format: 'image/png' },
-    });
-    const bufferSinFondo = Buffer.from(await resultado.arrayBuffer());
-
-    // Recortamos el margen transparente que deja el modelo, así el
-    // producto queda con el tamaño real del recorte...
-    const recorte = await sharp(bufferSinFondo).trim().toBuffer();
-    const { width, height } = await sharp(recorte).metadata();
-    if (!width || !height) return null;
-
-    // ...y armamos un lienzo blanco cuadrado, con margen proporcional
-    // a su alrededor, para centrarlo ahí.
-    const ladoLienzo = Math.round(Math.max(width, height) / (1 - MARGEN_QUITAR_FONDO * 2));
-    const rutaSalida = `${rutaOriginal.replace(/\.[^.]+$/, '')}-fondoblanco.png`;
-
-    await sharp({
-      create: {
-        width: ladoLienzo,
-        height: ladoLienzo,
-        channels: 3,
-        background: { r: 255, g: 255, b: 255 },
-      },
-    })
-      .composite([{ input: recorte, gravity: 'center' }])
-      .png()
-      .toFile(rutaSalida);
-
-    return rutaSalida;
-  } catch (err) {
-    console.error('No se pudo quitar el fondo de la foto, se sube tal cual:', err.message);
-    return null;
-  }
 }
 
 /**
@@ -261,9 +170,7 @@ function borrarFotoYMiniatura(carpeta, nombreArchivo) {
 
 module.exports = {
   estaDisponible,
-  estaDisponibleQuitarFondo,
   optimizarFotoSubida,
-  quitarFondoYCentrar,
   generarMiniaturasFaltantes,
   borrarFotoYMiniatura,
   urlMiniatura,
