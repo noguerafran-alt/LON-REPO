@@ -1737,6 +1737,23 @@
     } catch (e) {}
   }
 
+  /* Intenta abrir la camara pidiendo resolucion+enfoque continuo (mejor
+     caso); si el navegador/celular rechaza ESE pedido puntual (pasa en
+     algunos equipos: no es que no haya camara, es que no le gustan esos
+     constraints), reintenta una sola vez con el pedido minimo de
+     siempre — asi nunca se queda sin camara por pedir de mas. */
+  function iniciarCamaraConFallback(instanciaScanner, configuracionEscaneo, onDecodificado){
+    const constraintsCompletos = {
+      facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 },
+      advanced: [{ focusMode: 'continuous' }],
+    };
+    const constraintsBasicos = { facingMode: 'environment' };
+
+    return instanciaScanner.start(constraintsCompletos, configuracionEscaneo, onDecodificado, () => {})
+      .then(() => { reforzarEnfoqueContinuo(instanciaScanner); })
+      .catch(() => instanciaScanner.start(constraintsBasicos, configuracionEscaneo, onDecodificado, () => {}));
+  }
+
   function actualizarBotonActivarCamara(){
     const boton = document.getElementById('btnActivarCamara');
     if (escanerIniciado) {
@@ -1762,14 +1779,11 @@
         Html5QrcodeSupportedFormats.CODABAR, Html5QrcodeSupportedFormats.ITF,
       ]
     });
-    scanner.start(
-      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
+    iniciarCamaraConFallback(
+      scanner,
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.5); return { width: lado, height: Math.floor(lado * 1.25) }; } },
-      (decodedText) => { handleScan(decodedText); },
-      () => {}
-    ).then(() => {
-      reforzarEnfoqueContinuo(scanner);
-    }).catch(() => {
+      (decodedText) => { handleScan(decodedText); }
+    ).catch(() => {
       statusBar.className = 'status-bar error';
       statusBar.textContent = 'No se pudo acceder a la cámara. Revisá los permisos del navegador.';
       escanerIniciado = false;
@@ -2065,8 +2079,8 @@
     });
 
     let procesando = false;
-    scannerCodigoBarraGenerar.start(
-      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
+    iniciarCamaraConFallback(
+      scannerCodigoBarraGenerar,
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: Math.floor(lado * 0.6) }; } },
       async (textoLeido) => {
         if (procesando) return;
@@ -2074,11 +2088,8 @@
         await cerrarCamaraCodigoBarraGenerar();
         inputCodigoBarraGenerar.value = textoLeido;
         buscarCodigoBarraGenerar();
-      },
-      () => {}
-    ).then(() => {
-      reforzarEnfoqueContinuo(scannerCodigoBarraGenerar);
-    }).catch(() => {
+      }
+    ).catch(() => {
       mensajeCamaraCodigoBarraGenerar.style.color = 'var(--stamp-red)';
       mensajeCamaraCodigoBarraGenerar.textContent = 'No se pudo abrir la cámara. Escribí el código a mano.';
     });
@@ -3257,8 +3268,8 @@
     });
 
     let procesando = false;
-    scannerPedido.start(
-      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
+    iniciarCamaraConFallback(
+      scannerPedido,
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: lado }; } },
       async (textoLeido) => {
         if (procesando) return;
@@ -3267,11 +3278,8 @@
         mensajeUnidadPedido.textContent = `Leído: ${textoLeido}`;
         await cerrarEscanerUnidad();
         await registrarUnidadPedido(card, pedidoId, textoLeido);
-      },
-      () => {}
-    ).then(() => {
-      reforzarEnfoqueContinuo(scannerPedido);
-    }).catch(() => {
+      }
+    ).catch(() => {
       mensajeUnidadPedido.style.color = 'var(--stamp-red)';
       mensajeUnidadPedido.textContent = 'No se pudo abrir la cámara. Escribí el SKU a mano.';
     });

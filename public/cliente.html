@@ -415,6 +415,23 @@
     } catch (e) {}
   }
 
+  /* Intenta abrir la camara pidiendo resolucion+enfoque continuo (mejor
+     caso); si el navegador/celular rechaza ESE pedido puntual (pasa en
+     algunos equipos: no es que no haya camara, es que no le gustan esos
+     constraints), reintenta una sola vez con el pedido minimo de
+     siempre — asi nunca se queda sin camara por pedir de mas. */
+  function iniciarCamaraConFallback(instanciaScanner, configuracionEscaneo, onDecodificado){
+    const constraintsCompletos = {
+      facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 },
+      advanced: [{ focusMode: 'continuous' }],
+    };
+    const constraintsBasicos = { facingMode: 'environment' };
+
+    return instanciaScanner.start(constraintsCompletos, configuracionEscaneo, onDecodificado, () => {})
+      .then(() => { reforzarEnfoqueContinuo(instanciaScanner); })
+      .catch(() => instanciaScanner.start(constraintsBasicos, configuracionEscaneo, onDecodificado, () => {}));
+  }
+
   function iniciarEscanerSiHaceFalta(){
     if (escanerIniciado) return;
     escanerIniciado = true;
@@ -433,8 +450,8 @@
         Html5QrcodeSupportedFormats.ITF,
       ]
     });
-    scanner.start(
-      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
+    iniciarCamaraConFallback(
+      scanner,
       {
         fps: 10,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -442,11 +459,8 @@
           return { width: lado, height: Math.floor(lado * 1.25) };
         }
       },
-      (decodedText) => { handleScan(decodedText); },
-      () => {}
-    ).then(() => {
-      reforzarEnfoqueContinuo(scanner);
-    }).catch((err) => {
+      (decodedText) => { handleScan(decodedText); }
+    ).catch((err) => {
       statusBar.className = 'status-bar error';
       statusBar.textContent = 'No se pudo acceder a la cámara. Revisá los permisos del navegador.';
       escanerIniciado = false;
