@@ -47,6 +47,10 @@
     position:absolute; top:0; left:0; right:0; margin:0; padding:14px 24px;
   }
   .barra-superior-fullscreen .volver{ background:none; border:none; cursor:pointer; padding:0; }
+  /* La animación flotante de .btn-volver-flecha es para el botón "volver"
+     del detalle de producto (llama la atención para que lo encuentren);
+     acá, en el header, hace que se vea corrida en vez de fija/centrada. */
+  .barra-superior-fullscreen .btn-volver-flecha{ animation:none; justify-self:center; }
 
   .login-box{ width:100%; max-width:280px; text-align:left; }
   .login-box label{
