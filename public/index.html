@@ -124,20 +124,26 @@
   .item-carrito .selector-cantidad-carrito{
     display:flex; align-items:center; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
   }
+  /* .login-box button trae width:100%/padding:14px/margin-bottom para los
+     botones grandes del formulario — hay que pisar TODO eso acá, si no
+     estos botones chicos quedan aplastados (con box-sizing:border-box,
+     14px de padding en una caja de 28px no deja lugar para el signo). */
   .item-carrito .btn-cantidad-carrito{
-    width:28px; height:28px; border:none; background:var(--bg-alt);
+    width:28px !important; height:28px; min-width:0; padding:0 !important; margin:0 !important;
+    border:none !important; background:var(--bg-alt); border-radius:0;
     color:var(--ink); font-size:16px; font-weight:700; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; line-height:1;
+    display:flex; align-items:center; justify-content:center; line-height:1; flex:0 0 auto;
   }
   .item-carrito .btn-cantidad-carrito:hover:not(:disabled){ background:var(--accent-soft); color:var(--accent); }
   .item-carrito .btn-cantidad-carrito:disabled{ opacity:.35; cursor:default; }
   .item-carrito .cantidad-item-carrito{
-    font-family:'IBM Plex Mono', monospace; font-size:13px; min-width:24px; text-align:center;
-    background:#fff;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; width:26px; text-align:center;
+    background:#fff; flex:0 0 auto;
   }
   .item-carrito .btn-quitar-carrito{
-    background:none; border:none; color:var(--stamp-red); font-size:16px; cursor:pointer; padding:4px;
-    display:flex; align-items:center; justify-content:center;
+    width:auto !important; height:auto; min-width:0; padding:4px !important; margin:0 !important;
+    background:none; border:none !important; color:var(--stamp-red); font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
   }
   .total-carrito{
     display:flex; justify-content:space-between; font-family:'Fraunces', serif; font-weight:700;
