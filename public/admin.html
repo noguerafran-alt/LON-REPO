@@ -33,14 +33,29 @@
 
   header{
     padding:14px 20px; border-bottom:1px solid var(--line);
-    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    display:flex; align-items:center; gap:12px; flex-wrap:nowrap;
   }
   .volver-catalogo-header{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; flex:0 0 auto;
     background:none; border:none; color:var(--ink-muted);
-    font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.04em;
-    text-decoration:none; cursor:pointer; padding:0; white-space:nowrap;
+    font-family:'IBM Plex Mono', monospace; font-size:20px; line-height:1;
+    text-decoration:none; cursor:pointer; padding:0;
+    animation:volverFlechaFlotarAdmin 1.6s ease-in-out infinite;
+  }
+  .volver-catalogo-header:hover, .volver-catalogo-header:focus-visible{ animation-play-state:paused; transform:translateX(-4px); }
+  @keyframes volverFlechaFlotarAdmin{
+    0%, 100%{ transform:translateX(0); }
+    50%{ transform:translateX(-5px); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .volver-catalogo-header{ animation:none; }
+  }
+  #etiquetaUsuarioLogueado{
+    flex:1; min-width:0; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .admin-link-header{
+    flex:0 0 auto;
     background:none; border:none; color:var(--ink-muted);
     font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.04em;
     text-decoration:none; cursor:pointer; padding:0; white-space:nowrap;
@@ -80,11 +95,14 @@
   #app{ display:none; flex-direction:column; flex:1; }
   #app.show{ display:flex; }
 
-  .admin-tabs{ display:flex; gap:8px; margin:12px 24px 0; }
+  .admin-tabs{
+    display:flex; gap:8px; margin:12px 24px 0;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+  }
   .admin-tabs button{
-    flex:1; padding:10px; border-radius:var(--radius); border:1px solid var(--line);
+    flex:0 0 auto; padding:10px 16px; border-radius:var(--radius); border:1px solid var(--line);
     background:transparent; color:var(--ink-muted); font-family:'Archivo', sans-serif;
-    font-size:14px; font-weight:600; cursor:pointer;
+    font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;
   }
   .admin-tabs button.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
 
@@ -499,7 +517,7 @@
 
 <div id="app">
   <header>
-    <a class="volver-catalogo-header" href="/">← Volver al catálogo</a>
+    <a class="volver-catalogo-header" href="/" title="Volver al catálogo" aria-label="Volver al catálogo">←</a>
     <span id="etiquetaUsuarioLogueado" style="font-size:12.5px; color:var(--ink-muted); font-family:'IBM Plex Mono', monospace;"></span>
     <button class="admin-link-header" id="btnCerrarSesion">Cerrar sesión</button>
   </header>
@@ -1826,7 +1844,7 @@
           <span class="lista-producto-nombre">${escaparHtml(p.producto || '(sin nombre)')}</span>
           <span class="lista-producto-meta">${escaparHtml(p.skuGeneral)} · ${escaparHtml(p.categoria)}${p.subcategoria ? ' / ' + escaparHtml(p.subcategoria) : ''}${p.precio ? ' · $' + escaparHtml(String(p.precio)) : ''}</span>
         </div>
-        <button type="button" class="btn-subir-foto" data-accion="fotos" data-sku="${escaparHtml(p.skuGeneral)}" title="Fotos y descripción">🖼️</button>
+        <button type="button" class="btn-subir-foto" data-accion="fotos" data-sku="${escaparHtml(p.skuGeneral)}" title="Fotos y descripción">📷</button>
       </div>
     `).join('');
 
