@@ -405,11 +405,16 @@
     width:100px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
     background:var(--field-bg); color:var(--field-text);
   }
+  .fila-catalogo-completo .input-proveedor-fila{
+    width:140px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--field-bg); color:var(--field-text);
+  }
   .fila-catalogo-completo button{
     background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
     padding:8px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
   .fila-catalogo-completo button:disabled{ opacity:.5; cursor:default; }
+  .fila-catalogo-completo .btn-generar-stock-completo{ border-color:var(--ink); color:var(--ink); font-weight:600; }
   .fila-catalogo-completo .mensaje-precio-completo{ font-size:12.5px; flex-basis:100%; }
 
   .btn-imprimir{
@@ -942,7 +947,7 @@
   function mostrarApp(){
     pantallaLogin.classList.add('hidden');
     appDiv.classList.add('show');
-    etiquetaUsuarioLogueado.textContent = `${adminNombre || adminEmail} · nivel ${adminNivel}`;
+    etiquetaUsuarioLogueado.textContent = `Nivel ${adminNivel}`;
 
     // Nivel 1 solo puede Escanear y gestionar Pedidos: ni la pestaña de
     // Productos ni la de Usuarios existen para esa cuenta (ni siquiera
@@ -2809,7 +2814,10 @@
         </div>
         <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(p.precio != null ? String(p.precio) : '')}">
         <button type="button" class="btn-guardar-precio-completo">Guardar</button>
+        <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(p.proveedor || '')}">
+        <button type="button" class="btn-guardar-proveedor-completo">Guardar</button>
         <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
+        <button type="button" class="btn-generar-stock-completo" title="Generar unidades nuevas de este producto">+ Stock</button>
         <span class="mensaje-precio-completo"></span>
       </div>
     `).join('');
@@ -2818,6 +2826,9 @@
       const skuGeneral = fila.getAttribute('data-sku');
       const input = fila.querySelector('.input-precio-fila');
       const boton = fila.querySelector('.btn-guardar-precio-completo');
+      const inputProveedor = fila.querySelector('.input-proveedor-fila');
+      const botonProveedor = fila.querySelector('.btn-guardar-proveedor-completo');
+      const botonStock = fila.querySelector('.btn-generar-stock-completo');
       const mensaje = fila.querySelector('.mensaje-precio-completo');
 
       boton.addEventListener('click', async () => {
@@ -2851,6 +2862,66 @@
         } finally {
           boton.disabled = false;
           boton.textContent = 'Guardar';
+        }
+      });
+
+      botonProveedor.addEventListener('click', async () => {
+        mensaje.textContent = '';
+        mensaje.style.color = '';
+        botonProveedor.disabled = true;
+        botonProveedor.textContent = 'Guardando...';
+        try {
+          const res = await fetch('/admin/producto-proveedor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, skuGeneral, proveedor: inputProveedor.value.trim() }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+          const producto = catalogoCompletoAdmin.find((prod) => prod.skuGeneral === skuGeneral);
+          if (producto) producto.proveedor = inputProveedor.value.trim();
+          mensaje.textContent = 'Guardado ✓';
+          mensaje.style.color = 'var(--stamp-green)';
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+        } finally {
+          botonProveedor.disabled = false;
+          botonProveedor.textContent = 'Guardar';
+        }
+      });
+
+      // El stock nunca se edita como numero suelto acá: eso desincroniza
+      // las unidades con SKU serializado (etiquetas, venta por
+      // escaneo). Para sumar stock, saltamos a "Productos" con este
+      // producto ya elegido, como si lo hubieras buscado a mano.
+      botonStock.addEventListener('click', async () => {
+        botonStock.disabled = true;
+        try {
+          mostrarSeccionAdmin('generar');
+          if (!catalogoCargado) await cargarCatalogo();
+
+          // catalogoProductos (el de "Productos") tiene la forma
+          // completa que espera elegirProducto (campo "producto" para
+          // el nombre, subcategoria, etc). El de "Catálogo completo"
+          // usa otros nombres de campo — si por lo que sea no está en
+          // el catálogo recién cargado, armamos un objeto compatible
+          // a mano en vez de pasarlo tal cual.
+          const productoCompleto = catalogoProductos.find((prod) => prod.skuGeneral === skuGeneral);
+          const productoCatalogoCompleto = catalogoCompletoAdmin.find((prod) => prod.skuGeneral === skuGeneral);
+          const productoParaElegir = productoCompleto || (productoCatalogoCompleto && {
+            skuGeneral,
+            producto: productoCatalogoCompleto.nombre,
+            categoria: productoCatalogoCompleto.categoria,
+            subcategoria: '',
+            precio: productoCatalogoCompleto.precio,
+            proveedor: productoCatalogoCompleto.proveedor || '',
+          });
+          if (!productoParaElegir) return;
+          elegirProducto(productoParaElegir, { enfocar: true });
+        } finally {
+          botonStock.disabled = false;
         }
       });
     });

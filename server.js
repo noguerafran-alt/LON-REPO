@@ -813,7 +813,7 @@ app.post('/admin/vaciar-imprimir-app', limiteAdmin, async (req, res) => {
    PRODUCTOS). Con soloConStock=true (catálogo público) se descartan los
    productos sin unidades disponibles; con false (catálogo del admin) se
    devuelven todos, con la cantidad real. */
-async function construirCatalogoConStock(sheetsClient, { soloConStock }) {
+async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirProveedor = false }) {
   const stockResp = await sheetsClient.spreadsheets.values.get({
     spreadsheetId: config.SHEET_ID_VENTAS,
     range: `${config.HOJA_STOCK}!A:F`,
@@ -832,6 +832,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock }) {
   const fotoPorSkuGeneral = {};
   const fotosPorSkuGeneral = {};
   const descripcionPorSkuGeneral = {};
+  const proveedorPorSkuGeneral = {};
   catalogoProductos.forEach((p) => {
     if (p.skuGeneral && p.precio !== '' && p.precio !== undefined) {
       precioPorSkuGeneral[p.skuGeneral] = p.precio;
@@ -842,6 +843,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock }) {
     if (p.skuGeneral) {
       fotosPorSkuGeneral[p.skuGeneral] = p.fotos || [];
       descripcionPorSkuGeneral[p.skuGeneral] = p.descripcion || '';
+      proveedorPorSkuGeneral[p.skuGeneral] = p.proveedor || '';
     }
   });
 
@@ -872,6 +874,10 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock }) {
       foto: fotoPorSkuGeneral[skuGeneral] || null,
       fotos: fotosPorSkuGeneral[skuGeneral] || [],
       descripcion: descripcionPorSkuGeneral[skuGeneral] || '',
+      // Dato interno (compras/reposicion) — solo se agrega cuando lo
+      // pide explicitamente un llamador admin (incluirProveedor:true),
+      // nunca en el catalogo publico.
+      ...(incluirProveedor ? { proveedor: proveedorPorSkuGeneral[skuGeneral] || '' } : {}),
     });
   }
 
@@ -902,7 +908,7 @@ app.get('/admin/catalogo-completo', limiteAdmin, async (req, res) => {
     if (!sesion) return;
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
-    const productos = await construirCatalogoConStock(sheetsClient, { soloConStock: false });
+    const productos = await construirCatalogoConStock(sheetsClient, { soloConStock: false, incluirProveedor: true });
     res.json({ productos });
   } catch (err) {
     console.error('Error leyendo el catálogo completo (admin):', err.message);
@@ -1000,6 +1006,33 @@ app.post('/admin/producto-precio', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error actualizando el precio del producto:', err.message);
     res.status(500).json({ error: 'No se pudo actualizar el precio.' });
+  }
+});
+
+/* Actualiza el proveedor (dato interno) de un producto existente por SKU
+   general, desde "Catálogo completo". Requiere admin nivel 2. */
+app.post('/admin/producto-proveedor', limiteAdmin, async (req, res) => {
+  try {
+    const { skuGeneral, proveedor } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const encontrado = await actualizarProveedorProducto(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS,
+      String(skuGeneral).trim(), sanitizarTexto(proveedor || '', 120),
+    );
+    if (!encontrado) {
+      return res.status(404).json({ error: 'No se encontró ese producto en el catálogo.' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error actualizando el proveedor del producto:', err.message);
+    res.status(500).json({ error: 'No se pudo actualizar el proveedor.' });
   }
 });
 
