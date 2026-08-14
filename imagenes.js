@@ -55,12 +55,12 @@ const CALIDAD_THUMB = Number(process.env.FOTO_THUMB_CALIDAD || 70);
 
 const SUFIJO_THUMB = '-thumb';
 
-/* Modelo de segmentacion: 'small' es el mas liviano y rapido (el que
-   usamos por default, pensado para un servidor con recursos
-   limitados); 'medium'/'large' recortan mejor pero tardan mas y usan
-   mas memoria. Se puede subir por variable de entorno si hace falta
-   mas calidad y el servidor aguanta. */
-const MODELO_QUITAR_FONDO = process.env.FOTO_MODELO_QUITAR_FONDO || 'small';
+/* Modelo de segmentacion: probamos 'small' pensando que iba a ser el
+   mas liviano, pero midiendo en la practica usa MAS memoria que
+   'medium' (~1GB contra ~712MB) — por eso 'medium' es el default, no
+   'small'. 'large' recorta mejor pero usa mas memoria todavia. Se
+   puede cambiar por variable de entorno si hace falta. */
+const MODELO_QUITAR_FONDO = process.env.FOTO_MODELO_QUITAR_FONDO || 'medium';
 // Aire blanco alrededor del producto, como fraccion del lado del
 // lienzo final (0.14 = 14% de margen de cada lado).
 const MARGEN_QUITAR_FONDO = Number(process.env.FOTO_MARGEN_QUITAR_FONDO || 0.14);
