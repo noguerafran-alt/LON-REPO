@@ -415,21 +415,18 @@
     } catch (e) {}
   }
 
-  /* Intenta abrir la camara pidiendo resolucion+enfoque continuo (mejor
-     caso); si el navegador/celular rechaza ESE pedido puntual (pasa en
-     algunos equipos: no es que no haya camara, es que no le gustan esos
-     constraints), reintenta una sola vez con el pedido minimo de
-     siempre — asi nunca se queda sin camara por pedir de mas. */
+  /* OJO: pedir resolucion/enfoque YA en el getUserMedia inicial (en vez
+     de despues, con applyVideoConstraints sobre la camara ya andando)
+     rompia el acceso a la camara en algunos Android/Chrome reales
+     (confirmado: permisos bien, otras paginas con camara andan bien,
+     solo esta pagina fallaba) — asi que el pedido inicial se deja
+     minimo, IGUAL que antes de tocar nada de esto. El enfoque continuo
+     se sigue reforzando, pero solo DESPUES de que la camara ya esta
+     andando (eso nunca puede romper el acceso inicial). */
   function iniciarCamaraConFallback(instanciaScanner, configuracionEscaneo, onDecodificado){
-    const constraintsCompletos = {
-      facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 },
-      advanced: [{ focusMode: 'continuous' }],
-    };
-    const constraintsBasicos = { facingMode: 'environment' };
-
-    return instanciaScanner.start(constraintsCompletos, configuracionEscaneo, onDecodificado, () => {})
-      .then(() => { reforzarEnfoqueContinuo(instanciaScanner); })
-      .catch(() => instanciaScanner.start(constraintsBasicos, configuracionEscaneo, onDecodificado, () => {}));
+    return instanciaScanner.start(
+      { facingMode: 'environment' }, configuracionEscaneo, onDecodificado, () => {}
+    ).then(() => { reforzarEnfoqueContinuo(instanciaScanner); });
   }
 
   function iniciarEscanerSiHaceFalta(){
