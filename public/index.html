@@ -270,6 +270,7 @@
     overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
   }
   .fila-tabs-categorias-scroll::-webkit-scrollbar{ display:none; }
+  .espaciador-tabs-categoria{ flex:0 0 auto; }
   .tab-categoria-catalogo{
     display:inline-flex; align-items:center; flex:0 0 auto; white-space:nowrap;
     background:none; border:1px solid var(--line); color:var(--ink-muted);
@@ -972,8 +973,21 @@
       </div>
     `;
 
-    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo"><div class="fila-tabs-categorias-scroll">${tabsHtml}</div>${subcategoriasHtml}</div>`;
+    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo"><div class="fila-tabs-categorias-scroll">${tabsHtml}<div class="espaciador-tabs-categoria"></div></div>${subcategoriasHtml}</div>`;
     catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
+
+    // La categoría activa tiene que quedar primera (más a la izquierda) en
+    // el scroll horizontal, incluso si es la última de la lista — para
+    // eso el espaciador de arriba le da lugar de sobra para correrse.
+    const filaTabsScroll = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
+    const tabActiva = catalogoTabsCategoria.querySelector('.tab-categoria-catalogo.activo');
+    if (filaTabsScroll && tabActiva) {
+      const espaciador = filaTabsScroll.querySelector('.espaciador-tabs-categoria');
+      if (espaciador) espaciador.style.width = `${filaTabsScroll.clientWidth}px`;
+      const contRect = filaTabsScroll.getBoundingClientRect();
+      const tabRect = tabActiva.getBoundingClientRect();
+      filaTabsScroll.scrollLeft += (tabRect.left - contRect.left);
+    }
 
     catalogoTabsCategoria.querySelectorAll('.tab-categoria-catalogo').forEach((boton) => {
       boton.addEventListener('click', () => {
