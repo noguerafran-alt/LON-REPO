@@ -219,7 +219,7 @@
 
 <div class="barra-superior-catalogo">
   <a class="volver btn-volver-flecha" href="/" title="Volver al catálogo" aria-label="Volver al catálogo">←</a>
-  <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+  <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
     <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
   </a>
   <span></span>
@@ -271,6 +271,17 @@
 </div>
 
 <script>
+  /* Mismo criterio que en el catálogo público: el logo va al admin solo
+     si hay una sesión de admin activa; si no, al catálogo. */
+  (function fijarDestinoLogoHeader(){
+    let destino = '/';
+    try {
+      const sesionAdmin = localStorage.getItem('admin_sesion');
+      if (sesionAdmin && JSON.parse(sesionAdmin).token) destino = '/admin.html';
+    } catch (e) {}
+    document.querySelectorAll('.enlace-logo-header').forEach((a) => { a.href = destino; });
+  })();
+
   const statusBar = document.getElementById('statusBar');
   const logList = document.getElementById('logList');
   const overlay = document.getElementById('overlay');

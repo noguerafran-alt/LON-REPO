@@ -498,7 +498,7 @@
 <div class="fullscreen hidden" id="pantallaCarrito">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
@@ -515,7 +515,7 @@
 <div class="fullscreen hidden" id="pantallaLoginCliente">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverLoginCliente" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
@@ -544,7 +544,7 @@
 <div class="fullscreen hidden" id="pantallaContacto">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverContacto" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
@@ -569,7 +569,7 @@
 <div class="fullscreen hidden" id="pantallaCheckout">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver">←</button>
-    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
@@ -640,7 +640,7 @@
 <div id="vistaCatalogo">
   <div class="barra-superior-catalogo">
     <a class="volver" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">📷</a>
-    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <div class="acciones-header-catalogo">
@@ -674,6 +674,20 @@
 </div>
 
 <script>
+  /* El logo de LON del header no siempre va al mismo lado: si hay una
+     sesión de admin activa en este navegador, va al panel admin (como
+     antes); si no (cliente logueado o nadie logueado), va al catálogo
+     — no tiene sentido mandar a un cliente comprador a la pantalla de
+     login del admin. */
+  (function fijarDestinoLogoHeader(){
+    let destino = '/';
+    try {
+      const sesionAdmin = localStorage.getItem('admin_sesion');
+      if (sesionAdmin && JSON.parse(sesionAdmin).token) destino = '/admin.html';
+    } catch (e) {}
+    document.querySelectorAll('.enlace-logo-header').forEach((a) => { a.href = destino; });
+  })();
+
   const catalogoListaView = document.getElementById('catalogoListaView');
   const catalogoDetalleView = document.getElementById('catalogoDetalleView');
   const catalogoTabsCategoria = document.getElementById('catalogoTabsCategoria');
