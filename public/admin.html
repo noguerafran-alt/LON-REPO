@@ -537,21 +537,7 @@
       </div>
       <p id="mensajeCodigoBarraGenerar" style="font-size:12.5px; color:var(--ink-muted); margin:6px 0 0; min-height:1em;"></p>
       <p style="font-size:12.5px; color:var(--ink-muted); margin:4px 0 0;">Es para asociar el código de fábrica (no es único por unidad) al SKU interno de LON — elegís vos cuántas unidades entran, no hace falta escanear cada ejemplar.</p>
-    </div>
-    <div class="campo">
-      <label for="selectCategoria">Categoría</label>
-      <select id="selectCategoria"><option value="">Todas las categorías</option></select>
-    </div>
-    <div class="campo">
-      <label for="selectSubcategoria">Subcategoría</label>
-      <select id="selectSubcategoria"><option value="">Todas las subcategorías</option></select>
-    </div>
-    <div class="campo">
-      <label for="inputBuscarProducto">Buscar producto</label>
-      <input type="text" id="inputBuscarProducto" placeholder="Nombre o SKU del producto...">
-      <div class="lista-productos" id="listaProductos"></div>
-      <button class="acceso-admin-link" id="btnMostrarCrearProducto" style="text-align:left; margin:8px 0 0;">¿No existe? Crear producto nuevo</button>
-      <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">📷 Tocá el ícono de la cámara en un producto para subirle o cambiarle la foto.</p>
+      <button class="acceso-admin-link" id="btnMostrarCrearProducto" style="text-align:left; margin:10px 0 0;">¿No existe? Crear producto nuevo</button>
     </div>
 
     <div class="campo producto-elegido" id="formCrearProducto" style="display:none; border-color: var(--line); background:var(--bg-alt);">
@@ -567,6 +553,21 @@
       <input type="file" id="inputFotoProductoNuevo" accept="image/jpeg,image/png,image/webp" style="margin-bottom:10px;">
       <button class="btn-generar" id="btnCrearProductoConfirmar">Crear producto y continuar</button>
       <div id="mensajeCrearProducto" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="campo">
+      <label for="selectCategoria">Categoría</label>
+      <select id="selectCategoria"><option value="">Todas las categorías</option></select>
+    </div>
+    <div class="campo">
+      <label for="selectSubcategoria">Subcategoría</label>
+      <select id="selectSubcategoria"><option value="">Todas las subcategorías</option></select>
+    </div>
+    <div class="campo">
+      <label for="inputBuscarProducto">Buscar producto</label>
+      <input type="text" id="inputBuscarProducto" placeholder="Nombre o SKU del producto...">
+      <div class="lista-productos" id="listaProductos"></div>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">📷 Tocá el ícono de la cámara en un producto para subirle o cambiarle la foto.</p>
     </div>
 
     <div class="campo" id="productosSeleccionadosBox" style="display:none;">
