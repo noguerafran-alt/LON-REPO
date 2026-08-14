@@ -1207,18 +1207,10 @@ app.post('/admin/producto/foto', limiteAdmin, (req, res) => {
         return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
       }
 
-      // Antes de optimizar: le sacamos el fondo (IA local, sin mandar la
-      // foto a ningún servicio externo) y la centramos sobre blanco. Si
-      // no está disponible o falla, seguimos con la foto tal cual la
-      // subieron — nunca bloquea la subida. Ver imagenes.js.
-      const rutaSinFondo = await imagenes.quitarFondoYCentrar(req.file.path);
-      const rutaAOptimizar = rutaSinFondo || req.file.path;
-      if (rutaSinFondo) fs.unlink(req.file.path, () => {});
-
       // Reescribimos la imagen a WEBP en dos tamaños (grande + miniatura)
       // y nos quedamos con el nombre del archivo grande, que es el que va
       // a la hoja Productos. Ver imagenes.js.
-      const nombreFinal = await imagenes.optimizarFotoSubida(rutaAOptimizar);
+      const nombreFinal = await imagenes.optimizarFotoSubida(req.file.path);
       const fotoUrl = `/uploads/productos/${nombreFinal}`;
 
       const sheetsClient = google.sheets({ version: 'v4', auth });
@@ -1239,6 +1231,130 @@ app.post('/admin/producto/foto', limiteAdmin, (req, res) => {
       console.error('Error subiendo la foto del producto:', err.message);
       if (req.file) fs.unlink(req.file.path, () => {});
       res.status(500).json({ error: 'No se pudo guardar la foto.' });
+    }
+  });
+});
+
+/* ------------------------------------------------------------
+ * RECONOCER PRODUCTO POR FOTO (comparación simple imagen-contra-imagen,
+ * ver imagenes.js). Arma una vez la "huella" de cada foto ya cargada en
+ * el catálogo y la cachea unos minutos, para no recalcularla en cada
+ * escaneo — se recalcula sola cuando vence el cache.
+ * ------------------------------------------------------------ */
+const TTL_INDICE_HASHES_MS = 5 * 60 * 1000;
+let indiceHashesCache = { items: [], vence: 0 };
+
+async function obtenerIndiceHashesFotos(sheetsClient) {
+  if (Date.now() < indiceHashesCache.vence) return indiceHashesCache.items;
+
+  const catalogo = await getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS);
+  const items = [];
+
+  for (const p of catalogo) {
+    const fotos = (p.fotos && p.fotos.length) ? p.fotos : (p.foto ? [p.foto] : []);
+    for (const fotoUrl of fotos) {
+      // Solo podemos comparar contra fotos que están guardadas en este
+      // servidor (no una URL externa que no tenemos en disco).
+      if (!fotoUrl || !fotoUrl.startsWith('/uploads/productos/')) continue;
+      const rutaLocal = path.join(CARPETA_UPLOADS, path.basename(fotoUrl));
+      if (!fs.existsSync(rutaLocal)) continue;
+
+      const hash = await imagenes.calcularHashImagen(rutaLocal);
+      if (!hash) continue;
+      items.push({
+        skuGeneral: p.skuGeneral, nombre: p.producto, categoria: p.categoria,
+        precio: p.precio, foto: fotoUrl, hash,
+      });
+    }
+  }
+
+  indiceHashesCache = { items, vence: Date.now() + TTL_INDICE_HASHES_MS };
+  return items;
+}
+
+const uploadFotoTemporal = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: config.FOTO_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.mimetype)) {
+      return cb(new Error('Formato de imagen no soportado. Usá JPG, PNG o WEBP.'));
+    }
+    cb(null, true);
+  },
+});
+
+/* Compara la foto que manda el celular contra las fotos YA CARGADAS de
+   cada producto (solo esas — si un producto no tiene foto, nunca puede
+   salir como resultado) y devuelve los mejores candidatos, cada uno
+   con el SKU completo de una unidad sin vender ya lista para el modal
+   de "vender" (mismo flujo que escanear un QR). No hace falta nivel 2:
+   esto es parte del flujo de venta, igual que escanear. */
+app.post('/admin/reconocer-producto', limiteAdmin, (req, res) => {
+  uploadFotoTemporal.single('foto')(req, res, async (errorSubida) => {
+    try {
+      const sesion = requiereSesion(req, res);
+      if (!sesion) return;
+      if (errorSubida) {
+        return res.status(400).json({ error: errorSubida.message || 'No se pudo procesar la imagen.' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
+      }
+
+      const sheetsClient = google.sheets({ version: 'v4', auth });
+      const indice = await obtenerIndiceHashesFotos(sheetsClient);
+
+      if (indice.length === 0) {
+        return res.json({ candidatos: [], aviso: 'Todavía no hay ningún producto con foto cargada para comparar.' });
+      }
+
+      const hashCapturado = await imagenes.calcularHashImagen(req.file.buffer);
+      if (!hashCapturado) {
+        return res.status(500).json({ error: 'No se pudo procesar la foto sacada.' });
+      }
+
+      // Nos quedamos con la mejor foto por SKU general (si un producto
+      // tiene varias, no lo queremos repetido en los resultados), y
+      // ordenamos de más parecida a menos.
+      const mejorPorSku = new Map();
+      for (const item of indice) {
+        const distancia = imagenes.distanciaHamming(hashCapturado, item.hash);
+        const actual = mejorPorSku.get(item.skuGeneral);
+        if (!actual || distancia < actual.distancia) {
+          mejorPorSku.set(item.skuGeneral, { ...item, distancia });
+        }
+      }
+
+      const ordenados = Array.from(mejorPorSku.values()).sort((a, b) => a.distancia - b.distancia);
+
+      // De 64 bits totales, mas de 28 distintos ya es una foto bastante
+      // distinta — no tiene sentido ofrecerla como candidato.
+      const UMBRAL_MAXIMO = 28;
+      const mejores = ordenados.filter((c) => c.distancia <= UMBRAL_MAXIMO).slice(0, 3);
+
+      // Para los candidatos que vamos a mostrar, resolvemos ya mismo una
+      // unidad sin vender de cada uno (mismo mecanismo que el código de
+      // barras externo), así tocar "Vender" abre directo el modal normal.
+      const candidatos = await Promise.all(mejores.map(async (c) => {
+        const skuCompletoDisponible = await buscarSkuCompletoDisponible(
+          sheetsClient, config.SHEET_ID_PRODUCTOS, config.SHEET_ID_VENTAS, c.skuGeneral,
+        );
+        return {
+          skuGeneral: c.skuGeneral,
+          nombre: c.nombre,
+          categoria: c.categoria,
+          precio: c.precio,
+          foto: c.foto,
+          distancia: c.distancia,
+          skuCompletoDisponible,
+        };
+      }));
+
+      res.json({ candidatos });
+    } catch (err) {
+      console.error('Error reconociendo el producto por foto:', err.message);
+      res.status(500).json({ error: 'No se pudo comparar la foto.' });
     }
   });
 });

@@ -102,6 +102,32 @@
     font-size:13px; font-weight:600; cursor:pointer;
   }
   .btn-modo-escaner.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .btn-reconocer-foto{
+    display:block; width:calc(100% - 48px); max-width:480px; margin:10px auto 0; padding:12px;
+    border-radius:var(--radius); border:1px solid var(--accent); background:transparent; color:var(--accent);
+    font-family:'Archivo', sans-serif; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .btn-reconocer-foto:disabled{ opacity:.5; cursor:default; }
+  .modal-reconocer{ max-width:400px; text-align:left; max-height:88vh; overflow-y:auto; }
+  .lista-candidatos-reconocer{ margin:14px 0; }
+  .item-candidato-reconocer{
+    display:flex; align-items:center; gap:10px; padding:10px; margin-bottom:8px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-alt); cursor:pointer;
+  }
+  .item-candidato-reconocer:hover{ border-color:var(--accent); }
+  .item-candidato-reconocer .foto-candidato{
+    width:48px; height:48px; border-radius:var(--radius); object-fit:cover; flex-shrink:0;
+    background:#fff; border:1px solid var(--line);
+  }
+  .item-candidato-reconocer .info-candidato{ flex:1; min-width:0; }
+  .item-candidato-reconocer .nombre-candidato{ font-weight:600; color:var(--ink); }
+  .item-candidato-reconocer .meta-candidato{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ink-muted); margin-top:2px; }
+  .item-candidato-reconocer .badge-parecido{
+    flex-shrink:0; font-size:11px; padding:3px 8px; border-radius:20px; font-family:'IBM Plex Mono', monospace;
+  }
+  .badge-parecido.alto{ color:var(--stamp-green); background:var(--stamp-green-soft); border:1px solid var(--stamp-green); }
+  .badge-parecido.medio{ color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent); }
+  .badge-parecido.bajo{ color:var(--ink-muted); background:var(--bg-alt); border:1px solid var(--line); }
   .modal-asociar{ max-width:380px; text-align:left; }
   .modal-asociar .codigo-leido{
     font-family:'IBM Plex Mono', monospace; font-size:16px; color:var(--ink);
@@ -492,6 +518,8 @@
       <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR (venta)</button>
       <button type="button" class="btn-modo-escaner" id="btnModoAsociar" data-modo="asociar">🏷️ Código de barras (asociar SKU)</button>
     </div>
+    <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
+    <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
     <div id="reader"></div>
     <div class="status-bar" id="statusBar">Esperando código QR...</div>
     <div class="log">
@@ -687,6 +715,16 @@
       <button class="btn-generar-desde-escaneo" id="btnGenerarDesdeEscaneo">📦 Generar más unidades</button>
       <button class="btn-no-vendido" id="btnNoVendido">No vendido</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayReconocer">
+  <div class="modal modal-reconocer" id="modalReconocer">
+    <p class="label">Reconocer producto por foto</p>
+    <h2 style="font-size:18px; margin:0 0 4px;">¿Es alguno de estos?</h2>
+    <p style="font-size:13px; color:var(--ink-muted); margin:0 0 4px;" id="mensajeReconocer">Comparando con las fotos cargadas...</p>
+    <div class="lista-candidatos-reconocer" id="listaCandidatosReconocer"></div>
+    <button type="button" id="btnCerrarReconocer" style="width:100%; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
   </div>
 </div>
 
@@ -1231,6 +1269,99 @@
     btnModoVenta.classList.remove('activo');
     statusBar.className = 'status-bar';
     statusBar.textContent = 'Escaneá el código de barras del producto (ISBN, EAN, etc)...';
+  });
+
+  /* ------------------------------------------------------------
+   * RECONOCER PRODUCTO POR FOTO: saca una foto (cámara nativa del
+   * celular, no la cámara en vivo del QR) y la compara contra las
+   * fotos ya cargadas de cada producto (hash perceptual, ver
+   * imagenes.js). Muestra los mejores candidatos para que el admin
+   * confirme cuál es — nunca vende solo, siempre con un toque de más.
+   * ------------------------------------------------------------ */
+  const btnReconocerFoto = document.getElementById('btnReconocerFoto');
+  const inputFotoReconocer = document.getElementById('inputFotoReconocer');
+  const overlayReconocer = document.getElementById('overlayReconocer');
+  const mensajeReconocer = document.getElementById('mensajeReconocer');
+  const listaCandidatosReconocer = document.getElementById('listaCandidatosReconocer');
+  const btnCerrarReconocer = document.getElementById('btnCerrarReconocer');
+
+  btnReconocerFoto.addEventListener('click', () => {
+    inputFotoReconocer.value = '';
+    inputFotoReconocer.click();
+  });
+
+  function cerrarModalReconocer(){
+    overlayReconocer.classList.remove('show');
+  }
+  btnCerrarReconocer.addEventListener('click', cerrarModalReconocer);
+
+  inputFotoReconocer.addEventListener('change', async () => {
+    const archivo = inputFotoReconocer.files && inputFotoReconocer.files[0];
+    if (!archivo) return;
+
+    btnReconocerFoto.disabled = true;
+    mensajeReconocer.textContent = 'Comparando con las fotos cargadas...';
+    mensajeReconocer.style.color = 'var(--ink-muted)';
+    listaCandidatosReconocer.innerHTML = '';
+    overlayReconocer.classList.add('show');
+
+    try {
+      const formData = new FormData();
+      formData.append('token', adminToken);
+      formData.append('foto', archivo);
+
+      const res = await fetch('/admin/reconocer-producto', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      const candidatos = data.candidatos || [];
+      if (candidatos.length === 0) {
+        mensajeReconocer.textContent = data.aviso || 'No encontré ningún producto parecido entre las fotos cargadas. Probá con más luz o más de cerca.';
+        mensajeReconocer.style.color = 'var(--stamp-red)';
+        return;
+      }
+
+      mensajeReconocer.textContent = 'Tocá el que corresponda:';
+      mensajeReconocer.style.color = 'var(--ink-muted)';
+
+      listaCandidatosReconocer.innerHTML = candidatos.map((c, i) => {
+        // Distancia 0-64: menos es mas parecido. La convertimos a un
+        // rotulo simple en vez de mostrar el numero pelado.
+        let claseBadge = 'bajo', textoBadge = 'poco parecido';
+        if (c.distancia <= 10) { claseBadge = 'alto'; textoBadge = 'muy parecido'; }
+        else if (c.distancia <= 20) { claseBadge = 'medio'; textoBadge = 'parecido'; }
+
+        const sinStock = !c.skuCompletoDisponible;
+        return `
+          <div class="item-candidato-reconocer" data-indice="${i}" style="${sinStock ? 'opacity:.6;' : ''}">
+            ${c.foto ? `<img class="foto-candidato" src="${escaparHtml(c.foto)}" alt="">` : '<div class="foto-candidato"></div>'}
+            <div class="info-candidato">
+              <div class="nombre-candidato">${escaparHtml(c.nombre || '(sin nombre)')}</div>
+              <div class="meta-candidato">${escaparHtml(c.skuGeneral)}${c.precio ? ' · $' + escaparHtml(String(c.precio)) : ''}${sinStock ? ' · sin stock' : ''}</div>
+            </div>
+            <span class="badge-parecido ${claseBadge}">${textoBadge}</span>
+          </div>
+        `;
+      }).join('');
+
+      listaCandidatosReconocer.querySelectorAll('.item-candidato-reconocer').forEach((el) => {
+        el.addEventListener('click', () => {
+          const candidato = candidatos[Number(el.getAttribute('data-indice'))];
+          if (!candidato.skuCompletoDisponible) {
+            mensajeReconocer.textContent = `"${candidato.nombre}" no tiene unidades sin vender — generá más unidades antes de vender.`;
+            mensajeReconocer.style.color = 'var(--stamp-red)';
+            return;
+          }
+          cerrarModalReconocer();
+          showModal(candidato.skuCompletoDisponible);
+        });
+      });
+    } catch (err) {
+      mensajeReconocer.textContent = `No se pudo comparar la foto: ${err.message}`;
+      mensajeReconocer.style.color = 'var(--stamp-red)';
+    } finally {
+      btnReconocerFoto.disabled = false;
+    }
   });
 
   function handleScan(decodedText){
