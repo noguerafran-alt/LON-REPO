@@ -50,6 +50,7 @@ module.exports = {
   HOJA_VISITAS: process.env.GOOGLE_VISITAS_SHEET_NAME || 'VISITAS', // A=SKU general, B=cantidad de visitas, C=ultima fecha — para "Destacados: mas visitados" en el catalogo publico
   HOJA_ADMIN_USERS: process.env.GOOGLE_ADMIN_USERS_SHEET_NAME || 'AdminUsers',    // usuarios autorizados a entrar al panel admin (login con Google), con su nivel de acceso
   HOJA_ENVIOS: process.env.GOOGLE_ENVIOS_SHEET_NAME || 'Envios', // A=Provincia, B=Costo estimado de envio a domicilio — tabla fija mientras no esta la cotizacion real por API
+  HOJA_CLIENTES: process.env.GOOGLE_CLIENTES_SHEET_NAME || 'Clientes', // cuentas de clientes (login con Google) — A=email, B=nombre, C=fecha de alta
 
   /* ------------------------------------------------------------
    * 3) COLUMNAS — en que columna (0 = A, 1 = B, ...) esta cada dato.
@@ -159,6 +160,16 @@ module.exports = {
   COLUMNAS_ENVIOS: {
     provincia: 0, // A
     costo: 1,     // B
+  },
+
+  // Columnas de la hoja Clientes (planilla de PRODUCTOS). Cuentas de
+  // clientes del catálogo público, dadas de alta automáticamente la
+  // primera vez que inician sesión con Google (a diferencia de
+  // AdminUsers, acá no hace falta whitelist previa).
+  COLUMNAS_CLIENTES: {
+    email: 0,     // A
+    nombre: 1,    // B
+    fechaAlta: 2, // C
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca

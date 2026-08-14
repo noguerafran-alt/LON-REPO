@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg:#F6EFE4; --bg-alt:#EDE3D0; --ink:#3B1220; --ink-muted:#8C5B66;
@@ -100,6 +101,13 @@
     font-size:28px; line-height:1; justify-self:center;
   }
   .barra-superior-catalogo .btn-icono-simetrico{ color:var(--header-text); }
+  .acciones-header-catalogo{ display:flex; align-items:center; gap:14px; justify-self:end; }
+  #loginClienteLogueado.oculto, #loginClienteFormulario.oculto{ display:none; }
+  .btn-login-cliente{ font-size:22px; position:relative; }
+  .btn-login-cliente.logueado::after{
+    content:''; position:absolute; top:-2px; right:-4px; width:8px; height:8px;
+    border-radius:50%; background:var(--stamp-green); border:1.5px solid var(--bg-header);
+  }
 
   .flotantes-contacto{
     position:fixed; right:18px; bottom:18px; z-index:60;
@@ -393,6 +401,29 @@
 </head>
 <body>
 
+<div class="fullscreen hidden" id="pantallaLoginCliente">
+  <div class="barra-superior-catalogo barra-superior-fullscreen">
+    <span></span>
+    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+    </a>
+    <span></span>
+  </div>
+  <div class="login-box">
+    <p class="eyebrow">Mi cuenta</p>
+    <div id="loginClienteLogueado" class="oculto" style="margin-bottom:16px;">
+      <p style="margin:0 0 14px;">Hola, <strong id="nombreClienteLogueado"></strong>.</p>
+      <button type="button" id="btnSalirCliente" style="width:100%;">Cerrar sesión</button>
+    </div>
+    <div id="loginClienteFormulario">
+      <p style="font-size:13px; color:var(--ink-muted); margin:0 0 14px;">Ingresá con tu cuenta de Google para que la próxima vez no tengas que volver a cargar tus datos en el checkout.</p>
+      <div id="botonGoogleLoginCliente"></div>
+      <div id="mensajeLoginCliente" style="margin-top:10px; font-size:13px; color:var(--stamp-red);"></div>
+    </div>
+    <button class="acceso-admin-link" id="btnCerrarLoginCliente" style="width:100%; margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
 <div class="fullscreen hidden" id="pantallaContacto">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <span></span>
@@ -486,7 +517,10 @@
     <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <button class="btn-icono-simetrico" id="btnMostrarContacto" title="Dejanos tu contacto" aria-label="Dejanos tu contacto">✉️</button>
+    <div class="acciones-header-catalogo">
+      <button class="btn-icono-simetrico" id="btnMostrarContacto" title="Dejanos tu contacto" aria-label="Dejanos tu contacto">✉️</button>
+      <button class="btn-icono-simetrico btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar">👤</button>
+    </div>
   </div>
 
   <div id="catalogoListaView">
@@ -1022,6 +1056,118 @@
   cargarDestacados();
 
   /* ------------------------------------------------------------
+   * LOGIN DE CLIENTE (Google Identity Services)
+   * ------------------------------------------------------------ */
+  const CLAVE_SESION_CLIENTE = 'lon_cliente_sesion';
+  const pantallaLoginCliente = document.getElementById('pantallaLoginCliente');
+  const btnLoginCliente = document.getElementById('btnLoginCliente');
+  const btnCerrarLoginCliente = document.getElementById('btnCerrarLoginCliente');
+  const btnSalirCliente = document.getElementById('btnSalirCliente');
+  const loginClienteLogueado = document.getElementById('loginClienteLogueado');
+  const loginClienteFormulario = document.getElementById('loginClienteFormulario');
+  const nombreClienteLogueado = document.getElementById('nombreClienteLogueado');
+  const mensajeLoginCliente = document.getElementById('mensajeLoginCliente');
+
+  let sesionCliente = null; // { token, email, nombre, exp } o null
+
+  function cargarSesionClienteGuardada(){
+    try {
+      const crudo = localStorage.getItem(CLAVE_SESION_CLIENTE);
+      if (!crudo) return null;
+      const datos = JSON.parse(crudo);
+      if (!datos || !datos.token || !datos.exp || Date.now() > datos.exp) {
+        localStorage.removeItem(CLAVE_SESION_CLIENTE);
+        return null;
+      }
+      return datos;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function guardarSesionCliente(datos){
+    sesionCliente = datos;
+    try { localStorage.setItem(CLAVE_SESION_CLIENTE, JSON.stringify(datos)); } catch (e) {}
+    actualizarUiSesionCliente();
+  }
+
+  function cerrarSesionCliente(){
+    sesionCliente = null;
+    try { localStorage.removeItem(CLAVE_SESION_CLIENTE); } catch (e) {}
+    actualizarUiSesionCliente();
+  }
+
+  function actualizarUiSesionCliente(){
+    const logueado = Boolean(sesionCliente);
+    btnLoginCliente.classList.toggle('logueado', logueado);
+    btnLoginCliente.title = logueado ? `Hola, ${sesionCliente.nombre}` : 'Ingresar';
+    loginClienteLogueado.classList.toggle('oculto', !logueado);
+    loginClienteFormulario.classList.toggle('oculto', logueado);
+    if (logueado) nombreClienteLogueado.textContent = sesionCliente.nombre;
+  }
+
+  sesionCliente = cargarSesionClienteGuardada();
+  actualizarUiSesionCliente();
+
+  btnLoginCliente.addEventListener('click', () => {
+    mensajeLoginCliente.textContent = '';
+    pantallaLoginCliente.classList.remove('hidden');
+  });
+  btnCerrarLoginCliente.addEventListener('click', () => {
+    pantallaLoginCliente.classList.add('hidden');
+  });
+  btnSalirCliente.addEventListener('click', () => {
+    cerrarSesionCliente();
+    pantallaLoginCliente.classList.add('hidden');
+  });
+
+  let googleClienteListo = false;
+  function renderizarBotonGoogleCliente(){
+    const contenedor = document.getElementById('botonGoogleLoginCliente');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    if (!googleClienteListo) return;
+    google.accounts.id.renderButton(contenedor, { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill' });
+  }
+
+  async function alRecibirCredencialGoogleCliente(respuesta){
+    mensajeLoginCliente.textContent = '';
+    try {
+      const res = await fetch('/cliente-login-google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: respuesta.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { mensajeLoginCliente.textContent = data.error || 'No se pudo iniciar sesión.'; return; }
+
+      guardarSesionCliente({ token: data.token, email: data.email, nombre: data.nombre, exp: data.exp });
+      pantallaLoginCliente.classList.add('hidden');
+    } catch (err) {
+      mensajeLoginCliente.textContent = 'No se pudo verificar la cuenta de Google. Revisá tu conexión.';
+    }
+  }
+
+  async function inicializarGoogleLoginCliente(){
+    try {
+      const res = await fetch('/config-publico');
+      const data = await res.json();
+      if (!data.googleClientId) return;
+      if (typeof google === 'undefined' || !google.accounts) {
+        setTimeout(inicializarGoogleLoginCliente, 300);
+        return;
+      }
+      google.accounts.id.initialize({ client_id: data.googleClientId, callback: alRecibirCredencialGoogleCliente });
+      googleClienteListo = true;
+      renderizarBotonGoogleCliente();
+    } catch (err) {
+      // Si falla, el catálogo sigue funcionando sin login — solo no se
+      // va a poder ingresar hasta que se resuelva la conexión.
+    }
+  }
+  inicializarGoogleLoginCliente();
+
+  /* ------------------------------------------------------------
    * DEJANOS TU CONTACTO
    * ------------------------------------------------------------ */
   const pantallaContacto = document.getElementById('pantallaContacto');
@@ -1202,8 +1348,10 @@
   function abrirCheckout(producto){
     productoEnCheckout = producto;
     inputCantidadCheckout.value = 1;
-    document.getElementById('inputNombreCheckout').value = '';
-    document.getElementById('inputEmailCheckout').value = '';
+    // Si el cliente esta logueado, precargamos nombre/email (los puede
+    // editar igual) para no tener que volver a tipearlos cada compra.
+    document.getElementById('inputNombreCheckout').value = sesionCliente ? sesionCliente.nombre : '';
+    document.getElementById('inputEmailCheckout').value = sesionCliente ? sesionCliente.email : '';
     document.getElementById('inputTelefonoCheckout').value = '';
     document.getElementById('inputDireccionCheckout').value = '';
     document.getElementById('inputCiudadCheckout').value = '';

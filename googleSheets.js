@@ -1268,6 +1268,66 @@ async function eliminarAdminUser(sheetsClient, spreadsheetId, sheetName, email) 
 }
 
 /* ============================================================
+ *  CLIENTES (login con Google del catalogo publico)
+ * ============================================================ */
+
+/**
+ * Lee todas las cuentas de clientes y las devuelve como array de
+ * objetos { numeroFila, email, nombre, fechaAlta }.
+ */
+async function getClientes(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_CLIENTES;
+  const ultimaLetra = columnaALetra(Math.max(...Object.values(cols)));
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const clientes = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const fila = rows[i];
+    const email = fila[cols.email] ? normalizarEmail(fila[cols.email]) : '';
+    if (!email) continue;
+    clientes.push({
+      numeroFila: i + 1,
+      email,
+      nombre: fila[cols.nombre] ? String(fila[cols.nombre]).trim() : '',
+      fechaAlta: fila[cols.fechaAlta] || '',
+    });
+  }
+
+  return clientes;
+}
+
+async function buscarClientePorEmail(sheetsClient, spreadsheetId, sheetName, email) {
+  const clientes = await getClientes(sheetsClient, spreadsheetId, sheetName);
+  const emailNormalizado = normalizarEmail(email);
+  const encontrado = clientes.find((c) => c.email === emailNormalizado);
+  return encontrado ? { numeroFila: encontrado.numeroFila, cliente: encontrado } : { numeroFila: null, cliente: null };
+}
+
+/**
+ * Da de alta a un cliente la primera vez que inicia sesión con Google
+ * (a diferencia de AdminUsers, no requiere whitelist previa: cualquier
+ * cuenta de Google puede ser cliente). Si ya existe, no toca nada —
+ * solo devuelve sus datos.
+ */
+async function crearClienteSiNoExiste(sheetsClient, spreadsheetId, sheetName, { email, nombre, fecha }) {
+  const emailNormalizado = normalizarEmail(email);
+  const { cliente } = await buscarClientePorEmail(sheetsClient, spreadsheetId, sheetName, emailNormalizado);
+  if (cliente) return cliente;
+
+  const cols = config.COLUMNAS_CLIENTES;
+  const fila = new Array(Math.max(...Object.values(cols)) + 1).fill('');
+  fila[cols.email] = emailNormalizado;
+  fila[cols.nombre] = nombre || '';
+  fila[cols.fechaAlta] = fecha;
+  await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
+
+  return { email: emailNormalizado, nombre: nombre || '', fechaAlta: fecha };
+}
+
+/* ============================================================
  *  PEDIDOS (pagos con Payway / transferencia + coordinacion de envio)
  * ============================================================ */
 
@@ -1768,6 +1828,9 @@ module.exports = {
   actualizarNombreVisibleCategoria,
   getTarifasEnvio,
   actualizarTarifaEnvio,
+  getClientes,
+  buscarClientePorEmail,
+  crearClienteSiNoExiste,
   getSiguienteNumeroProducto,
   crearProductoNuevo,
   buscarFilaProductoPorSkuGeneral,

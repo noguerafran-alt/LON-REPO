@@ -25,6 +25,8 @@ const {
   actualizarNombreVisibleCategoria,
   getTarifasEnvio,
   actualizarTarifaEnvio,
+  buscarClientePorEmail,
+  crearClienteSiNoExiste,
   crearProductoNuevo,
   agregarFotoProducto,
   eliminarFotoProducto,
@@ -217,16 +219,18 @@ const auth = new google.auth.GoogleAuth({
 
 const clienteGoogleOAuth = new google.auth.OAuth2(config.GOOGLE_OAUTH_CLIENT_ID);
 
-/** Firma una sesión de admin como "cuerpo.firma" (base64url + HMAC-SHA256). */
-function firmarSesionAdmin(payload) {
+/** Firma una sesión como "cuerpo.firma" (base64url + HMAC-SHA256). */
+function firmarSesion(payload) {
   const cuerpo = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const firma = crypto.createHmac('sha256', config.SESSION_SECRET).update(cuerpo).digest('base64url');
   return `${cuerpo}.${firma}`;
 }
 
-/** Verifica y decodifica un token de sesión. Devuelve null si es inválido,
-    fue firmado con otra clave, o ya venció. */
-function verificarSesionAdmin(token) {
+/** Verifica y decodifica un token de sesión (firma + vencimiento). No
+    valida el campo `tipo` — eso lo hace cada verificador especifico
+    (admin/cliente), para que un token de un tipo no sirva para el otro
+    aunque compartan el mismo secreto de firma. */
+function verificarSesionFirmada(token) {
   if (!token || typeof token !== 'string' || token.indexOf('.') === -1) return null;
   const [cuerpo, firma] = token.split('.');
   if (!cuerpo || !firma) return null;
@@ -243,7 +247,42 @@ function verificarSesionAdmin(token) {
     return null;
   }
   if (!payload || !payload.exp || Date.now() > payload.exp) return null;
-  return payload; // { email, nivel, nombre, exp }
+  return payload;
+}
+
+/** Firma una sesión de admin. Incluye tipo:'admin' para que este token
+    nunca pueda usarse en un endpoint de cliente ni viceversa. */
+function firmarSesionAdmin(payload) {
+  return firmarSesion({ ...payload, tipo: 'admin' });
+}
+
+function verificarSesionAdmin(token) {
+  const payload = verificarSesionFirmada(token);
+  if (!payload || payload.tipo !== 'admin') return null;
+  return payload; // { tipo, email, nivel, nombre, exp }
+}
+
+/** Firma una sesión de cliente del catálogo público (login con Google,
+    sin whitelist previa — cualquier cuenta de Google puede loguearse). */
+function firmarSesionCliente(payload) {
+  return firmarSesion({ ...payload, tipo: 'cliente' });
+}
+
+function verificarSesionCliente(token) {
+  const payload = verificarSesionFirmada(token);
+  if (!payload || payload.tipo !== 'cliente') return null;
+  return payload; // { tipo, email, nombre, exp }
+}
+
+/** Exige una sesión de cliente válida. Si es inválida o venció, responde
+    401 y devuelve null — el caller debe hacer `if (!sesion) return;`. */
+function requiereSesionCliente(req, res) {
+  const sesion = verificarSesionCliente(tokenDeLaRequest(req));
+  if (!sesion) {
+    res.status(401).json({ error: 'Sesión inválida o vencida. Volvé a iniciar sesión.' });
+    return null;
+  }
+  return sesion;
 }
 
 /** El token de sesión viaja como `token` en el body (POST) o en la
@@ -332,6 +371,50 @@ app.post('/admin-login-google', limiteLogin, async (req, res) => {
     res.json({ ok: true, token, email, nivel, nombre, exp });
   } catch (err) {
     console.error('Error en el login con Google:', err.message);
+    res.status(500).json({ error: 'No se pudo iniciar sesión.' });
+  }
+});
+
+/* Login de CLIENTES del catálogo público (Google Identity), separado
+   del login de admin: acá no hay whitelist — cualquier cuenta de
+   Google se da de alta sola la primera vez que inicia sesión. */
+app.post('/cliente-login-google', limiteLogin, async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ error: 'Falta el token de Google.' });
+    }
+    if (!config.GOOGLE_OAUTH_CLIENT_ID) {
+      return res.status(500).json({ error: 'El servidor no tiene configurado GOOGLE_OAUTH_CLIENT_ID.' });
+    }
+
+    let payloadGoogle;
+    try {
+      const ticket = await clienteGoogleOAuth.verifyIdToken({ idToken, audience: config.GOOGLE_OAUTH_CLIENT_ID });
+      payloadGoogle = ticket.getPayload();
+    } catch (err) {
+      return res.status(401).json({ error: 'No se pudo verificar la cuenta de Google. Probá iniciar sesión de nuevo.' });
+    }
+
+    if (!payloadGoogle || !payloadGoogle.email || !payloadGoogle.email_verified) {
+      return res.status(401).json({ error: 'La cuenta de Google no tiene el email verificado.' });
+    }
+
+    const email = String(payloadGoogle.email).trim().toLowerCase();
+    const nombreGoogle = payloadGoogle.name || payloadGoogle.email;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { fecha, hora } = fechaYHoraActual();
+    const cliente = await crearClienteSiNoExiste(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, {
+      email, nombre: nombreGoogle, fecha: `${fecha} ${hora}`,
+    });
+
+    const exp = Date.now() + config.SESSION_DURACION_HORAS * 60 * 60 * 1000;
+    const token = firmarSesionCliente({ email: cliente.email, nombre: cliente.nombre || nombreGoogle, exp });
+
+    res.json({ ok: true, token, email: cliente.email, nombre: cliente.nombre || nombreGoogle, exp });
+  } catch (err) {
+    console.error('Error en el login de cliente con Google:', err.message);
     res.status(500).json({ error: 'No se pudo iniciar sesión.' });
   }
 });
