@@ -175,39 +175,6 @@
   .badge-parecido.alto{ color:var(--stamp-green); background:var(--stamp-green-soft); border:1px solid var(--stamp-green); }
   .badge-parecido.medio{ color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent); }
   .badge-parecido.bajo{ color:var(--ink-muted); background:var(--bg-alt); border:1px solid var(--line); }
-  .modal-asociar{ max-width:380px; text-align:left; }
-  .modal-asociar .codigo-leido{
-    font-family:'IBM Plex Mono', monospace; font-size:16px; color:var(--ink);
-    background:var(--bg-alt); border:1px solid var(--line); border-radius:var(--radius);
-    padding:10px 12px; margin-bottom:14px; text-align:center; word-break:break-all;
-  }
-  .modal-asociar .asociacion-actual{
-    font-size:13px; color:var(--ink-muted); margin-bottom:14px; padding:10px 12px;
-    background:var(--accent-soft); border:1px solid var(--accent); border-radius:var(--radius);
-  }
-  .modal-asociar .asociacion-actual strong{ color:var(--ink); }
-  #btnSumarUnidadAsociado{
-    width:100%; padding:22px; font-size:22px; font-weight:700; letter-spacing:0.02em;
-    border:none; border-radius:var(--radius); background:var(--accent); color:#fff;
-    cursor:pointer; box-shadow:0 3px 10px rgba(169,118,42,0.35);
-  }
-  #btnSumarUnidadAsociado:active{ transform:scale(0.98); }
-  .modal-asociar input{
-    width:100%; padding:11px 12px; font-size:14px; font-family:'Archivo', sans-serif;
-    border-radius:var(--radius); border:1px solid var(--line); background:#fff; margin-bottom:10px;
-  }
-  .lista-asociar-productos{ max-height:220px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--radius); margin-bottom:14px; }
-  .item-asociar-producto{
-    display:flex; flex-direction:column; padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--line);
-  }
-  .item-asociar-producto:last-child{ border-bottom:none; }
-  .item-asociar-producto:hover{ background:var(--bg-alt); }
-  .item-asociar-producto .nombre{ font-size:13.5px; color:var(--ink); font-weight:600; }
-  .item-asociar-producto .meta{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-muted); }
-  .btn-cerrar-asociar{
-    background:none; border:none; color:var(--ink-muted); font-family:'IBM Plex Mono', monospace;
-    font-size:13px; text-decoration:underline; cursor:pointer; padding:0; display:block; margin:0 auto;
-  }
   #reader video{
     border-radius:var(--radius); border:1px solid var(--line);
     width:100% !important; height:auto !important; object-fit:cover;
@@ -576,8 +543,7 @@
     <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
     <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
     <div class="modo-escaner-opciones">
-      <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR (venta)</button>
-      <button type="button" class="btn-modo-escaner" id="btnModoAsociar" data-modo="asociar">🏷️ Código de barras (asociar SKU)</button>
+      <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR / código de barras (venta)</button>
       <button type="button" class="btn-modo-escaner" id="btnModoCafe" data-modo="cafe">☕ Café (fidelidad)</button>
     </div>
     <div id="reader"></div>
@@ -813,37 +779,6 @@
       <button class="btn-no-vendido" id="btnCancelarCafe">Cancelar</button>
     </div>
     <div id="mensajeCafeModal" style="font-size:13px; margin-top:10px; min-height:1em; text-align:center;"></div>
-  </div>
-</div>
-
-<div class="overlay" id="overlayAsociar">
-  <div class="modal modal-asociar" id="modalAsociar" style="max-height:88vh; overflow-y:auto;">
-    <p class="label">Código de barras leído</p>
-    <div class="codigo-leido" id="codigoLeidoTexto">-</div>
-
-    <div class="asociacion-actual" id="asociacionActualBox" style="display:none;">
-      <div id="asociacionActualTexto"></div>
-      <button type="button" class="btn-generar" id="btnSumarUnidadAsociado" style="margin-top:10px;">+1 unidad</button>
-    </div>
-
-    <input type="text" id="inputBuscarProductoAsociar" placeholder="Buscar producto por nombre o SKU...">
-    <div class="lista-asociar-productos" id="listaAsociarProductos"></div>
-    <button type="button" class="acceso-admin-link" id="btnMostrarCrearProductoAsociar" style="text-align:left; margin:0 0 10px; display:block;">¿No existe? Crear producto nuevo</button>
-
-    <div class="campo producto-elegido" id="formCrearProductoAsociar" style="display:none; margin:0 0 10px;">
-      <label>Categoría / Subcategoría del producto nuevo</label>
-      <select id="selectCategoriaNuevaAsociar" style="margin-bottom:10px;"><option value="">Elegí categoría / subcategoría...</option></select>
-      <label>Nombre del producto</label>
-      <input type="text" id="inputNombreProductoNuevoAsociar" placeholder="Nombre del producto" style="margin-bottom:10px;">
-      <label>Precio</label>
-      <input type="text" id="inputPrecioProductoNuevoAsociar" placeholder="Ej: 45000" style="margin-bottom:10px;">
-      <label for="inputFotoProductoNuevoAsociar">Foto (opcional)</label>
-      <input type="file" id="inputFotoProductoNuevoAsociar" accept="image/jpeg,image/png,image/webp" style="margin-bottom:10px;">
-      <button class="btn-generar" id="btnCrearProductoConfirmarAsociar">Crear, asociar y sumar 1 unidad</button>
-    </div>
-
-    <p class="checkout-mensaje" id="mensajeAsociar" style="margin:0 0 10px;"></p>
-    <button type="button" class="btn-cerrar-asociar" id="btnCerrarAsociar">Cancelar / seguir escaneando</button>
   </div>
 </div>
 
@@ -1387,24 +1322,24 @@
   });
 
   /* ------------------------------------------------------------
-   * MODO DE ESCANEO: "venta" (QR, flujo normal de Vendido/No vendido),
-   * "asociar" (código de barras externo -> SKU interno) o "cafe"
-   * (QR de fidelidad del cliente -> suma 1 café)
+   * MODO DE ESCANEO: "venta" (QR o código de barras — el servidor
+   * resuelve solo si es un SKU interno o un código de barras externo ya
+   * asociado, ver showModal más abajo) o "cafe" (QR de fidelidad del
+   * cliente -> suma 1 café). Asociar un código de barras nuevo a un SKU
+   * se hace desde la pestaña "Productos", no acá.
    * ------------------------------------------------------------ */
   let modoEscaner = 'venta';
   const btnModoVenta = document.getElementById('btnModoVenta');
-  const btnModoAsociar = document.getElementById('btnModoAsociar');
   const btnModoCafe = document.getElementById('btnModoCafe');
-  const botonesModoEscaner = [btnModoVenta, btnModoAsociar, btnModoCafe];
+  const botonesModoEscaner = [btnModoVenta, btnModoCafe];
 
   /* El texto de espera depende del modo, pero SOLO tiene sentido
      mostrarlo si la cámara está realmente prendida — si está apagada,
      siempre tiene que decir "Cámara apagada.", nunca "Esperando..."
      (eso confundía, parecía que estaba escaneando sin estarlo). */
   function mensajeEsperaSegunModo(){
-    if (modoEscaner === 'asociar') return 'Escaneá el código de barras del producto (ISBN, EAN, etc)...';
     if (modoEscaner === 'cafe') return 'Escaneá el QR de fidelidad del cliente...';
-    return 'Esperando código QR...';
+    return 'Esperando código QR o de barras...';
   }
   function actualizarStatusBarSegunEstadoCamara(){
     statusBar.className = 'status-bar';
@@ -1412,27 +1347,11 @@
   }
 
   function elegirModoEscaner(modo, botonActivo){
-    const modoAnterior = modoEscaner;
     modoEscaner = modo;
     botonesModoEscaner.forEach((b) => b.classList.toggle('activo', b === botonActivo));
     actualizarStatusBarSegunEstadoCamara();
-
-    // El recuadro de encuadre (qrbox) se calcula una sola vez al iniciar
-    // la cámara, no se actualiza solo mientras está prendida — por eso,
-    // si cambia el modo (código de barras necesita un recuadro ancho y
-    // bajo, no el cuadrado/alto de QR) y la cámara ya está andando, hay
-    // que reiniciarla para que tome la forma correcta.
-    const esModoConEncuadreDistinto = (m) => m === 'asociar';
-    if (esModoConEncuadreDistinto(modoAnterior) !== esModoConEncuadreDistinto(modo) && scanner) {
-      scanner.stop().catch(() => {}).finally(() => {
-        scanner = null;
-        escanerIniciado = false;
-        iniciarEscanerSiHaceFalta();
-      });
-    }
   }
   btnModoVenta.addEventListener('click', () => elegirModoEscaner('venta', btnModoVenta));
-  btnModoAsociar.addEventListener('click', () => elegirModoEscaner('asociar', btnModoAsociar));
   btnModoCafe.addEventListener('click', () => elegirModoEscaner('cafe', btnModoCafe));
 
   /* ------------------------------------------------------------
@@ -1536,9 +1455,7 @@
     lastScanTime = now;
     isBusy = true;
 
-    if (modoEscaner === 'asociar') {
-      manejarEscaneoParaAsociar(decodedText);
-    } else if (modoEscaner === 'cafe') {
+    if (modoEscaner === 'cafe') {
       manejarEscaneoCafe(decodedText);
     } else {
       showModal(decodedText);
@@ -1653,276 +1570,10 @@
     }
   });
 
-  /* ------------------------------------------------------------
-   * ASOCIAR CÓDIGO DE BARRAS -> SKU INTERNO
-   * (elegir un producto existente, o crear uno nuevo) y sumar
-   * SIEMPRE 1 sola unidad por escaneo — para contar físicamente
-   * escaneando ejemplar por ejemplar, nunca "generar varios" de golpe.
-   * ------------------------------------------------------------ */
-  const overlayAsociar = document.getElementById('overlayAsociar');
-  const codigoLeidoTexto = document.getElementById('codigoLeidoTexto');
-  const asociacionActualBox = document.getElementById('asociacionActualBox');
-  const asociacionActualTexto = document.getElementById('asociacionActualTexto');
-  const btnSumarUnidadAsociado = document.getElementById('btnSumarUnidadAsociado');
-  const inputBuscarProductoAsociar = document.getElementById('inputBuscarProductoAsociar');
-  const listaAsociarProductos = document.getElementById('listaAsociarProductos');
-  const btnMostrarCrearProductoAsociar = document.getElementById('btnMostrarCrearProductoAsociar');
-  const formCrearProductoAsociar = document.getElementById('formCrearProductoAsociar');
-  const selectCategoriaNuevaAsociar = document.getElementById('selectCategoriaNuevaAsociar');
-  const inputNombreProductoNuevoAsociar = document.getElementById('inputNombreProductoNuevoAsociar');
-  const inputPrecioProductoNuevoAsociar = document.getElementById('inputPrecioProductoNuevoAsociar');
-  const inputFotoProductoNuevoAsociar = document.getElementById('inputFotoProductoNuevoAsociar');
-  const btnCrearProductoConfirmarAsociar = document.getElementById('btnCrearProductoConfirmarAsociar');
-  const mensajeAsociar = document.getElementById('mensajeAsociar');
-  const btnCerrarAsociar = document.getElementById('btnCerrarAsociar');
-  let codigoBarraEnCurso = null;
-  let skuYaAsociadoEnCurso = null;
-
-  async function manejarEscaneoParaAsociar(codigo){
-    codigoBarraEnCurso = codigo;
-    skuYaAsociadoEnCurso = null;
-    codigoLeidoTexto.textContent = codigo;
-    mensajeAsociar.className = 'checkout-mensaje';
-    mensajeAsociar.textContent = '';
-    inputBuscarProductoAsociar.value = '';
-    asociacionActualBox.style.display = 'none';
-    formCrearProductoAsociar.style.display = 'none';
-    listaAsociarProductos.innerHTML = '<div style="padding:10px 12px; font-size:13px; color:var(--ink-muted);">Cargando...</div>';
-
-    // Abrimos el modal ya mismo, sin esperar a la red, para que se sienta
-    // instantáneo — el contenido se va completando apenas llega.
-    overlayAsociar.classList.add('show');
-
-    const promesaCatalogo = catalogoCargado ? Promise.resolve() : cargarCatalogo();
-    const promesaCodigo = fetch(`/admin/codigo-barra/${encodeURIComponent(codigo)}?token=${encodeURIComponent(adminToken)}`)
-      .then((res) => res.json())
-      .catch(() => null);
-
-    const [, data] = await Promise.all([promesaCatalogo, promesaCodigo]);
-
-    renderizarListaAsociarProductos();
-
-    if (data && data.asociado && data.asociacion) {
-      skuYaAsociadoEnCurso = data.asociacion.skuGeneral;
-      asociacionActualBox.style.display = 'block';
-      asociacionActualTexto.innerHTML = `Ya asociado a: <strong>${escaparHtml(data.asociacion.producto || data.asociacion.skuGeneral)}</strong> (${escaparHtml(data.asociacion.skuGeneral)})<br><span style="color:var(--ink-muted);">Cargando precio y stock...</span>`;
-
-      // No bloqueamos el modal por esto — se completa aparte apenas llega.
-      fetch(`/producto/${encodeURIComponent(data.asociacion.skuGeneral)}?token=${encodeURIComponent(adminToken)}`)
-        .then((res) => res.json())
-        .then((info) => {
-          if (skuYaAsociadoEnCurso !== data.asociacion.skuGeneral) return; // ya se escaneo otra cosa, no pisar
-          const precioTexto = info.precio !== null && info.precio !== undefined && info.precio !== '' ? `$${info.precio}` : 'sin precio cargado';
-          const stockTexto = info.stock !== null && info.stock !== undefined ? `Stock: ${info.stock}` : 'Stock: sin datos';
-          asociacionActualTexto.innerHTML = `Ya asociado a: <strong>${escaparHtml(data.asociacion.producto || data.asociacion.skuGeneral)}</strong> (${escaparHtml(data.asociacion.skuGeneral)})<br>${escaparHtml(precioTexto)} · ${escaparHtml(stockTexto)}`;
-        })
-        .catch(() => {});
-    }
-  }
-
-  function renderizarListaAsociarProductos(){
-    const busqueda = inputBuscarProductoAsociar.value.trim().toLowerCase();
-    let filtrados = catalogoProductos;
-    if (busqueda) {
-      filtrados = catalogoProductos.filter((p) => (
-        (p.producto || '').toLowerCase().includes(busqueda) || (p.skuGeneral || '').toLowerCase().includes(busqueda)
-      ));
-    }
-    filtrados = filtrados.slice(0, 50);
-
-    if (filtrados.length === 0) {
-      listaAsociarProductos.innerHTML = '<div style="padding:10px 12px; font-size:13px; color:var(--ink-muted);">Sin resultados. Probá buscar por nombre o SKU, o creá el producto abajo.</div>';
-      return;
-    }
-
-    listaAsociarProductos.innerHTML = filtrados.map((p) => `
-      <div class="item-asociar-producto" data-sku="${escaparHtml(p.skuGeneral)}">
-        <span class="nombre">${escaparHtml(p.producto || '(sin nombre)')}</span>
-        <span class="meta">${escaparHtml(p.skuGeneral)}${p.categoria ? ' · ' + escaparHtml(p.categoria) : ''}</span>
-      </div>
-    `).join('');
-
-    listaAsociarProductos.querySelectorAll('.item-asociar-producto').forEach((el) => {
-      el.addEventListener('click', () => asociarYSumarUnidad(el.getAttribute('data-sku')));
-    });
-  }
-
-  inputBuscarProductoAsociar.addEventListener('input', renderizarListaAsociarProductos);
-
-  /* Guarda (o corrige) la asociación código de barras -> SKU, y suma
-     exactamente 1 unidad generada de ese SKU. */
-  async function asociarYSumarUnidad(skuGeneral){
-    const producto = catalogoProductos.find((p) => p.skuGeneral === skuGeneral);
-    if (!producto) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = 'No se encontró ese producto en el catálogo cargado.';
-      return;
-    }
-
-    mensajeAsociar.className = 'checkout-mensaje';
-    mensajeAsociar.textContent = 'Asociando...';
-
-    try {
-      const resAsociar = await fetch('/admin/codigo-barra', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: adminToken, codigoBarra: codigoBarraEnCurso, skuGeneral }),
-      });
-      const dataAsociar = await resAsociar.json();
-      if (!resAsociar.ok) throw new Error(dataAsociar.error || 'Error al asociar');
-
-      await sumarUnaUnidad(producto);
-      mensajeAsociar.className = 'checkout-mensaje ok';
-      mensajeAsociar.textContent = `Listo: ${codigoBarraEnCurso} → ${producto.producto} (${producto.skuGeneral}). +1 unidad sumada.`;
-      setTimeout(cerrarModalAsociar, 800);
-    } catch (err) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = `No se pudo completar: ${err.message}`;
-    }
-  }
-
-  /* Suma 1 unidad generada de un SKU ya existente en el catálogo (para
-     códigos que ya estaban asociados de antes: solo contamos, no hace
-     falta re-asociar). */
-  btnSumarUnidadAsociado.addEventListener('click', async () => {
-    const producto = catalogoProductos.find((p) => p.skuGeneral === skuYaAsociadoEnCurso);
-    if (!producto) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = 'No se encontró ese producto en el catálogo cargado.';
-      return;
-    }
-    mensajeAsociar.className = 'checkout-mensaje';
-    mensajeAsociar.textContent = 'Sumando unidad...';
-    try {
-      await sumarUnaUnidad(producto);
-      mensajeAsociar.className = 'checkout-mensaje ok';
-      mensajeAsociar.textContent = `+1 unidad sumada a ${producto.producto} (${producto.skuGeneral}).`;
-      setTimeout(cerrarModalAsociar, 500);
-    } catch (err) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = `No se pudo sumar la unidad: ${err.message}`;
-    }
-  });
-
-  /* Llama a /admin/generar-unidades con cantidad SIEMPRE en 1 — este
-     flujo es a propósito "una unidad por escaneo", nunca un lote, para
-     que contar físicamente el stock escaneando sea confiable. */
-  async function sumarUnaUnidad(producto){
-    // El servidor anota SOLO el email de la sesión como "generado por"
-    // (columna H de HISTORICO_SKU) — no hace falta ni conviene mandar
-    // nada de eso desde acá.
-    const res = await fetch('/admin/generar-unidades', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token: adminToken,
-        skuGeneral: producto.skuGeneral,
-        producto: producto.producto,
-        categoria: producto.categoria,
-        subcategoria: producto.subcategoria,
-        precio: producto.precio,
-        cantidad: 1,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Error al sumar la unidad');
-    return data;
-  }
-
-  /* Crear producto nuevo directo desde el escaneo (reutiliza Config
-     igual que el formulario de "Productos"). */
-  btnMostrarCrearProductoAsociar.addEventListener('click', async () => {
-    const mostrando = formCrearProductoAsociar.style.display !== 'none';
-    formCrearProductoAsociar.style.display = mostrando ? 'none' : 'block';
-    if (!mostrando && !configCargada) await cargarConfigCategorias();
-    if (!mostrando) {
-      selectCategoriaNuevaAsociar.innerHTML = selectCategoriaNueva.innerHTML;
-    }
-  });
-
-  btnCrearProductoConfirmarAsociar.addEventListener('click', async () => {
-    const indice = selectCategoriaNuevaAsociar.value;
-    const nombre = inputNombreProductoNuevoAsociar.value.trim();
-    const precio = inputPrecioProductoNuevoAsociar.value.trim();
-
-    mensajeAsociar.className = 'checkout-mensaje';
-    mensajeAsociar.textContent = '';
-
-    if (indice === '' || !configCategorias[Number(indice)]) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = 'Elegí una categoría / subcategoría.';
-      return;
-    }
-    if (!nombre) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = 'Ingresá el nombre del producto.';
-      return;
-    }
-
-    const elegido = configCategorias[Number(indice)];
-    btnCrearProductoConfirmarAsociar.disabled = true;
-    btnCrearProductoConfirmarAsociar.textContent = 'Creando...';
-
-    try {
-      const resCrear = await fetch('/admin/crear-producto', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: adminToken, producto: nombre, categoria: elegido.categoria,
-          subcategoria: elegido.subcategoria, prefijoSku: elegido.prefijoSku, precio,
-        }),
-      });
-      const dataCrear = await resCrear.json();
-      if (!resCrear.ok) throw new Error(dataCrear.error || 'Error al crear el producto');
-
-      catalogoProductos.push(dataCrear.producto);
-
-      const resAsociar = await fetch('/admin/codigo-barra', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: adminToken, codigoBarra: codigoBarraEnCurso, skuGeneral: dataCrear.producto.skuGeneral }),
-      });
-      const dataAsociar = await resAsociar.json();
-      if (!resAsociar.ok) throw new Error(dataAsociar.error || 'El producto se creó, pero no se pudo asociar el código de barras');
-
-      await sumarUnaUnidad(dataCrear.producto);
-
-      let mensajeFotoAsociar = '';
-      const archivoFotoAsociar = inputFotoProductoNuevoAsociar.files && inputFotoProductoNuevoAsociar.files[0];
-      if (archivoFotoAsociar) {
-        try {
-          await subirFotoProducto(dataCrear.producto.skuGeneral, archivoFotoAsociar);
-          mensajeFotoAsociar = ' Foto subida.';
-        } catch (errFoto) {
-          mensajeFotoAsociar = ` No se pudo subir la foto: ${errFoto.message}`;
-        }
-      }
-
-      mensajeAsociar.className = 'checkout-mensaje ok';
-      mensajeAsociar.textContent = `Producto creado (${dataCrear.producto.skuGeneral}), código asociado y +1 unidad sumada.${mensajeFotoAsociar}`;
-      inputFotoProductoNuevoAsociar.value = '';
-      setTimeout(cerrarModalAsociar, 1000);
-    } catch (err) {
-      mensajeAsociar.className = 'checkout-mensaje error';
-      mensajeAsociar.textContent = `No se pudo completar: ${err.message}`;
-    } finally {
-      btnCrearProductoConfirmarAsociar.disabled = false;
-      btnCrearProductoConfirmarAsociar.textContent = 'Crear, asociar y sumar 1 unidad';
-    }
-  });
-
-  function cerrarModalAsociar(){
-    overlayAsociar.classList.remove('show');
-    formCrearProductoAsociar.style.display = 'none';
-    inputNombreProductoNuevoAsociar.value = '';
-    inputPrecioProductoNuevoAsociar.value = '';
-    inputFotoProductoNuevoAsociar.value = '';
-    selectCategoriaNuevaAsociar.value = '';
-    codigoBarraEnCurso = null;
-    skuYaAsociadoEnCurso = null;
-    isBusy = false;
-  }
-  btnCerrarAsociar.addEventListener('click', cerrarModalAsociar);
+  /* La asociación código de barras -> SKU se hace desde la pestaña
+     "Productos" (campo "Código de barras del producto que entra"), no
+     desde acá — este escáner (modo "venta") solo lee y trae los datos
+     del producto ya asociado, ver showModal más arriba. */
 
   let scanner = null;
   let escanerIniciado = false;
@@ -1991,16 +1642,7 @@
     });
     iniciarCamaraConFallback(
       scanner,
-      { fps: 10, qrbox: (w, h) => {
-        // Código de barras (1D): recuadro ancho y bajo. QR/café: recuadro
-        // cuadrado/alto, como siempre.
-        if (modoEscaner === 'asociar') {
-          const ancho = Math.floor(w * 0.85);
-          return { width: ancho, height: Math.floor(ancho * 0.35) };
-        }
-        const lado = Math.floor(Math.min(w, h) * 0.5);
-        return { width: lado, height: Math.floor(lado * 1.25) };
-      } },
+      { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.5); return { width: lado, height: Math.floor(lado * 1.25) }; } },
       (decodedText) => { handleScan(decodedText); }
     ).catch(() => {
       statusBar.className = 'status-bar error';
