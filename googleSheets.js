@@ -1350,38 +1350,41 @@ async function crearClienteSiNoExiste(sheetsClient, spreadsheetId, sheetName, { 
 }
 
 /**
- * Registra un escaneo del QR de fidelidad de un cliente. El contador
- * tiene dos etapas:
- *   1. Mientras cafesContador < CAFES_PARA_GRATIS: cada escaneo es un
+ * Registra "cantidad" cafés cargados a un cliente identificado por su
+ * código de fidelidad (el admin confirma la cantidad a mano después de
+ * escanear, no se suma sola por cada lectura de cámara — evita que un
+ * QR leído varias veces de casualidad cargue de más). El contador tiene
+ * dos etapas, aplicadas cantidad veces en secuencia:
+ *   1. Mientras cafesContador < CAFES_PARA_GRATIS: cada unidad es un
  *      café pago, suma 1. Al llegar al objetivo (3), el contador queda
  *      EN el objetivo (no se resetea todavía) — el cliente "tiene un
- *      regalo pendiente" (regaloDesbloqueado:true en ese escaneo).
- *   2. El siguiente escaneo (4to), como cafesContador ya está en el
- *      objetivo, se interpreta como la entrega del regalo: esGratis:true
- *      y el contador vuelve a 0, listo para un ciclo nuevo.
+ *      regalo pendiente".
+ *   2. La siguiente unidad, como cafesContador ya está en el objetivo,
+ *      se interpreta como la entrega del regalo: el contador vuelve a 0
+ *      y arranca un ciclo nuevo.
  * Devuelve null si el código no corresponde a ningún cliente.
  */
-async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codigoFidelidad) {
+async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codigoFidelidad, cantidad = 1) {
   const { numeroFila, cliente } = await buscarClientePorCodigoFidelidad(sheetsClient, spreadsheetId, sheetName, codigoFidelidad);
   if (!numeroFila) return null;
 
   const objetivo = config.CAFES_PARA_GRATIS;
-  let nuevoContador;
-  let esGratis;
-  let regaloDesbloqueado;
+  let contador = cliente.cafesContador;
+  let regalosEntregados = 0;
+  let regaloDesbloqueado = false;
 
-  if (cliente.cafesContador >= objetivo) {
-    // Ya tenía el regalo pendiente de un escaneo anterior: este escaneo
-    // es la entrega del regalo, arranca un ciclo nuevo desde 0.
-    nuevoContador = 0;
-    esGratis = true;
-    regaloDesbloqueado = false;
-  } else {
-    const siguiente = cliente.cafesContador + 1;
-    nuevoContador = siguiente;
-    esGratis = false;
-    regaloDesbloqueado = siguiente >= objetivo;
+  for (let i = 0; i < cantidad; i++) {
+    if (contador >= objetivo) {
+      contador = 0;
+      regalosEntregados += 1;
+      regaloDesbloqueado = false;
+    } else {
+      contador += 1;
+      regaloDesbloqueado = contador >= objetivo;
+    }
   }
+  const nuevoContador = contador;
+  const esGratis = regalosEntregados > 0;
 
   const cols = config.COLUMNAS_CLIENTES;
   await sheetsClient.spreadsheets.values.update({
@@ -1391,7 +1394,7 @@ async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codi
     requestBody: { values: [[nuevoContador]] },
   });
 
-  return { cliente, cafesContador: nuevoContador, esGratis, regaloDesbloqueado };
+  return { cliente, cafesContador: nuevoContador, esGratis, regalosEntregados, regaloDesbloqueado };
 }
 
 /* ============================================================

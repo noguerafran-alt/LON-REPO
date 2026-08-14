@@ -451,22 +451,60 @@ app.get('/cliente/mi-cuenta', limiteLecturaPublica, async (req, res) => {
   }
 });
 
-/* El personal del local escanea el QR de fidelidad del cliente (desde
-   el modo "Café" del escáner admin) y suma 1 café. Al llegar a
-   CAFES_PARA_GRATIS ese café es gratis y el contador vuelve a 0.
-   Requiere sesion de admin (nivel 1 o 2 — es parte del flujo de venta). */
-app.post('/admin/cafe-escaneado', limiteAdmin, async (req, res) => {
+/* Consulta (sin modificar nada) los datos de fidelidad de un cliente a
+   partir del código escaneado — se usa para mostrarle al admin quién es
+   y su progreso ANTES de confirmar cuántos cafés cargarle, así el
+   escaneo en sí nunca suma solo. Requiere sesion de admin. */
+app.get('/admin/cliente-por-codigo-fidelidad', limiteAdmin, async (req, res) => {
   try {
     const sesion = requiereSesion(req, res);
     if (!sesion) return;
 
-    const { codigoFidelidad } = req.body;
+    const codigoFidelidad = req.query.codigo;
     if (!codigoFidelidad || !String(codigoFidelidad).trim()) {
       return res.status(400).json({ error: 'Falta el código escaneado.' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
-    const resultado = await registrarCafeCliente(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, String(codigoFidelidad).trim());
+    const { cliente } = await buscarClientePorCodigoFidelidad(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, String(codigoFidelidad).trim());
+    if (!cliente) {
+      return res.status(404).json({ error: 'Ese código no corresponde a ninguna cuenta. Pedile al cliente que abra "Mi cuenta" en LON.' });
+    }
+
+    res.json({
+      nombre: cliente.nombre,
+      cafesContador: cliente.cafesContador,
+      cafesParaGratis: config.CAFES_PARA_GRATIS,
+    });
+  } catch (err) {
+    console.error('Error consultando cliente por código de fidelidad:', err.message);
+    res.status(500).json({ error: 'No se pudo consultar la cuenta.' });
+  }
+});
+
+/* El personal del local confirma la cantidad de cafés a cargarle a un
+   cliente (después de escanear su QR y ver quién es con el endpoint de
+   arriba) — la cantidad la elige el admin a mano, el escaneo en sí NO
+   suma solo, para que una lectura repetida de casualidad no cargue de
+   más. Al llegar a CAFES_PARA_GRATIS el contador queda "esperando" y el
+   siguiente café entregado es el regalo (vuelve a 0). Requiere sesion
+   de admin (nivel 1 o 2 — es parte del flujo de venta). */
+app.post('/admin/cafe-escaneado', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
+
+    const { codigoFidelidad, cantidad } = req.body;
+    if (!codigoFidelidad || !String(codigoFidelidad).trim()) {
+      return res.status(400).json({ error: 'Falta el código escaneado.' });
+    }
+    const cantidadNum = enteroEnRango(cantidad === undefined ? 1 : cantidad, 1, 20);
+    if (cantidadNum === null) {
+      return res.status(400).json({ error: 'La cantidad tiene que ser un número entero entre 1 y 20.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const resultado = await registrarCafeCliente(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, String(codigoFidelidad).trim(), cantidadNum);
     if (!resultado) {
       return res.status(404).json({ error: 'Ese código no corresponde a ninguna cuenta. Pedile al cliente que abra "Mi cuenta" en LON.' });
     }
@@ -477,6 +515,7 @@ app.post('/admin/cafe-escaneado', limiteAdmin, async (req, res) => {
       cafesContador: resultado.cafesContador,
       cafesParaGratis: config.CAFES_PARA_GRATIS,
       esGratis: resultado.esGratis,
+      regalosEntregados: resultado.regalosEntregados,
       regaloDesbloqueado: resultado.regaloDesbloqueado,
     });
   } catch (err) {

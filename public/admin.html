@@ -127,6 +127,19 @@
     font-family:'Archivo', sans-serif; font-size:14px; font-weight:600; cursor:pointer;
   }
   .btn-reconocer-foto:disabled{ opacity:.5; cursor:default; }
+  .selector-cantidad-cafe{
+    display:flex; align-items:center; justify-content:center; gap:0; margin:0 auto;
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; width:140px;
+  }
+  .selector-cantidad-cafe button{
+    width:44px; height:44px; padding:0; margin:0; border:none; background:var(--bg-alt);
+    color:var(--ink); font-size:20px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; line-height:1; flex:0 0 auto;
+  }
+  .selector-cantidad-cafe button:disabled{ opacity:.35; cursor:default; }
+  .selector-cantidad-cafe span{
+    flex:1; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:18px; background:#fff;
+  }
   .modal-reconocer{ max-width:400px; text-align:left; max-height:88vh; overflow-y:auto; }
   .lista-candidatos-reconocer{ margin:14px 0; }
   .item-candidato-reconocer{
@@ -759,6 +772,25 @@
     <p style="font-size:13px; color:var(--ink-muted); margin:0 0 4px;" id="mensajeReconocer">Comparando con las fotos cargadas...</p>
     <div class="lista-candidatos-reconocer" id="listaCandidatosReconocer"></div>
     <button type="button" id="btnCerrarReconocer" style="width:100%; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayCafe">
+  <div class="modal" id="modalCafe">
+    <p class="label">Café de fidelidad</p>
+    <h2 id="cafeNombreCliente" style="margin:0 0 4px;">-</h2>
+    <p class="sku-chico" id="cafeProgresoTexto">-</p>
+    <p style="font-size:13px; color:var(--ink-muted); margin:14px 0 6px;">¿Cuántos cafés le cargás?</p>
+    <div class="selector-cantidad-cafe">
+      <button type="button" id="btnCafeMenos">−</button>
+      <span id="cafeCantidadValor">1</span>
+      <button type="button" id="btnCafeMas">+</button>
+    </div>
+    <div class="modal-buttons" style="margin-top:16px;">
+      <button class="btn-vendido" id="btnConfirmarCafe">Confirmar</button>
+      <button class="btn-no-vendido" id="btnCancelarCafe">Cancelar</button>
+    </div>
+    <div id="mensajeCafeModal" style="font-size:13px; margin-top:10px; min-height:1em; text-align:center;"></div>
   </div>
 </div>
 
@@ -1473,36 +1505,107 @@
    * objetivo (CAFES_PARA_GRATIS) ese café es gratis y el contador del
    * cliente vuelve a 0 — el aviso queda unos segundos en pantalla.
    * ------------------------------------------------------------ */
+  const overlayCafe = document.getElementById('overlayCafe');
+  const cafeNombreCliente = document.getElementById('cafeNombreCliente');
+  const cafeProgresoTexto = document.getElementById('cafeProgresoTexto');
+  const cafeCantidadValor = document.getElementById('cafeCantidadValor');
+  const btnCafeMenos = document.getElementById('btnCafeMenos');
+  const btnCafeMas = document.getElementById('btnCafeMas');
+  const btnConfirmarCafe = document.getElementById('btnConfirmarCafe');
+  const btnCancelarCafe = document.getElementById('btnCancelarCafe');
+  const mensajeCafeModal = document.getElementById('mensajeCafeModal');
+  let codigoFidelidadEnCurso = null;
+  let cantidadCafeSeleccionada = 1;
+
+  function actualizarSelectorCantidadCafe(){
+    cafeCantidadValor.textContent = String(cantidadCafeSeleccionada);
+    btnCafeMenos.disabled = cantidadCafeSeleccionada <= 1;
+  }
+  btnCafeMenos.addEventListener('click', () => {
+    if (cantidadCafeSeleccionada > 1) cantidadCafeSeleccionada -= 1;
+    actualizarSelectorCantidadCafe();
+  });
+  btnCafeMas.addEventListener('click', () => {
+    if (cantidadCafeSeleccionada < 20) cantidadCafeSeleccionada += 1;
+    actualizarSelectorCantidadCafe();
+  });
+
+  function cerrarModalCafe(){
+    overlayCafe.classList.remove('show');
+    codigoFidelidadEnCurso = null;
+    isBusy = false;
+    actualizarStatusBarSegunEstadoCamara();
+  }
+  btnCancelarCafe.addEventListener('click', cerrarModalCafe);
+
+  /* El escaneo NUNCA suma solo: solo identifica al cliente y muestra su
+     progreso. El admin elige la cantidad a mano y recién ahí se
+     confirma — así una misma lectura de cámara repetida por casualidad
+     no carga cafés de más. */
   async function manejarEscaneoCafe(codigoFidelidad){
     statusBar.className = 'status-bar';
-    statusBar.textContent = 'Cargando café...';
+    statusBar.textContent = 'Buscando cliente...';
+    try {
+      const res = await fetch(`/admin/cliente-por-codigo-fidelidad?token=${encodeURIComponent(adminToken)}&codigo=${encodeURIComponent(codigoFidelidad)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      codigoFidelidadEnCurso = codigoFidelidad;
+      cantidadCafeSeleccionada = 1;
+      actualizarSelectorCantidadCafe();
+      cafeNombreCliente.textContent = data.nombre;
+      cafeProgresoTexto.textContent = data.cafesContador >= data.cafesParaGratis
+        ? 'Tiene un regalo esperando — confirmá para entregárselo.'
+        : `Lleva ${data.cafesContador}/${data.cafesParaGratis} cafés.`;
+      mensajeCafeModal.textContent = '';
+      mensajeCafeModal.style.color = '';
+      btnConfirmarCafe.disabled = false;
+      btnConfirmarCafe.textContent = 'Confirmar';
+      overlayCafe.classList.add('show');
+      actualizarStatusBarSegunEstadoCamara();
+    } catch (err) {
+      statusBar.className = 'status-bar error';
+      statusBar.textContent = `No se pudo identificar el código: ${err.message}`;
+      isBusy = false;
+    }
+  }
+
+  btnConfirmarCafe.addEventListener('click', async () => {
+    if (!codigoFidelidadEnCurso) return;
+    btnConfirmarCafe.disabled = true;
+    btnConfirmarCafe.textContent = 'Confirmando...';
+    mensajeCafeModal.textContent = '';
     try {
       const res = await fetch('/admin/cafe-escaneado', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: adminToken, codigoFidelidad }),
+        body: JSON.stringify({ token: adminToken, codigoFidelidad: codigoFidelidadEnCurso, cantidad: cantidadCafeSeleccionada }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
+      overlayCafe.classList.remove('show');
+      codigoFidelidadEnCurso = null;
       statusBar.className = 'status-bar ok';
       if (data.esGratis) {
-        statusBar.textContent = `🎁 ¡REGALO ENTREGADO! ${data.nombre} — arranca de nuevo (0/${data.cafesParaGratis})`;
+        statusBar.textContent = `🎁 ¡${data.regalosEntregados > 1 ? `${data.regalosEntregados} REGALOS ENTREGADOS` : 'REGALO ENTREGADO'}! ${data.nombre} — ahora va ${data.cafesContador}/${data.cafesParaGratis}`;
       } else if (data.regaloDesbloqueado) {
         statusBar.textContent = `🎉 ${data.nombre} completó ${data.cafesParaGratis} cafés — tiene un regalo esperando. Escaneá de nuevo para entregárselo.`;
       } else {
         statusBar.textContent = `☕ ${data.nombre} — ${data.cafesContador}/${data.cafesParaGratis}`;
       }
-    } catch (err) {
-      statusBar.className = 'status-bar error';
-      statusBar.textContent = `No se pudo cargar el café: ${err.message}`;
-    } finally {
       setTimeout(() => {
         isBusy = false;
         actualizarStatusBarSegunEstadoCamara();
       }, 2500);
+    } catch (err) {
+      mensajeCafeModal.style.color = 'var(--stamp-red)';
+      mensajeCafeModal.textContent = `No se pudo confirmar: ${err.message}`;
+    } finally {
+      btnConfirmarCafe.disabled = false;
+      btnConfirmarCafe.textContent = 'Confirmar';
     }
-  }
+  });
 
   /* ------------------------------------------------------------
    * ASOCIAR CÓDIGO DE BARRAS -> SKU INTERNO
