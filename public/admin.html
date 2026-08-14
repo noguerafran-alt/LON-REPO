@@ -1842,7 +1842,7 @@
     });
   }
 
-  function elegirProducto(producto){
+  function elegirProducto(producto, { enfocar = true } = {}){
     const yaEsta = productosSeleccionados.some((s) => s.producto.skuGeneral === producto.skuGeneral);
     if (!yaEsta) {
       productosSeleccionados.unshift({
@@ -1861,7 +1861,14 @@
       asociarCodigoBarraPendiente(producto.skuGeneral);
     }
 
-    enfocarCantidadDe(producto.skuGeneral);
+    // Al elegir un producto YA EXISTENTE (buscador, escaneo) tiene
+    // sentido llevar la vista a la fila de cantidad, porque el admin ya
+    // está mirando esa zona. Al CREAR un producto nuevo, en cambio, el
+    // admin está arriba de todo (cerca del código de barras / del
+    // formulario) — scrollear lejos ahí se siente como un salto
+    // brusco, así que ese caso pasa enfocar:false y se queda quieto
+    // (el producto ya quedó arriba de la lista, unshift lo garantiza).
+    if (enfocar) enfocarCantidadDe(producto.skuGeneral);
   }
 
   function enfocarCantidadDe(skuGeneral){
@@ -1910,9 +1917,8 @@
         }
       } else {
         codigoBarraPendienteAsociar = codigo;
-        mensajeCodigoBarraGenerar.textContent = `Código nuevo: buscá el producto abajo (o creá uno) y se asocia solo al elegirlo.`;
+        mensajeCodigoBarraGenerar.textContent = `Código nuevo: buscá el producto abajo, o creá uno con "¿No existe? Crear producto nuevo" — se asocia solo al elegirlo.`;
         mensajeCodigoBarraGenerar.style.color = 'var(--accent)';
-        inputBuscarProducto.focus();
       }
     } catch (err) {
       mensajeCodigoBarraGenerar.textContent = `No se pudo buscar: ${err.message}`;
@@ -2459,7 +2465,7 @@
       catalogoProductos.push(data.producto);
       mensajeCrearProducto.className = 'mensaje-generacion ok';
       mensajeCrearProducto.textContent = `Producto creado: ${data.producto.skuGeneral}`;
-      elegirProducto(data.producto);
+      elegirProducto(data.producto, { enfocar: false });
 
       const archivoFoto = inputFotoProductoNuevo.files && inputFotoProductoNuevo.files[0];
       if (archivoFoto) {
