@@ -541,6 +541,7 @@
     <div class="modo-escaner-opciones">
       <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR (venta)</button>
       <button type="button" class="btn-modo-escaner" id="btnModoAsociar" data-modo="asociar">🏷️ Código de barras (asociar SKU)</button>
+      <button type="button" class="btn-modo-escaner" id="btnModoCafe" data-modo="cafe">☕ Café (fidelidad)</button>
     </div>
     <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
     <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
@@ -1308,39 +1309,38 @@
   });
 
   /* ------------------------------------------------------------
-   * MODO DE ESCANEO: "venta" (QR, flujo normal de Vendido/No vendido)
-   * vs "asociar" (código de barras externo -> SKU interno)
+   * MODO DE ESCANEO: "venta" (QR, flujo normal de Vendido/No vendido),
+   * "asociar" (código de barras externo -> SKU interno) o "cafe"
+   * (QR de fidelidad del cliente -> suma 1 café)
    * ------------------------------------------------------------ */
   let modoEscaner = 'venta';
   const btnModoVenta = document.getElementById('btnModoVenta');
   const btnModoAsociar = document.getElementById('btnModoAsociar');
+  const btnModoCafe = document.getElementById('btnModoCafe');
+  const botonesModoEscaner = [btnModoVenta, btnModoAsociar, btnModoCafe];
 
   /* El texto de espera depende del modo, pero SOLO tiene sentido
      mostrarlo si la cámara está realmente prendida — si está apagada,
      siempre tiene que decir "Cámara apagada.", nunca "Esperando..."
      (eso confundía, parecía que estaba escaneando sin estarlo). */
   function mensajeEsperaSegunModo(){
-    return modoEscaner === 'asociar'
-      ? 'Escaneá el código de barras del producto (ISBN, EAN, etc)...'
-      : 'Esperando código QR...';
+    if (modoEscaner === 'asociar') return 'Escaneá el código de barras del producto (ISBN, EAN, etc)...';
+    if (modoEscaner === 'cafe') return 'Escaneá el QR de fidelidad del cliente...';
+    return 'Esperando código QR...';
   }
   function actualizarStatusBarSegunEstadoCamara(){
     statusBar.className = 'status-bar';
     statusBar.textContent = escanerIniciado ? mensajeEsperaSegunModo() : 'Cámara apagada.';
   }
 
-  btnModoVenta.addEventListener('click', () => {
-    modoEscaner = 'venta';
-    btnModoVenta.classList.add('activo');
-    btnModoAsociar.classList.remove('activo');
+  function elegirModoEscaner(modo, botonActivo){
+    modoEscaner = modo;
+    botonesModoEscaner.forEach((b) => b.classList.toggle('activo', b === botonActivo));
     actualizarStatusBarSegunEstadoCamara();
-  });
-  btnModoAsociar.addEventListener('click', () => {
-    modoEscaner = 'asociar';
-    btnModoAsociar.classList.add('activo');
-    btnModoVenta.classList.remove('activo');
-    actualizarStatusBarSegunEstadoCamara();
-  });
+  }
+  btnModoVenta.addEventListener('click', () => elegirModoEscaner('venta', btnModoVenta));
+  btnModoAsociar.addEventListener('click', () => elegirModoEscaner('asociar', btnModoAsociar));
+  btnModoCafe.addEventListener('click', () => elegirModoEscaner('cafe', btnModoCafe));
 
   /* ------------------------------------------------------------
    * RECONOCER PRODUCTO POR FOTO: saca una foto (cámara nativa del
@@ -1445,8 +1445,43 @@
 
     if (modoEscaner === 'asociar') {
       manejarEscaneoParaAsociar(decodedText);
+    } else if (modoEscaner === 'cafe') {
+      manejarEscaneoCafe(decodedText);
     } else {
       showModal(decodedText);
+    }
+  }
+
+  /* ------------------------------------------------------------
+   * CAFÉ DE FIDELIDAD: el cliente muestra el QR de "Mi cuenta" del
+   * catálogo público, acá se escanea y se suma 1 café. Al llegar al
+   * objetivo (CAFES_PARA_GRATIS) ese café es gratis y el contador del
+   * cliente vuelve a 0 — el aviso queda unos segundos en pantalla.
+   * ------------------------------------------------------------ */
+  async function manejarEscaneoCafe(codigoFidelidad){
+    statusBar.className = 'status-bar';
+    statusBar.textContent = 'Cargando café...';
+    try {
+      const res = await fetch('/admin/cafe-escaneado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken, codigoFidelidad }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      statusBar.className = 'status-bar ok';
+      statusBar.textContent = data.esGratis
+        ? `🎉 ¡CAFÉ GRATIS! ${data.nombre} — arranca de nuevo (0/${data.cafesParaGratis})`
+        : `☕ ${data.nombre} — ${data.cafesContador}/${data.cafesParaGratis}`;
+    } catch (err) {
+      statusBar.className = 'status-bar error';
+      statusBar.textContent = `No se pudo cargar el café: ${err.message}`;
+    } finally {
+      setTimeout(() => {
+        isBusy = false;
+        actualizarStatusBarSegunEstadoCamara();
+      }, 2500);
     }
   }
 

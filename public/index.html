@@ -103,6 +103,16 @@
   .barra-superior-catalogo .btn-icono-simetrico{ color:var(--header-text); }
   .acciones-header-catalogo{ display:flex; align-items:center; gap:14px; justify-self:end; }
   #loginClienteLogueado.oculto, #loginClienteFormulario.oculto{ display:none; }
+  .tarjeta-fidelidad-cafe{
+    background:var(--bg-alt); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px; text-align:center;
+  }
+  .puntos-fidelidad-cafe{
+    font-family:'Fraunces', serif; font-size:22px; letter-spacing:0.08em; color:var(--ink);
+    margin-bottom:10px;
+  }
+  .qr-fidelidad-cliente{ width:160px; height:160px; display:block; margin:0 auto; border-radius:var(--radius); background:#fff; padding:8px; }
+  .qr-fidelidad-cliente.oculto{ display:none; }
   .btn-login-cliente{ font-size:22px; position:relative; }
   .btn-login-cliente.logueado::after{
     content:''; position:absolute; top:-2px; right:-4px; width:8px; height:8px;
@@ -413,7 +423,13 @@
     <p class="eyebrow">Mi cuenta</p>
     <div id="loginClienteLogueado" class="oculto" style="margin-bottom:16px;">
       <p style="margin:0 0 14px;">Hola, <strong id="nombreClienteLogueado"></strong>.</p>
-      <button type="button" id="btnSalirCliente" style="width:100%;">Cerrar sesión</button>
+      <div class="tarjeta-fidelidad-cafe">
+        <p class="eyebrow" style="margin:0 0 8px;">Café de fidelidad</p>
+        <div id="puntosFidelidadCafe" class="puntos-fidelidad-cafe">Cargando...</div>
+        <img id="qrFidelidadCliente" class="qr-fidelidad-cliente oculto" alt="Tu código QR de fidelidad">
+        <p style="font-size:12px; color:var(--ink-muted); margin:8px 0 0;">Mostrá este QR en el local para cargar tu café.</p>
+      </div>
+      <button type="button" id="btnSalirCliente" style="width:100%; margin-top:16px;">Cerrar sesión</button>
     </div>
     <div id="loginClienteFormulario">
       <p style="font-size:13px; color:var(--ink-muted); margin:0 0 14px;">Ingresá con tu cuenta de Google para que la próxima vez no tengas que volver a cargar tus datos en el checkout.</p>
@@ -1109,9 +1125,32 @@
   sesionCliente = cargarSesionClienteGuardada();
   actualizarUiSesionCliente();
 
+  const puntosFidelidadCafe = document.getElementById('puntosFidelidadCafe');
+  const qrFidelidadCliente = document.getElementById('qrFidelidadCliente');
+
+  async function cargarFidelidadCafe(){
+    if (!sesionCliente) return;
+    puntosFidelidadCafe.textContent = 'Cargando...';
+    qrFidelidadCliente.classList.add('oculto');
+    try {
+      const res = await fetch(`/cliente/mi-cuenta?token=${encodeURIComponent(sesionCliente.token)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      const llenos = '☕'.repeat(data.cafesContador);
+      const vacios = '⚪'.repeat(Math.max(0, data.cafesParaGratis - data.cafesContador));
+      puntosFidelidadCafe.textContent = `${llenos}${vacios}  ${data.cafesContador}/${data.cafesParaGratis}`;
+      qrFidelidadCliente.src = data.qrDataUrl;
+      qrFidelidadCliente.classList.remove('oculto');
+    } catch (err) {
+      puntosFidelidadCafe.textContent = 'No se pudo cargar tu tarjeta de café.';
+    }
+  }
+
   btnLoginCliente.addEventListener('click', () => {
     mensajeLoginCliente.textContent = '';
     pantallaLoginCliente.classList.remove('hidden');
+    if (sesionCliente) cargarFidelidadCafe();
   });
   btnCerrarLoginCliente.addEventListener('click', () => {
     pantallaLoginCliente.classList.add('hidden');

@@ -27,6 +27,8 @@ const {
   actualizarTarifaEnvio,
   buscarClientePorEmail,
   crearClienteSiNoExiste,
+  buscarClientePorCodigoFidelidad,
+  registrarCafeCliente,
   crearProductoNuevo,
   agregarFotoProducto,
   eliminarFotoProducto,
@@ -52,6 +54,7 @@ const {
   actualizarPedido,
 } = require('./googleSheets');
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
+const QRCode = require('qrcode');
 const payway = require('./payway');
 const emailService = require('./email');
 const imagenes = require('./imagenes');
@@ -416,6 +419,68 @@ app.post('/cliente-login-google', limiteLogin, async (req, res) => {
   } catch (err) {
     console.error('Error en el login de cliente con Google:', err.message);
     res.status(500).json({ error: 'No se pudo iniciar sesión.' });
+  }
+});
+
+/* Datos de la cuenta del cliente logueado: nombre, cuantos cafes lleva
+   y el QR de su codigo de fidelidad (para que el personal del local lo
+   escanee). Requiere sesion de cliente. */
+app.get('/cliente/mi-cuenta', limiteLecturaPublica, async (req, res) => {
+  try {
+    const sesion = requiereSesionCliente(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { cliente } = await buscarClientePorEmail(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, sesion.email);
+    if (!cliente) {
+      return res.status(404).json({ error: 'No se encontró tu cuenta.' });
+    }
+
+    const qrDataUrl = await QRCode.toDataURL(cliente.codigoFidelidad, { width: 220, margin: 1 });
+
+    res.json({
+      nombre: cliente.nombre || sesion.nombre,
+      email: cliente.email,
+      cafesContador: cliente.cafesContador,
+      cafesParaGratis: config.CAFES_PARA_GRATIS,
+      qrDataUrl,
+    });
+  } catch (err) {
+    console.error('Error leyendo la cuenta del cliente:', err.message);
+    res.status(500).json({ error: 'No se pudo cargar tu cuenta.' });
+  }
+});
+
+/* El personal del local escanea el QR de fidelidad del cliente (desde
+   el modo "Café" del escáner admin) y suma 1 café. Al llegar a
+   CAFES_PARA_GRATIS ese café es gratis y el contador vuelve a 0.
+   Requiere sesion de admin (nivel 1 o 2 — es parte del flujo de venta). */
+app.post('/admin/cafe-escaneado', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
+
+    const { codigoFidelidad } = req.body;
+    if (!codigoFidelidad || !String(codigoFidelidad).trim()) {
+      return res.status(400).json({ error: 'Falta el código escaneado.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const resultado = await registrarCafeCliente(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, String(codigoFidelidad).trim());
+    if (!resultado) {
+      return res.status(404).json({ error: 'Ese código no corresponde a ninguna cuenta. Pedile al cliente que abra "Mi cuenta" en LON.' });
+    }
+
+    res.json({
+      ok: true,
+      nombre: resultado.cliente.nombre,
+      cafesContador: resultado.cafesContador,
+      cafesParaGratis: config.CAFES_PARA_GRATIS,
+      esGratis: resultado.esGratis,
+    });
+  } catch (err) {
+    console.error('Error registrando café:', err.message);
+    res.status(500).json({ error: 'No se pudo registrar el café.' });
   }
 });
 

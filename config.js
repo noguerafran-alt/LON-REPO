@@ -166,10 +166,17 @@ module.exports = {
   // clientes del catálogo público, dadas de alta automáticamente la
   // primera vez que inician sesión con Google (a diferencia de
   // AdminUsers, acá no hace falta whitelist previa).
+  //   codigoFidelidad: codigo unico (no es el email, para no exponerlo
+  //     en el QR) que se muestra como QR en "Mi cuenta" y el personal
+  //     del local escanea al vender un cafe.
+  //   cafesContador: cuantos cafes lleva desde el ultimo gratis (0-3).
+  //     Al llegar a 4 ese cafe es gratis y vuelve a 0.
   COLUMNAS_CLIENTES: {
-    email: 0,     // A
-    nombre: 1,    // B
-    fechaAlta: 2, // C
+    email: 0,           // A
+    nombre: 1,           // B
+    fechaAlta: 2,         // C
+    codigoFidelidad: 3,   // D
+    cafesContador: 4,     // E
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca
@@ -321,6 +328,10 @@ module.exports = {
   // de nuevo.
   SESSION_DURACION_HORAS: Number(process.env.SESSION_DURACION_HORAS || 24 * 30),
 
+  // Programa de fidelidad de cafe: cada cuantos cafes el siguiente es
+  // gratis (4 = "el 4to es gratis": se pagan 3, el 4to escaneo resetea
+  // el contador y se marca como gratis).
+  CAFES_PARA_GRATIS: Number(process.env.CAFES_PARA_GRATIS || 4),
 
   // Longitud del bloque de numero de serie (unidad) del SKU. Con 6,
   // "1" se transforma en "000001".

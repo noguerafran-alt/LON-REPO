@@ -5,6 +5,7 @@
  *  cambia de lugar en la planilla, se ajusta ahi, no aca.
  * ============================================================ */
 
+const crypto = require('crypto');
 const config = require('./config');
 
 /**
@@ -1271,9 +1272,17 @@ async function eliminarAdminUser(sheetsClient, spreadsheetId, sheetName, email) 
  *  CLIENTES (login con Google del catalogo publico)
  * ============================================================ */
 
+/** Genera un codigo de fidelidad unico (no es el email, para no
+    exponerlo en el QR que el cliente muestra en el local). */
+function generarCodigoFidelidad() {
+  const azar = crypto.randomBytes(6).toString('hex').toUpperCase();
+  return `LON-${azar}`;
+}
+
 /**
  * Lee todas las cuentas de clientes y las devuelve como array de
- * objetos { numeroFila, email, nombre, fechaAlta }.
+ * objetos { numeroFila, email, nombre, fechaAlta, codigoFidelidad,
+ * cafesContador }.
  */
 async function getClientes(sheetsClient, spreadsheetId, sheetName) {
   const cols = config.COLUMNAS_CLIENTES;
@@ -1288,11 +1297,14 @@ async function getClientes(sheetsClient, spreadsheetId, sheetName) {
     const fila = rows[i];
     const email = fila[cols.email] ? normalizarEmail(fila[cols.email]) : '';
     if (!email) continue;
+    const cafesContador = Number(fila[cols.cafesContador]);
     clientes.push({
       numeroFila: i + 1,
       email,
       nombre: fila[cols.nombre] ? String(fila[cols.nombre]).trim() : '',
       fechaAlta: fila[cols.fechaAlta] || '',
+      codigoFidelidad: fila[cols.codigoFidelidad] ? String(fila[cols.codigoFidelidad]).trim() : '',
+      cafesContador: Number.isFinite(cafesContador) ? cafesContador : 0,
     });
   }
 
@@ -1306,11 +1318,18 @@ async function buscarClientePorEmail(sheetsClient, spreadsheetId, sheetName, ema
   return encontrado ? { numeroFila: encontrado.numeroFila, cliente: encontrado } : { numeroFila: null, cliente: null };
 }
 
+async function buscarClientePorCodigoFidelidad(sheetsClient, spreadsheetId, sheetName, codigo) {
+  const clientes = await getClientes(sheetsClient, spreadsheetId, sheetName);
+  const codigoNormalizado = String(codigo || '').trim().toUpperCase();
+  const encontrado = clientes.find((c) => c.codigoFidelidad.toUpperCase() === codigoNormalizado);
+  return encontrado ? { numeroFila: encontrado.numeroFila, cliente: encontrado } : { numeroFila: null, cliente: null };
+}
+
 /**
  * Da de alta a un cliente la primera vez que inicia sesión con Google
  * (a diferencia de AdminUsers, no requiere whitelist previa: cualquier
  * cuenta de Google puede ser cliente). Si ya existe, no toca nada —
- * solo devuelve sus datos.
+ * solo devuelve sus datos. Genera su codigo de fidelidad en el alta.
  */
 async function crearClienteSiNoExiste(sheetsClient, spreadsheetId, sheetName, { email, nombre, fecha }) {
   const emailNormalizado = normalizarEmail(email);
@@ -1318,13 +1337,42 @@ async function crearClienteSiNoExiste(sheetsClient, spreadsheetId, sheetName, { 
   if (cliente) return cliente;
 
   const cols = config.COLUMNAS_CLIENTES;
+  const codigoFidelidad = generarCodigoFidelidad();
   const fila = new Array(Math.max(...Object.values(cols)) + 1).fill('');
   fila[cols.email] = emailNormalizado;
   fila[cols.nombre] = nombre || '';
   fila[cols.fechaAlta] = fecha;
+  fila[cols.codigoFidelidad] = codigoFidelidad;
+  fila[cols.cafesContador] = 0;
   await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
 
-  return { email: emailNormalizado, nombre: nombre || '', fechaAlta: fecha };
+  return { email: emailNormalizado, nombre: nombre || '', fechaAlta: fecha, codigoFidelidad, cafesContador: 0 };
+}
+
+/**
+ * Registra un café escaneado para un cliente (programa de fidelidad):
+ * suma 1 al contador y, si llega a CAFES_PARA_GRATIS, ese café se marca
+ * gratis y el contador vuelve a 0. Devuelve null si el código no
+ * corresponde a ningún cliente.
+ */
+async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codigoFidelidad) {
+  const { numeroFila, cliente } = await buscarClientePorCodigoFidelidad(sheetsClient, spreadsheetId, sheetName, codigoFidelidad);
+  if (!numeroFila) return null;
+
+  const objetivo = config.CAFES_PARA_GRATIS;
+  const siguiente = cliente.cafesContador + 1;
+  const esGratis = siguiente >= objetivo;
+  const nuevoContador = esGratis ? 0 : siguiente;
+
+  const cols = config.COLUMNAS_CLIENTES;
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!${columnaALetra(cols.cafesContador)}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[nuevoContador]] },
+  });
+
+  return { cliente, cafesContador: nuevoContador, esGratis };
 }
 
 /* ============================================================
@@ -1830,7 +1878,9 @@ module.exports = {
   actualizarTarifaEnvio,
   getClientes,
   buscarClientePorEmail,
+  buscarClientePorCodigoFidelidad,
   crearClienteSiNoExiste,
+  registrarCafeCliente,
   getSiguienteNumeroProducto,
   crearProductoNuevo,
   buscarFilaProductoPorSkuGeneral,
