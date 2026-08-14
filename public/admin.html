@@ -1334,9 +1334,24 @@
   }
 
   function elegirModoEscaner(modo, botonActivo){
+    const modoAnterior = modoEscaner;
     modoEscaner = modo;
     botonesModoEscaner.forEach((b) => b.classList.toggle('activo', b === botonActivo));
     actualizarStatusBarSegunEstadoCamara();
+
+    // El recuadro de encuadre (qrbox) se calcula una sola vez al iniciar
+    // la cámara, no se actualiza solo mientras está prendida — por eso,
+    // si cambia el modo (código de barras necesita un recuadro ancho y
+    // bajo, no el cuadrado/alto de QR) y la cámara ya está andando, hay
+    // que reiniciarla para que tome la forma correcta.
+    const esModoConEncuadreDistinto = (m) => m === 'asociar';
+    if (esModoConEncuadreDistinto(modoAnterior) !== esModoConEncuadreDistinto(modo) && scanner) {
+      scanner.stop().catch(() => {}).finally(() => {
+        scanner = null;
+        escanerIniciado = false;
+        iniciarEscanerSiHaceFalta();
+      });
+    }
   }
   btnModoVenta.addEventListener('click', () => elegirModoEscaner('venta', btnModoVenta));
   btnModoAsociar.addEventListener('click', () => elegirModoEscaner('asociar', btnModoAsociar));
@@ -1823,7 +1838,16 @@
     });
     iniciarCamaraConFallback(
       scanner,
-      { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.5); return { width: lado, height: Math.floor(lado * 1.25) }; } },
+      { fps: 10, qrbox: (w, h) => {
+        // Código de barras (1D): recuadro ancho y bajo. QR/café: recuadro
+        // cuadrado/alto, como siempre.
+        if (modoEscaner === 'asociar') {
+          const ancho = Math.floor(w * 0.85);
+          return { width: ancho, height: Math.floor(ancho * 0.35) };
+        }
+        const lado = Math.floor(Math.min(w, h) * 0.5);
+        return { width: lado, height: Math.floor(lado * 1.25) };
+      } },
       (decodedText) => { handleScan(decodedText); }
     ).catch(() => {
       statusBar.className = 'status-bar error';
