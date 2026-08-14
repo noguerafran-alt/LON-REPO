@@ -1350,11 +1350,15 @@ async function crearClienteSiNoExiste(sheetsClient, spreadsheetId, sheetName, { 
 }
 
 /**
- * Registra un café PAGO escaneado para un cliente (programa de
- * fidelidad): suma 1 al contador y, al llegar a CAFES_PARA_GRATIS
- * (3 cafés pagos), desbloquea el regalo y el contador vuelve a 0. El
- * regalo se entrega en la próxima visita sin necesidad de escanear de
- * nuevo — por eso "esGratis" se marca en el 3er escaneo, no en un 4to.
+ * Registra un escaneo del QR de fidelidad de un cliente. El contador
+ * tiene dos etapas:
+ *   1. Mientras cafesContador < CAFES_PARA_GRATIS: cada escaneo es un
+ *      café pago, suma 1. Al llegar al objetivo (3), el contador queda
+ *      EN el objetivo (no se resetea todavía) — el cliente "tiene un
+ *      regalo pendiente" (regaloDesbloqueado:true en ese escaneo).
+ *   2. El siguiente escaneo (4to), como cafesContador ya está en el
+ *      objetivo, se interpreta como la entrega del regalo: esGratis:true
+ *      y el contador vuelve a 0, listo para un ciclo nuevo.
  * Devuelve null si el código no corresponde a ningún cliente.
  */
 async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codigoFidelidad) {
@@ -1362,9 +1366,22 @@ async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codi
   if (!numeroFila) return null;
 
   const objetivo = config.CAFES_PARA_GRATIS;
-  const siguiente = cliente.cafesContador + 1;
-  const esGratis = siguiente >= objetivo;
-  const nuevoContador = esGratis ? 0 : siguiente;
+  let nuevoContador;
+  let esGratis;
+  let regaloDesbloqueado;
+
+  if (cliente.cafesContador >= objetivo) {
+    // Ya tenía el regalo pendiente de un escaneo anterior: este escaneo
+    // es la entrega del regalo, arranca un ciclo nuevo desde 0.
+    nuevoContador = 0;
+    esGratis = true;
+    regaloDesbloqueado = false;
+  } else {
+    const siguiente = cliente.cafesContador + 1;
+    nuevoContador = siguiente;
+    esGratis = false;
+    regaloDesbloqueado = siguiente >= objetivo;
+  }
 
   const cols = config.COLUMNAS_CLIENTES;
   await sheetsClient.spreadsheets.values.update({
@@ -1374,7 +1391,7 @@ async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codi
     requestBody: { values: [[nuevoContador]] },
   });
 
-  return { cliente, cafesContador: nuevoContador, esGratis };
+  return { cliente, cafesContador: nuevoContador, esGratis, regaloDesbloqueado };
 }
 
 /* ============================================================

@@ -477,6 +477,7 @@ app.post('/admin/cafe-escaneado', limiteAdmin, async (req, res) => {
       cafesContador: resultado.cafesContador,
       cafesParaGratis: config.CAFES_PARA_GRATIS,
       esGratis: resultado.esGratis,
+      regaloDesbloqueado: resultado.regaloDesbloqueado,
     });
   } catch (err) {
     console.error('Error registrando café:', err.message);

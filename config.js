@@ -329,10 +329,10 @@ module.exports = {
   SESSION_DURACION_HORAS: Number(process.env.SESSION_DURACION_HORAS || 24 * 30),
 
   // Programa de fidelidad de cafe: cuantos cafes PAGOS (escaneados) hacen
-  // falta para desbloquear el regalo. El regalo (un cafe u otra sorpresa)
-  // se entrega en la proxima visita SIN escanear — por eso el objetivo es
-  // 3, no 4: al llegar al 3er escaneo se marca el regalo y el contador
-  // vuelve a 0, no hace falta un 4to escaneo para "cobrar" algo gratis.
+  // falta para desbloquear el regalo. Al llegar al objetivo (3), el
+  // contador queda "esperando" (no se resetea todavia) — el 4to escaneo
+  // (en la proxima visita) es el que entrega el regalo y recien ahi
+  // vuelve a 0. Ver registrarCafeCliente() en googleSheets.js.
   CAFES_PARA_GRATIS: Number(process.env.CAFES_PARA_GRATIS || 3),
 
   // Longitud del bloque de numero de serie (unidad) del SKU. Con 6,
