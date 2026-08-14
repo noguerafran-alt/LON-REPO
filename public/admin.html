@@ -1751,7 +1751,7 @@
       ]
     });
     scanner.start(
-      { facingMode: 'environment' },
+      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.5); return { width: lado, height: Math.floor(lado * 1.25) }; } },
       (decodedText) => { handleScan(decodedText); },
       () => {}
@@ -2044,7 +2044,7 @@
 
     let procesando = false;
     scannerCodigoBarraGenerar.start(
-      { facingMode: 'environment' },
+      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: Math.floor(lado * 0.6) }; } },
       async (textoLeido) => {
         if (procesando) return;
@@ -3234,7 +3234,7 @@
 
     let procesando = false;
     scannerPedido.start(
-      { facingMode: 'environment' },
+      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: lado }; } },
       async (textoLeido) => {
         if (procesando) return;
