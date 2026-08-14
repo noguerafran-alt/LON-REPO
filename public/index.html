@@ -69,7 +69,7 @@
 
   #vistaCatalogo{ padding:16px 24px 40px; flex:1; }
   #vistaCatalogo .volver{
-    background:none; border:none; color:var(--ink-muted); font-family:'IBM Plex Mono', monospace;
+    background:none; border:none; color:var(--ink-muted); font-family:'Fraunces', serif;
     font-size:28px; cursor:pointer; padding:0; text-decoration:none; white-space:nowrap; line-height:1;
   }
   .btn-volver-flecha{
@@ -147,19 +147,19 @@
     display:grid; grid-template-columns:repeat(6, 1fr); gap:18px;
   }
   .fila-buscador-categorias{
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px;
+    display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;
   }
   .btn-mostrar-buscador{
     display:inline-flex; align-items:center; gap:6px; background:none; border:1px solid var(--line);
     color:var(--ink-muted); border-radius:var(--radius); padding:0 14px; height:40px; box-sizing:border-box;
-    font-size:13px; font-family:'Archivo', sans-serif; cursor:pointer; flex:0 0 auto;
+    font-size:14px; font-family:'Fraunces', serif; font-style:italic; font-weight:600; cursor:pointer; flex:0 0 auto;
     transition:border-color 150ms ease, color 150ms ease;
   }
   .btn-mostrar-buscador:hover, .btn-mostrar-buscador.activo{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
   #catalogoTabsCategoria{ flex:1; min-width:0; }
   #catalogoTabsCategoria .tabs-categorias-catalogo{ margin-bottom:0; }
 
-  .carrusel-destacados{ position:relative; margin:22px 0 28px; }
+  .carrusel-destacados{ position:relative; margin:16px 0 26px; }
   .carrusel-pista{
     display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
     padding-bottom:4px; scrollbar-width:none;
@@ -182,7 +182,7 @@
     .btn-carrusel{ display:none; }
   }
   .buscador-catalogo{
-    width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Archivo', sans-serif;
+    width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Fraunces', serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
     color:var(--field-text); margin:0 0 18px; text-transform:uppercase;
   }
@@ -215,7 +215,7 @@
   }
   .tab-subcategoria-catalogo{
     background:none; border:1px solid var(--line); color:var(--ink-muted);
-    border-radius:var(--radius); padding:6px 12px; font-size:12.5px; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); padding:6px 12px; font-size:13px; font-family:'Fraunces', serif;
     cursor:pointer; transition:border-color 150ms ease, color 150ms ease, background 150ms ease;
   }
   .tab-subcategoria-catalogo:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
@@ -237,7 +237,7 @@
   .item-catalogo-publico .foto-item{
     width:100%; aspect-ratio:1/1; background:var(--bg-alt); position:relative;
     display:flex; align-items:center; justify-content:center;
-    color:var(--ink-muted); font-size:11px; font-family:'IBM Plex Mono', monospace;
+    color:var(--ink-muted); font-size:11px; font-family:'Fraunces', serif;
     overflow:hidden;
   }
   .item-catalogo-publico .foto-item img{ width:100%; height:100%; object-fit:cover; display:block; }
@@ -254,22 +254,22 @@
     display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap;
   }
   .item-catalogo-publico .info-item .precio-item{
-    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:700; color:var(--accent);
+    font-family:'Fraunces', serif; font-size:14px; font-weight:700; color:var(--accent);
     font-variant-numeric:tabular-nums;
   }
   .item-catalogo-publico .info-item .estado-stock{
-    font-family:'IBM Plex Mono', monospace; font-size:10px; white-space:nowrap; letter-spacing:0.02em;
+    font-family:'Fraunces', serif; font-size:11px; white-space:nowrap; letter-spacing:0.02em;
   }
   .item-catalogo-publico .info-item .estado-stock.disponible{ color:var(--stamp-green); }
   .item-catalogo-publico .info-item .estado-stock.agotado{ color:var(--stamp-red); }
   .item-catalogo-publico button{
     background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
-    padding:8px 10px; font-size:11.5px; font-family:'IBM Plex Mono', monospace; cursor:pointer; margin-top:auto;
+    padding:8px 10px; font-size:12.5px; font-family:'Fraunces', serif; cursor:pointer; margin-top:auto;
   }
   .detalle-producto .foto-detalle{
     width:100%; max-width:320px; aspect-ratio:1/1; border-radius:var(--radius); overflow:hidden;
     background:var(--bg-alt); display:flex; align-items:center; justify-content:center; position:relative;
-    color:var(--ink-muted); font-size:12px; font-family:'IBM Plex Mono', monospace; margin:0 auto 16px;
+    color:var(--ink-muted); font-size:12px; font-family:'Fraunces', serif; margin:0 auto 16px;
   }
   .detalle-producto .foto-detalle img{ width:100%; height:100%; object-fit:cover; display:block; }
   .detalle-producto .foto-detalle .mockup-icono{ max-width:180px; }
@@ -283,17 +283,17 @@
   .detalle-producto .miniaturas-detalle button.activa{ border-color:var(--accent); border-width:2px; }
   .detalle-producto .miniaturas-detalle img{ width:100%; height:100%; object-fit:cover; display:block; }
   .detalle-producto .nombre{ font-family:'Fraunces', serif; font-weight:600; font-size:24px; color:var(--ink); margin:0 0 6px; }
-  .detalle-producto .meta{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ink-muted); margin-bottom:4px; }
+  .detalle-producto .meta{ font-family:'Fraunces', serif; font-size:13px; color:var(--ink-muted); margin-bottom:4px; }
   .detalle-producto .precio{
-    font-family:'IBM Plex Mono', monospace; font-size:20px; font-weight:700; color:var(--accent);
+    font-family:'Fraunces', serif; font-size:22px; font-weight:700; color:var(--accent);
     font-variant-numeric:tabular-nums; margin-top:14px;
   }
   .detalle-producto .descripcion-producto{
     font-size:14px; line-height:1.6; color:var(--ink); max-width:520px; margin:16px auto 0; text-align:left; white-space:pre-wrap;
   }
   .detalle-producto .btn-comprar{
-    display:block; width:100%; max-width:320px; margin:18px auto 0; padding:14px; font-size:15px; font-weight:700;
-    font-family:'Archivo', sans-serif; border:none; border-radius:var(--radius); background:var(--accent);
+    display:block; width:100%; max-width:320px; margin:18px auto 0; padding:14px; font-size:16px; font-weight:700;
+    font-family:'Fraunces', serif; border:none; border-radius:var(--radius); background:var(--accent);
     color:#FFFFFF; cursor:pointer;
   }
   .detalle-producto .btn-comprar:disabled{ opacity:.5; cursor:default; }
@@ -480,12 +480,12 @@
   </div>
 
   <div id="catalogoListaView">
+    <div id="catalogoDestacados"></div>
     <div class="fila-buscador-categorias">
       <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 Buscar</button>
       <div id="catalogoTabsCategoria"></div>
     </div>
     <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
-    <div id="catalogoDestacados"></div>
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
