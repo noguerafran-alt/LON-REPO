@@ -1731,7 +1731,7 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
-    const catalogo = await getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS);
+    const catalogo = await construirCatalogoConStock(sheetsClient, { soloConStock: false });
     const producto = catalogo.find((p) => p.skuGeneral.toLowerCase() === String(skuGeneral).trim().toLowerCase());
 
     if (!producto) {
@@ -1740,6 +1740,17 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     const precioNum = Number(producto.precio);
     if (!precioNum || precioNum <= 0) {
       return res.status(400).json({ error: 'Este producto todavia no tiene precio cargado, no se puede comprar online.' });
+    }
+    // El stock recien se descuenta cuando se confirma el pago (mas abajo
+    // se anota vacio en stockReservado), pero igual hay que validar ACA
+    // que haya unidades suficientes: sin esto, cualquiera podia pedir
+    // una cantidad mayor al stock real (ej. comprar 7 con 1 en stock).
+    if (cantidadNum > producto.cantidad) {
+      return res.status(400).json({
+        error: producto.cantidad > 0
+          ? `Solo quedan ${producto.cantidad} unidad${producto.cantidad === 1 ? '' : 'es'} disponibles de este producto.`
+          : 'Este producto ya no tiene stock disponible.',
+      });
     }
 
     const pedidoId = generarPedidoId();
@@ -1750,7 +1761,7 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       pedidoId,
       fecha: `${fecha} ${hora}`,
       skuGeneral: producto.skuGeneral,
-      producto: producto.producto,
+      producto: producto.nombre,
       precio: precioNum,
       cantidad: cantidadNum,
       total,
@@ -1778,7 +1789,7 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     if (metodoPago === 'payway') {
       const link = await payway.crearLinkDePago({
         pedidoId,
-        titulo: producto.producto,
+        titulo: producto.nombre,
         precioUnitario: precioNum,
         cantidad: cantidadNum,
       });
@@ -1809,7 +1820,7 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       destinatario: email,
       nombreCliente: nombre,
       pedidoId,
-      producto: producto.producto,
+      producto: producto.nombre,
       cantidad: cantidadNum,
       monto: total,
       transferencia: datosTransferencia,
