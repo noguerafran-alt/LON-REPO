@@ -107,6 +107,21 @@
   }
   .admin-tabs button.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
 
+  .total-venta-actual{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    max-width:480px; margin:16px auto 0; padding:14px 20px; border-radius:var(--radius);
+    background:var(--ink); color:var(--bg);
+  }
+  .etiqueta-total-venta{
+    display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.06em;
+    text-transform:uppercase; opacity:.75;
+  }
+  .valor-total-venta{ display:block; font-family:'Archivo', sans-serif; font-size:24px; font-weight:700; }
+  #btnReiniciarTotalVenta{
+    flex:0 0 auto; padding:8px 14px; font-size:12.5px; font-family:'Archivo', sans-serif; font-weight:600;
+    border:1px solid rgba(255,255,255,0.4); border-radius:var(--radius); background:none; color:var(--bg); cursor:pointer;
+  }
+  #btnReiniciarTotalVenta:hover{ border-color:#fff; }
   #reader{ width:100%; max-width:480px; margin:20px auto 0; padding:0 24px; overflow:hidden; }
   .btn-activar-camara{
     display:block; margin:20px auto 0; padding:14px 24px; font-size:15px; font-weight:700;
@@ -550,6 +565,13 @@
   </div>
 
   <div id="seccionEscanear">
+    <div class="total-venta-actual" id="totalVentaActualBox">
+      <div>
+        <span class="etiqueta-total-venta">Total de esta venta</span>
+        <span class="valor-total-venta" id="totalVentaActualValor">$0</span>
+      </div>
+      <button type="button" id="btnReiniciarTotalVenta">Nueva venta</button>
+    </div>
     <button type="button" id="btnActivarCamara" class="btn-activar-camara">▶ Tocar para activar la cámara</button>
     <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
     <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
@@ -1257,7 +1279,29 @@
     pendingSku = null;
   }
 
-  async function guardarEscaneo(sku, nombre, estado, precioManual){
+  /* ------------------------------------------------------------
+   * TOTAL DE LA VENTA ACTUAL: suma en pantalla (no se guarda en
+   * ninguna hoja, es solo para que el admin le diga el total al
+   * cliente que tiene enfrente) cada vez que se confirma un "Vendido".
+   * Se reinicia a mano con "Nueva venta" al arrancar con otra persona.
+   * ------------------------------------------------------------ */
+  const totalVentaActualValor = document.getElementById('totalVentaActualValor');
+  let totalVentaActual = 0;
+
+  function actualizarTotalVentaActualUi(){
+    totalVentaActualValor.textContent = `$${totalVentaActual}`;
+  }
+  function sumarATotalVentaActual(precio){
+    if (typeof precio !== 'number' || Number.isNaN(precio)) return;
+    totalVentaActual += precio;
+    actualizarTotalVentaActualUi();
+  }
+  document.getElementById('btnReiniciarTotalVenta').addEventListener('click', () => {
+    totalVentaActual = 0;
+    actualizarTotalVentaActualUi();
+  });
+
+  async function guardarEscaneo(sku, nombre, estado, precioManual, precioParaTotal){
     statusBar.className = 'status-bar';
     statusBar.textContent = `Guardando "${sku}"...`;
     try {
@@ -1275,6 +1319,7 @@
       statusBar.className = 'status-bar ok';
       statusBar.textContent = `Agregado a la hoja: ${sku} (${estado})`;
       addLogEntry(sku, nombre, estado);
+      if (estado === 'Vendido') sumarATotalVentaActual(precioParaTotal);
     } catch (err) {
       statusBar.className = 'status-bar error';
       statusBar.textContent = `Error al guardar "${sku}": ${err.message}`;
@@ -1321,7 +1366,8 @@
       // si la verificacion falla, seguimos igual (no bloqueamos la venta por un error de red)
     }
 
-    guardarEscaneo(sku, nombre, 'Vendido', precioIngresado);
+    const precioParaTotal = precioIngresado !== null ? precioIngresado : precioCatalogo;
+    guardarEscaneo(sku, nombre, 'Vendido', precioIngresado, precioParaTotal);
   });
   btnNoVendido.addEventListener('click', () => {
     const sku = pendingSku, nombre = pendingNombre;
