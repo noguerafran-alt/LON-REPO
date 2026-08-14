@@ -513,6 +513,21 @@
     try { localStorage.setItem(CLAVE_CONTACTO_GUARDADO, JSON.stringify(datos)); } catch (e) {}
   }
 
+  /* Si ya inició sesión con Google en el catálogo ("Mi cuenta"), esa
+     sesión queda en localStorage (mismo origen, la comparte con esta
+     página) — no tiene sentido volver a pedirle el contacto, ya
+     sabemos quién es. */
+  const CLAVE_SESION_CLIENTE = 'lon_cliente_sesion';
+  function getSesionClienteValida(){
+    try {
+      const crudo = localStorage.getItem(CLAVE_SESION_CLIENTE);
+      if (!crudo) return null;
+      const datos = JSON.parse(crudo);
+      if (!datos || !datos.token || !datos.exp || Date.now() > datos.exp) return null;
+      return datos;
+    } catch (e) { return null; }
+  }
+
   const pantallaGate = document.getElementById('pantallaGate');
   const pantallaGateFormulario = document.getElementById('pantallaGateFormulario');
 
@@ -522,8 +537,13 @@
     iniciarEscanerSiHaceFalta();
   }
 
+  const sesionClienteGate = getSesionClienteValida();
   const contactoGuardado = getContactoGuardado();
-  if (contactoGuardado) {
+  if (sesionClienteGate) {
+    clienteDatos = { nombre: sesionClienteGate.nombre, email: sesionClienteGate.email, telefono: '' };
+    continuarDespuesDelGate();
+    document.querySelector('.bloque-contacto').style.display = 'none';
+  } else if (contactoGuardado) {
     clienteDatos = contactoGuardado;
     continuarDespuesDelGate();
     document.querySelector('.bloque-contacto').style.display = 'none';
