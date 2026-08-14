@@ -623,6 +623,22 @@ async function actualizarNombreVisibleCategoria(sheetsClient, spreadsheetId, she
 }
 
 /**
+ * Convierte a numero un valor de celda que puede venir en formato
+ * argentino (punto de miles, coma decimal — ej "4.000,00", asi es como
+ * Google Sheets lo devuelve si alguien tipeo el numero directo en la
+ * planilla y Sheets le aplico formato de moneda/miles) o como numero
+ * plano (ej "4000", que es lo que manda el panel admin). Devuelve 0 si
+ * no se puede interpretar.
+ */
+function parseNumeroFormatoArgentino(valorCelda) {
+  if (typeof valorCelda === 'number') return Number.isFinite(valorCelda) ? valorCelda : 0;
+  if (valorCelda === undefined || valorCelda === null || valorCelda === '') return 0;
+  const normalizado = String(valorCelda).trim().replace(/\./g, '').replace(',', '.');
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+/**
  * Lee la hoja Envios y devuelve la tabla de costos estimados de envío a
  * domicilio por provincia: [{ provincia, costo }]. Se usa en el checkout
  * público mientras no está integrada la cotización real por API.
@@ -640,8 +656,7 @@ async function getTarifasEnvio(sheetsClient, spreadsheetId, sheetName) {
     const row = rows[i];
     const provincia = row[cols.provincia] ? String(row[cols.provincia]).trim() : '';
     if (!provincia) continue;
-    const costo = Number(row[cols.costo]);
-    tarifas.push({ provincia, costo: Number.isFinite(costo) ? costo : 0 });
+    tarifas.push({ provincia, costo: parseNumeroFormatoArgentino(row[cols.costo]) });
   }
 
   return tarifas;
