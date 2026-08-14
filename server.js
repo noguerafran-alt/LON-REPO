@@ -175,6 +175,13 @@ if (!config.EMAIL_USER || !config.EMAIL_APP_PASSWORD) {
 if (!config.WHATSAPP_TOKEN || !config.WHATSAPP_PHONE_NUMBER_ID) {
   console.warn('⚠️  No configuraste WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID — el chatbot de WhatsApp no va a poder responder hasta que los agregues.');
 }
+if (!config.GEMINI_API_KEY) {
+  console.warn('⚠️  No configuraste GEMINI_API_KEY — las fotos de producto se suben sin sacarles el fondo automáticamente.');
+} else if (!imagenes.estaDisponibleGemini()) {
+  console.warn('⚠️  Configuraste GEMINI_API_KEY pero no se pudo cargar el paquete @google/genai — revisá que esté instalado (ver package.json / logs del build en Render). Las fotos se suben sin sacarles el fondo.');
+} else {
+  console.log('✅ GEMINI_API_KEY detectada — las fotos de producto van a subirse con el fondo sacado automáticamente.');
+}
 
 const credentials = process.env.GOOGLE_CREDENTIALS_JSON
   ? JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON)

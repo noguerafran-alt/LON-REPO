@@ -54,8 +54,14 @@ const MIME_POR_EXTENSION = {
  * cualquiera de esos casos el llamador sigue con la foto original tal
  * cual (nunca bloquea la subida).
  */
+function estaDisponibleGemini() {
+  return Boolean(GoogleGenAI);
+}
+
 async function quitarFondoConGemini(rutaOriginal) {
   if (!GoogleGenAI || !config.GEMINI_API_KEY) return null;
+
+  console.log(`Gemini: sacando el fondo de ${path.basename(rutaOriginal)}...`);
 
   try {
     const extension = path.extname(rutaOriginal).toLowerCase();
@@ -77,8 +83,13 @@ async function quitarFondoConGemini(rutaOriginal) {
       ? respuesta.candidates[0].content.parts || []
       : [];
     const parteImagen = partes.find((p) => p.inlineData && p.inlineData.data);
-    if (!parteImagen) return null;
+    if (!parteImagen) {
+      const textoRespuesta = partes.find((p) => p.text)?.text;
+      console.warn('Gemini no devolvió ninguna imagen editada' + (textoRespuesta ? ` — dijo: "${textoRespuesta}"` : ' (sin texto adicional).'));
+      return null;
+    }
 
+    console.log(`Gemini: fondo sacado OK (${path.basename(rutaOriginal)}).`);
     return Buffer.from(parteImagen.inlineData.data, 'base64');
   } catch (err) {
     console.error('No se pudo quitar el fondo con Gemini, se usa la foto original:', err.message);
@@ -234,6 +245,7 @@ function borrarFotoYMiniatura(carpeta, nombreArchivo) {
 
 module.exports = {
   estaDisponible,
+  estaDisponibleGemini,
   optimizarFotoSubida,
   generarMiniaturasFaltantes,
   borrarFotoYMiniatura,
