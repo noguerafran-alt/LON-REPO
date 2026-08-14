@@ -146,12 +146,19 @@
   .grilla-catalogo-publico{
     display:grid; grid-template-columns:repeat(6, 1fr); gap:18px;
   }
+  .btn-mostrar-buscador{
+    display:inline-flex; align-items:center; gap:6px; background:none; border:1px solid var(--line);
+    color:var(--ink-muted); border-radius:var(--radius); padding:8px 14px; font-size:13px;
+    font-family:'Archivo', sans-serif; cursor:pointer; margin-bottom:14px;
+    transition:border-color 150ms ease, color 150ms ease;
+  }
+  .btn-mostrar-buscador:hover, .btn-mostrar-buscador.activo{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
   .buscador-catalogo{
     width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Archivo', sans-serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
-    color:var(--field-text); margin:14px 0 18px;
+    color:var(--field-text); margin:0 0 18px; text-transform:uppercase;
   }
-  .buscador-catalogo::placeholder{ color:#9a9488; }
+  .buscador-catalogo::placeholder{ color:#9a9488; text-transform:none; }
   .buscador-catalogo:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
   .seccion-categoria-catalogo{ margin-bottom:28px; }
   .titulo-categoria-catalogo{
@@ -429,7 +436,9 @@
   </div>
 
   <div id="catalogoListaView">
-    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="🔍 Buscar producto por nombre..." style="margin-top:16px;">
+    <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo" style="margin-top:16px;">🔍 Buscar</button>
+    <div id="catalogoTabsCategoria"></div>
+    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none; margin-top:12px;">
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
@@ -447,6 +456,7 @@
 <script>
   const catalogoListaView = document.getElementById('catalogoListaView');
   const catalogoDetalleView = document.getElementById('catalogoDetalleView');
+  const catalogoTabsCategoria = document.getElementById('catalogoTabsCategoria');
   const catalogoPublicoLista = document.getElementById('catalogoPublicoLista');
   const catalogoDetalleContenido = document.getElementById('catalogoDetalleContenido');
   const btnVolverDeDetalle = document.getElementById('btnVolverDeDetalle');
@@ -547,13 +557,16 @@
 
   function renderizarCatalogoPublico(){
     if (catalogoPublicoProductos.length === 0) {
+      catalogoTabsCategoria.innerHTML = '';
       catalogoPublicoLista.innerHTML = '<p style="color:var(--ink-muted); font-size:13px;">Todavía no hay productos cargados.</p>';
       return;
     }
 
-    // Modo búsqueda: ignora las categorías, muestra un listado plano con
-    // todos los productos cuyo nombre coincide.
+    // Modo búsqueda: ignora las categorías (se ocultan las pestañas),
+    // muestra un listado plano con todos los productos cuyo nombre
+    // coincide.
     if (terminoBusquedaCatalogo) {
+      catalogoTabsCategoria.innerHTML = '';
       const encontrados = ordenarPorDisponibilidad(
         productosCatalogoFiltrados().map((p) => ({ ...p, indiceGlobal: catalogoPublicoProductos.indexOf(p) }))
       );
@@ -637,12 +650,10 @@
       </div>
     `;
 
-    catalogoPublicoLista.innerHTML = `
-      <div class="tabs-categorias-catalogo">${tabsHtml}</div>
-      <div class="seccion-categoria-catalogo">${gridHtml}</div>
-    `;
+    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo">${tabsHtml}</div>`;
+    catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
 
-    catalogoPublicoLista.querySelectorAll('.tab-categoria-catalogo').forEach((boton) => {
+    catalogoTabsCategoria.querySelectorAll('.tab-categoria-catalogo').forEach((boton) => {
       boton.addEventListener('click', () => {
         categoriaCatalogoActiva = boton.getAttribute('data-categoria');
         renderizarCatalogoPublico();
@@ -771,9 +782,25 @@
     catalogoListaView.style.display = 'block';
   });
 
+  const btnMostrarBuscadorCatalogo = document.getElementById('btnMostrarBuscadorCatalogo');
   const inputBuscarCatalogo = document.getElementById('inputBuscarCatalogo');
   let debounceBusquedaCatalogo = null;
+
+  btnMostrarBuscadorCatalogo.addEventListener('click', () => {
+    const mostrando = inputBuscarCatalogo.style.display !== 'none';
+    inputBuscarCatalogo.style.display = mostrando ? 'none' : 'block';
+    btnMostrarBuscadorCatalogo.classList.toggle('activo', !mostrando);
+    if (!mostrando) inputBuscarCatalogo.focus();
+  });
+
+  // Este buscador se escribe en MAYÚSCULAS (a diferencia del resto de
+  // los campos públicos, que quedan tal cual los tipea el cliente).
   inputBuscarCatalogo.addEventListener('input', () => {
+    const inicio = inputBuscarCatalogo.selectionStart;
+    const fin = inputBuscarCatalogo.selectionEnd;
+    inputBuscarCatalogo.value = inputBuscarCatalogo.value.toUpperCase();
+    if (inicio !== null && fin !== null) inputBuscarCatalogo.setSelectionRange(inicio, fin);
+
     clearTimeout(debounceBusquedaCatalogo);
     debounceBusquedaCatalogo = setTimeout(() => {
       terminoBusquedaCatalogo = inputBuscarCatalogo.value.trim();
