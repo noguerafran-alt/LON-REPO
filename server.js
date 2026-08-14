@@ -1207,10 +1207,18 @@ app.post('/admin/producto/foto', limiteAdmin, (req, res) => {
         return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
       }
 
+      // Antes de optimizar: le sacamos el fondo (IA local, sin mandar la
+      // foto a ningún servicio externo) y la centramos sobre blanco. Si
+      // no está disponible o falla, seguimos con la foto tal cual la
+      // subieron — nunca bloquea la subida. Ver imagenes.js.
+      const rutaSinFondo = await imagenes.quitarFondoYCentrar(req.file.path);
+      const rutaAOptimizar = rutaSinFondo || req.file.path;
+      if (rutaSinFondo) fs.unlink(req.file.path, () => {});
+
       // Reescribimos la imagen a WEBP en dos tamaños (grande + miniatura)
       // y nos quedamos con el nombre del archivo grande, que es el que va
       // a la hoja Productos. Ver imagenes.js.
-      const nombreFinal = await imagenes.optimizarFotoSubida(req.file.path);
+      const nombreFinal = await imagenes.optimizarFotoSubida(rutaAOptimizar);
       const fotoUrl = `/uploads/productos/${nombreFinal}`;
 
       const sheetsClient = google.sheets({ version: 'v4', auth });
