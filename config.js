@@ -396,12 +396,4 @@ module.exports = {
   // sigue funcionando con las respuestas por palabra clave (sin IA).
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
-
-  // Opcional: si cargás una API key de Gemini (Google AI Studio), las fotos
-  // de producto que se suben desde el admin pasan primero por Gemini para
-  // sacarles el fondo y centrar el producto sobre blanco (edición de imagen
-  // en la nube, no consume RAM del servidor). Si la dejás vacía, las fotos
-  // se suben tal cual (sin tocar el fondo), como antes.
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-  GEMINI_IMAGE_MODEL: process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
 };

@@ -24,66 +24,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const config = require('./config');
 
 let sharp = null;
 try {
   sharp = require('sharp');
 } catch (err) {
   console.warn('⚠️  No se pudo cargar sharp — las fotos se van a guardar sin optimizar. Detalle:', err.message);
-}
-
-let GoogleGenAI = null;
-try {
-  ({ GoogleGenAI } = require('@google/genai'));
-} catch (err) {
-  // No pasa nada si no esta instalado: quitar el fondo es opcional, ver
-  // quitarFondoConGemini() mas abajo.
-}
-
-const MIME_POR_EXTENSION = {
-  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp',
-};
-
-/**
- * Le pide a Gemini (edicion de imagen, corre en la nube de Google — no
- * consume RAM del servidor) que ponga el producto de la foto sobre un
- * fondo blanco liso, centrado y sin sombras, sin tocar el producto en
- * si. Devuelve un Buffer con la imagen editada, o null si no hay API key
- * configurada, la librería no está instalada, o algo falla — en
- * cualquiera de esos casos el llamador sigue con la foto original tal
- * cual (nunca bloquea la subida).
- */
-async function quitarFondoConGemini(rutaOriginal) {
-  if (!GoogleGenAI || !config.GEMINI_API_KEY) return null;
-
-  try {
-    const extension = path.extname(rutaOriginal).toLowerCase();
-    const mimeType = MIME_POR_EXTENSION[extension] || 'image/jpeg';
-    const datosBase64 = fs.readFileSync(rutaOriginal).toString('base64');
-
-    const ai = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
-    const respuesta = await ai.models.generateContent({
-      model: config.GEMINI_IMAGE_MODEL,
-      contents: [
-        {
-          text: 'Edit this product photo: place the product on a solid pure white background (#FFFFFF), centered in the frame, with no shadows, gradients or reflections behind it. Do not change the product itself in any way (same shape, colors, proportions, details) — only replace and clean up the background. Output only the edited image, same aspect ratio as the input.',
-        },
-        { inlineData: { mimeType, data: datosBase64 } },
-      ],
-    });
-
-    const partes = respuesta.candidates && respuesta.candidates[0] && respuesta.candidates[0].content
-      ? respuesta.candidates[0].content.parts || []
-      : [];
-    const parteImagen = partes.find((p) => p.inlineData && p.inlineData.data);
-    if (!parteImagen) return null;
-
-    return Buffer.from(parteImagen.inlineData.data, 'base64');
-  } catch (err) {
-    console.error('No se pudo quitar el fondo con Gemini, se usa la foto original:', err.message);
-    return null;
-  }
 }
 
 /* Medidas de salida. Se pueden ajustar por variable de entorno sin tocar
@@ -138,20 +84,10 @@ async function optimizarFotoSubida(rutaOriginal) {
   const nombreThumb = `${nombreSinExtension}${SUFIJO_THUMB}.webp`;
 
   try {
-    // Si hay API key de Gemini configurada, primero le sacamos el fondo
-    // (queda blanco, centrado, sin sombras) antes de optimizar — si algo
-    // falla, seguimos con el archivo original tal cual venia.
-    const sinFondo = await quitarFondoConGemini(rutaOriginal);
-
     // `rotate()` sin argumentos aplica la orientacion EXIF: sin esto, las
     // fotos sacadas con el celular de costado salen giradas, porque al
-    // reescribirlas se pierde el metadato que las enderezaba. La imagen
-    // que devuelve Gemini ya viene sin ese metadato (es una imagen nueva
-    // generada, no la original con su EXIF), así que rotate() en ese
-    // caso no hace nada — no rompe nada tenerlo igual.
-    const entrada = sinFondo
-      ? sharp(sinFondo, { failOn: 'none' }).rotate()
-      : sharp(rutaOriginal, { failOn: 'none' }).rotate();
+    // reescribirlas se pierde el metadato que las enderezaba.
+    const entrada = sharp(rutaOriginal, { failOn: 'none' }).rotate();
 
     await Promise.all([
       entrada.clone()
