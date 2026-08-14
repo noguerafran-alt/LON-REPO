@@ -47,6 +47,7 @@ module.exports = {
   HOJA_IMPRIMIR_APP: process.env.GOOGLE_IMPRIMIR_APP_SHEET_NAME || 'IMPRIMIR APP',  // usada SOLO por esta app: aca se anota cada unidad generada desde la web, para poder imprimir unicamente lo generado desde aca
   HOJA_CONFIG: process.env.GOOGLE_CONFIG_SHEET_NAME || 'Config',                    // categorias, subcategorias y prefijo de SKU (para crear productos nuevos)
   HOJA_CODIGOS_BARRA: process.env.GOOGLE_CODIGOS_BARRA_SHEET_NAME || 'CODIGOS_BARRA', // asociacion entre codigos de barra externos (ISBN, EAN, etc) y el SKU interno
+  HOJA_VISITAS: process.env.GOOGLE_VISITAS_SHEET_NAME || 'VISITAS', // A=SKU general, B=cantidad de visitas, C=ultima fecha — para "Destacados: mas visitados" en el catalogo publico
   HOJA_ADMIN_USERS: process.env.GOOGLE_ADMIN_USERS_SHEET_NAME || 'AdminUsers',    // usuarios autorizados a entrar al panel admin (login con Google), con su nivel de acceso
 
   /* ------------------------------------------------------------
@@ -139,6 +140,15 @@ module.exports = {
     skuGeneral: 1,    // B: SKU interno al que corresponde
     producto: 2,      // C: nombre del producto, solo de referencia visual
     fecha: 3,         // D: fecha en que se creo/actualizo la asociacion
+  },
+
+  // Columnas de la hoja VISITAS (planilla de PRODUCTOS). Una fila por SKU
+  // general; se suma 1 cada vez que alguien abre el detalle de ese
+  // producto en el catalogo publico.
+  COLUMNAS_VISITAS: {
+    skuGeneral: 0,    // A
+    visitas: 1,       // B
+    ultimaFecha: 2,   // C
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca

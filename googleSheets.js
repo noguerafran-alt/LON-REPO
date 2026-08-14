@@ -1591,6 +1591,90 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
   return { procesadas, duplicadas };
 }
 
+/**
+ * Suma 1 visita a un producto (columna B de la hoja VISITAS), buscandolo
+ * por SKU general. Si todavia no tiene fila, la crea en 1. Se usa cada
+ * vez que alguien abre el detalle de un producto en el catalogo publico,
+ * para poder armar el ranking de "Destacados: mas visitados".
+ */
+async function registrarVisitaProducto(sheetsClient, spreadsheetId, sheetName, skuGeneral, fecha) {
+  const cols = config.COLUMNAS_VISITAS;
+  const ultimaLetra = columnaALetra(cols.ultimaFecha);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const skuNormalizado = String(skuGeneral).trim().toLowerCase();
+
+  for (let i = 0; i < rows.length; i++) {
+    const filaSku = rows[i][cols.skuGeneral] ? String(rows[i][cols.skuGeneral]).trim().toLowerCase() : '';
+    if (filaSku === skuNormalizado) {
+      const visitasActuales = Number(rows[i][cols.visitas]) || 0;
+      const numeroFila = i + 1;
+      await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetName, numeroFila);
+      const letraVisitas = columnaALetra(cols.visitas);
+      await sheetsClient.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!${letraVisitas}${numeroFila}:${ultimaLetra}${numeroFila}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[visitasActuales + 1, fecha || '']] },
+      });
+      return;
+    }
+  }
+
+  const filaNueva = new Array(cols.ultimaFecha + 1).fill('');
+  filaNueva[cols.skuGeneral] = skuGeneral;
+  filaNueva[cols.visitas] = 1;
+  filaNueva[cols.ultimaFecha] = fecha || '';
+  await appendRow(sheetsClient, spreadsheetId, sheetName, filaNueva);
+}
+
+/**
+ * Lee la hoja VISITAS entera y devuelve un mapa SKU general (mayusculas)
+ * -> cantidad de visitas. Se usa para armar "Destacados: mas visitados".
+ */
+async function getVisitasPorSkuGeneral(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_VISITAS;
+  const ultimaLetra = columnaALetra(cols.ultimaFecha);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const mapa = {};
+
+  for (const fila of rows) {
+    const skuGeneral = fila[cols.skuGeneral] ? String(fila[cols.skuGeneral]).trim() : '';
+    if (!skuGeneral) continue;
+    mapa[skuGeneral.toUpperCase()] = Number(fila[cols.visitas]) || 0;
+  }
+
+  return mapa;
+}
+
+/**
+ * Lee la hoja Consultas entera y devuelve un mapa SKU general (mayusculas)
+ * -> cantidad de consultas. El SKU guardado en Consultas puede ser un SKU
+ * completo (con numero de serie) o "(contacto general)" — se normaliza
+ * con extraerSkuGeneral() y se ignoran las que no correspondan a ningun
+ * producto real. Se usa para armar "Destacados: mas consultados".
+ */
+async function getConsultasPorSkuGeneral(sheetsClient, spreadsheetId, sheetName) {
+  const range = `${sheetName}!A:A`;
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const mapa = {};
+
+  for (let i = 1; i < rows.length; i++) {
+    const skuCrudo = rows[i][0] ? String(rows[i][0]).trim() : '';
+    if (!skuCrudo || skuCrudo === '(contacto general)') continue;
+    const skuGeneral = extraerSkuGeneral(skuCrudo).toUpperCase();
+    mapa[skuGeneral] = (mapa[skuGeneral] || 0) + 1;
+  }
+
+  return mapa;
+}
+
 module.exports = {
   appendRow,
   appendRows,
@@ -1623,6 +1707,9 @@ module.exports = {
   asegurarFilaStock,
   ajustarStockCantidad,
   procesarVentasNuevas,
+  registrarVisitaProducto,
+  getVisitasPorSkuGeneral,
+  getConsultasPorSkuGeneral,
 
   getAdminUsers,
   buscarAdminUserPorEmail,

@@ -146,13 +146,40 @@
   .grilla-catalogo-publico{
     display:grid; grid-template-columns:repeat(6, 1fr); gap:18px;
   }
+  .fila-buscador-categorias{
+    display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-top:16px;
+  }
   .btn-mostrar-buscador{
     display:inline-flex; align-items:center; gap:6px; background:none; border:1px solid var(--line);
     color:var(--ink-muted); border-radius:var(--radius); padding:8px 14px; font-size:13px;
-    font-family:'Archivo', sans-serif; cursor:pointer; margin-bottom:14px;
+    font-family:'Archivo', sans-serif; cursor:pointer; flex:0 0 auto;
     transition:border-color 150ms ease, color 150ms ease;
   }
   .btn-mostrar-buscador:hover, .btn-mostrar-buscador.activo{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
+  #catalogoTabsCategoria{ flex:1; min-width:0; }
+  #catalogoTabsCategoria .tabs-categorias-catalogo{ margin-bottom:0; }
+
+  .seccion-destacados{ margin:22px 0 6px; }
+  .seccion-destacados .titulo-destacados{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:600; font-size:17px;
+    letter-spacing:0.02em; color:var(--accent-terracota); margin:0 0 10px;
+  }
+  .fila-destacados{
+    display:flex; gap:14px; overflow-x:auto; padding-bottom:6px; margin-bottom:22px;
+    scrollbar-width:thin;
+  }
+  .item-destacado{
+    flex:0 0 auto; width:150px; border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; background:var(--field-bg); cursor:pointer; text-align:left;
+  }
+  .item-destacado .foto-destacado{ width:150px; height:150px; background:var(--bg-alt); overflow:hidden; }
+  .item-destacado .foto-destacado img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .item-destacado .info-destacado{ padding:8px 10px; }
+  .item-destacado .nombre-destacado{
+    font-size:13px; font-weight:600; color:var(--ink); line-height:1.3;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .item-destacado .precio-destacado{ font-family:'Fraunces', serif; font-size:14px; color:var(--accent-terracota); margin-top:4px; }
   .buscador-catalogo{
     width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Archivo', sans-serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
@@ -436,9 +463,12 @@
   </div>
 
   <div id="catalogoListaView">
-    <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo" style="margin-top:16px;">🔍 Buscar</button>
-    <div id="catalogoTabsCategoria"></div>
-    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none; margin-top:12px;">
+    <div class="fila-buscador-categorias">
+      <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 Buscar</button>
+      <div id="catalogoTabsCategoria"></div>
+    </div>
+    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
+    <div id="catalogoDestacados"></div>
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
@@ -457,6 +487,7 @@
   const catalogoListaView = document.getElementById('catalogoListaView');
   const catalogoDetalleView = document.getElementById('catalogoDetalleView');
   const catalogoTabsCategoria = document.getElementById('catalogoTabsCategoria');
+  const catalogoDestacados = document.getElementById('catalogoDestacados');
   const catalogoPublicoLista = document.getElementById('catalogoPublicoLista');
   const catalogoDetalleContenido = document.getElementById('catalogoDetalleContenido');
   const btnVolverDeDetalle = document.getElementById('btnVolverDeDetalle');
@@ -543,6 +574,63 @@
       abrirProductoDesdeUrlSiHaceFalta();
     } catch (err) {
       catalogoPublicoLista.innerHTML = `<p style="color:var(--stamp-red); font-size:13px;">No se pudo cargar el catálogo: ${escaparHtmlPublico(err.message)}</p>`;
+    }
+  }
+
+  /* "Destacados": más consultados (hoja Consultas) y más visitados
+     (aperturas del detalle de producto). Si todavía no hay datos de
+     alguno de los dos (instalación nueva), esa fila directamente no se
+     muestra — no tiene sentido un carrusel vacío. */
+  function filaDestacadosHtml(titulo, productos){
+    if (!productos || productos.length === 0) return '';
+    return `
+      <div class="seccion-destacados">
+        <h3 class="titulo-destacados">${escaparHtmlPublico(titulo)}</h3>
+        <div class="fila-destacados">
+          ${productos.map((p) => `
+            <button type="button" class="item-destacado" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}">
+              <div class="foto-destacado">${fotoOPlaceholder(p.foto, p.categoria)}</div>
+              <div class="info-destacado">
+                <div class="nombre-destacado">${escaparHtmlPublico(p.nombre)}</div>
+                ${p.precio ? `<div class="precio-destacado">$${escaparHtmlPublico(String(p.precio))}</div>` : ''}
+              </div>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  let productosDestacadosPorSku = new Map();
+
+  async function cargarDestacados(){
+    try {
+      const res = await fetch('/catalogo-destacados');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar destacados');
+
+      const masConsultados = data.masConsultados || [];
+      const masVisitados = data.masVisitados || [];
+      productosDestacadosPorSku = new Map(
+        [...masConsultados, ...masVisitados].map((p) => [p.skuGeneral, p])
+      );
+
+      catalogoDestacados.innerHTML =
+        filaDestacadosHtml('Más consultados', masConsultados) +
+        filaDestacadosHtml('Más visitados', masVisitados);
+
+      catalogoDestacados.querySelectorAll('[data-sku-destacado]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+          const skuGeneral = boton.getAttribute('data-sku-destacado');
+          const producto = productosDestacadosPorSku.get(skuGeneral)
+            || catalogoPublicoProductos.find((p) => p.skuGeneral === skuGeneral);
+          if (producto) mostrarDetalleProductoPublico(producto);
+        });
+      });
+    } catch (err) {
+      // Si falla, simplemente no se muestra la sección — no es crítico
+      // para poder usar el resto del catálogo.
+      catalogoDestacados.innerHTML = '';
     }
   }
 
@@ -675,6 +763,17 @@
   }
 
   function mostrarDetalleProductoPublico(producto){
+    // Registramos la visita para "Destacados: más visitados" — en
+    // segundo plano, sin bloquear ni avisar nada si falla (no es
+    // crítico para poder ver el producto).
+    if (producto.skuGeneral) {
+      fetch('/producto-visita', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skuGeneral: producto.skuGeneral }),
+      }).catch(() => {});
+    }
+
     const puedeComprar = Boolean(producto.precio) && producto.disponible;
     const fotos = fotosDelProducto(producto);
 
@@ -809,6 +908,7 @@
   });
 
   cargarCatalogoPublico();
+  cargarDestacados();
 
   /* ------------------------------------------------------------
    * DEJANOS TU CONTACTO

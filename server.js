@@ -34,6 +34,9 @@ const {
   buscarSkuCompletoDisponible,
   procesarVentasNuevas,
   ajustarStockCantidad,
+  registrarVisitaProducto,
+  getVisitasPorSkuGeneral,
+  getConsultasPorSkuGeneral,
   getAdminUsers,
   buscarAdminUserPorEmail,
   crearOActualizarAdminUser,
@@ -895,6 +898,66 @@ app.get('/catalogo-publico', limiteLecturaPublica, async (req, res) => {
   } catch (err) {
     console.error('Error leyendo el catálogo público:', err.message);
     res.status(500).json({ error: 'No se pudo cargar el catálogo.' });
+  }
+});
+
+/* Suma 1 visita a un producto — se llama cada vez que alguien abre el
+   detalle de un producto en el catalogo publico. Se usa para armar
+   "Destacados: mas visitados". Sin login, con rate-limit anti-abuso. */
+app.post('/producto-visita', limiteEscrituraPublica, async (req, res) => {
+  try {
+    const { skuGeneral } = req.body;
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { fecha } = fechaYHoraActual();
+    await registrarVisitaProducto(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_VISITAS,
+      String(skuGeneral).trim(), fecha,
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    // No es grave si esto falla — no bloqueamos ni avisamos al cliente,
+    // el catalogo tiene que seguir funcionando igual sin esta metrica.
+    console.error('Error registrando la visita:', err.message);
+    res.status(500).json({ error: 'No se pudo registrar la visita.' });
+  }
+});
+
+/* Top de productos "mas consultados" (hoja Consultas) y "mas visitados"
+   (hoja VISITAS) para la seccion "Destacados" del catalogo publico. Solo
+   incluye productos con stock disponible (los mismos que ya se pueden
+   ver/comprar en el catalogo). Sin login. */
+app.get('/catalogo-destacados', limiteLecturaPublica, async (req, res) => {
+  try {
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const TOP_N = 8;
+
+    const [productos, consultasPorSku, visitasPorSku] = await Promise.all([
+      construirCatalogoConStock(sheetsClient, { soloConStock: true }),
+      getConsultasPorSkuGeneral(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_CONSULTAS),
+      getVisitasPorSkuGeneral(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_VISITAS),
+    ]);
+
+    function topPorConteo(mapaConteo) {
+      return productos
+        .map((p) => ({ producto: p, conteo: mapaConteo[p.skuGeneral.toUpperCase()] || 0 }))
+        .filter((item) => item.conteo > 0)
+        .sort((a, b) => b.conteo - a.conteo)
+        .slice(0, TOP_N)
+        .map((item) => ({ ...item.producto, conteo: item.conteo }));
+    }
+
+    res.json({
+      masConsultados: topPorConteo(consultasPorSku),
+      masVisitados: topPorConteo(visitasPorSku),
+    });
+  } catch (err) {
+    console.error('Error armando destacados:', err.message);
+    res.status(500).json({ error: 'No se pudieron cargar los destacados.' });
   }
 });
 
