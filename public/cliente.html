@@ -404,6 +404,17 @@
   let scanner = null;
   let escanerIniciado = false;
 
+  /* Refuerza el enfoque continuo directo sobre la camara YA activa (no
+     solo al pedirla en getUserMedia — en algunos celulares eso no
+     alcanza). Si el navegador/dispositivo no lo soporta, no hace
+     nada — nunca rompe el escaneo. */
+  function reforzarEnfoqueContinuo(instanciaScanner){
+    if (!instanciaScanner || typeof instanciaScanner.applyVideoConstraints !== 'function') return;
+    try {
+      instanciaScanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+    } catch (e) {}
+  }
+
   function iniciarEscanerSiHaceFalta(){
     if (escanerIniciado) return;
     escanerIniciado = true;
@@ -423,7 +434,7 @@
       ]
     });
     scanner.start(
-      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
+      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
       {
         fps: 10,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -433,12 +444,22 @@
       },
       (decodedText) => { handleScan(decodedText); },
       () => {}
-    ).catch((err) => {
+    ).then(() => {
+      reforzarEnfoqueContinuo(scanner);
+    }).catch((err) => {
       statusBar.className = 'status-bar error';
       statusBar.textContent = 'No se pudo acceder a la cámara. Revisá los permisos del navegador.';
       escanerIniciado = false;
     });
   }
+
+  /* Ultimo recurso manual: tocar el video vuelve a pedirle enfoque
+     continuo a la camara. En Android/Chrome esto a veces "despierta" el
+     autoenfoque cuando quedo trabado; en iOS/Safari no hace nada (esa
+     plataforma no expone control de enfoque por navegador). */
+  document.getElementById('reader').addEventListener('click', () => {
+    if (scanner) reforzarEnfoqueContinuo(scanner);
+  });
 
   function reiniciarEscaner(){
     if (scanner) {

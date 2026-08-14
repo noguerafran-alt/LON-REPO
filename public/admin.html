@@ -1725,6 +1725,18 @@
   // resultado. Se consume (y apaga) en el primer reinicio que evita.
   let suprimirProximoReinicioEscaner = false;
 
+  /* Refuerza el enfoque continuo directo sobre la camara YA activa (no
+     solo al pedirla en getUserMedia — en algunos celulares eso no
+     alcanza, hace falta aplicarlo de nuevo sobre el track ya corriendo).
+     Si el navegador/dispositivo no lo soporta, no hace nada — nunca
+     rompe el escaneo. */
+  function reforzarEnfoqueContinuo(instanciaScanner){
+    if (!instanciaScanner || typeof instanciaScanner.applyVideoConstraints !== 'function') return;
+    try {
+      instanciaScanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+    } catch (e) {}
+  }
+
   function actualizarBotonActivarCamara(){
     const boton = document.getElementById('btnActivarCamara');
     if (escanerIniciado) {
@@ -1751,11 +1763,13 @@
       ]
     });
     scanner.start(
-      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
+      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.5); return { width: lado, height: Math.floor(lado * 1.25) }; } },
       (decodedText) => { handleScan(decodedText); },
       () => {}
-    ).catch(() => {
+    ).then(() => {
+      reforzarEnfoqueContinuo(scanner);
+    }).catch(() => {
       statusBar.className = 'status-bar error';
       statusBar.textContent = 'No se pudo acceder a la cámara. Revisá los permisos del navegador.';
       escanerIniciado = false;
@@ -1792,6 +1806,14 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reiniciarEscaner(); });
   window.addEventListener('pageshow', (evento) => { if (evento.persisted) reiniciarEscaner(); });
+
+  /* Ultimo recurso manual: tocar el video vuelve a pedirle enfoque
+     continuo a la camara. En Android/Chrome esto a veces "despierta" el
+     autoenfoque cuando quedo trabado; en iOS/Safari no hace nada (esa
+     plataforma no expone control de enfoque por navegador). */
+  document.getElementById('reader').addEventListener('click', () => {
+    if (scanner) reforzarEnfoqueContinuo(scanner);
+  });
 
   /* ============================================================
    *  PANEL: GENERAR UNIDADES
@@ -2044,7 +2066,7 @@
 
     let procesando = false;
     scannerCodigoBarraGenerar.start(
-      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
+      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: Math.floor(lado * 0.6) }; } },
       async (textoLeido) => {
         if (procesando) return;
@@ -2054,7 +2076,9 @@
         buscarCodigoBarraGenerar();
       },
       () => {}
-    ).catch(() => {
+    ).then(() => {
+      reforzarEnfoqueContinuo(scannerCodigoBarraGenerar);
+    }).catch(() => {
       mensajeCamaraCodigoBarraGenerar.style.color = 'var(--stamp-red)';
       mensajeCamaraCodigoBarraGenerar.textContent = 'No se pudo abrir la cámara. Escribí el código a mano.';
     });
@@ -3234,7 +3258,7 @@
 
     let procesando = false;
     scannerPedido.start(
-      { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] },
+      { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] },
       { fps: 10, qrbox: (w, h) => { const lado = Math.floor(Math.min(w, h) * 0.7); return { width: lado, height: lado }; } },
       async (textoLeido) => {
         if (procesando) return;
@@ -3245,7 +3269,9 @@
         await registrarUnidadPedido(card, pedidoId, textoLeido);
       },
       () => {}
-    ).catch(() => {
+    ).then(() => {
+      reforzarEnfoqueContinuo(scannerPedido);
+    }).catch(() => {
       mensajeUnidadPedido.style.color = 'var(--stamp-red)';
       mensajeUnidadPedido.textContent = 'No se pudo abrir la cámara. Escribí el SKU a mano.';
     });
