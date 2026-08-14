@@ -194,16 +194,31 @@
     margin:0 0 12px;
   }
   .tabs-categorias-catalogo{
-    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;
+    display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px; margin-bottom:20px;
   }
   .tab-categoria-catalogo{
     background:none; border:1px solid var(--line); color:var(--ink-muted);
-    border-radius:var(--radius); padding:8px 14px; font-size:13px; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); padding:7px 14px 9px;
+    font-family:'Fraunces', serif; font-style:italic; font-weight:600; font-size:16px; letter-spacing:0.01em;
     cursor:pointer; transition:border-color 150ms ease, color 150ms ease, background 150ms ease;
   }
   .tab-categoria-catalogo:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
   .tab-categoria-catalogo.activo{
-    background:var(--accent-terracota); color:#FFF3E5; border-color:var(--accent-terracota); font-weight:600;
+    background:var(--accent-terracota); color:#FFF3E5; border-color:var(--accent-terracota);
+  }
+  .tab-categoria-catalogo .flecha-subcategoria{ font-style:normal; font-size:11px; margin-left:4px; }
+  .caja-subcategorias{
+    flex-basis:100%; display:flex; flex-wrap:wrap; gap:8px;
+    padding:10px 0 0 2px; margin-top:-4px;
+  }
+  .tab-subcategoria-catalogo{
+    background:none; border:1px solid var(--line); color:var(--ink-muted);
+    border-radius:var(--radius); padding:6px 12px; font-size:12.5px; font-family:'Archivo', sans-serif;
+    cursor:pointer; transition:border-color 150ms ease, color 150ms ease, background 150ms ease;
+  }
+  .tab-subcategoria-catalogo:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
+  .tab-subcategoria-catalogo.activo{
+    background:var(--accent); color:#FFFFFF; border-color:var(--accent); font-weight:600;
   }
   .item-catalogo-publico{
     border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
@@ -494,6 +509,8 @@
 
   let catalogoPublicoProductos = [];
   let categoriaCatalogoActiva = null;
+  let subcategoriaCatalogoActiva = null;
+  let mostrarDesplegableSubcategorias = false;
   let terminoBusquedaCatalogo = '';
   let productoEnCheckout = null;
 
@@ -715,15 +732,44 @@
 
     if (!categoriaCatalogoActiva || !categoriasOrdenadas.includes(categoriaCatalogoActiva)) {
       categoriaCatalogoActiva = categoriasOrdenadas.includes('LIBROS') ? 'LIBROS' : categoriasOrdenadas[0];
+      subcategoriaCatalogoActiva = null;
+      mostrarDesplegableSubcategorias = false;
     }
 
-    const tabsHtml = categoriasOrdenadas.map((categoria) => `
-      <button type="button" class="tab-categoria-catalogo${categoria === categoriaCatalogoActiva ? ' activo' : ''}" data-categoria="${escaparHtmlPublico(categoria)}">${escaparHtmlPublico(nombreVisiblePorCategoria.get(categoria))}</button>
-    `).join('');
+    // Subcategorías disponibles DENTRO de la categoría activa (en
+    // mayúsculas, mismo criterio que la categoría, para no duplicar por
+    // diferencias de tipeo).
+    const productosDeCategoriaSinFiltrar = porCategoria.get(categoriaCatalogoActiva) || [];
+    const subcategoriasDisponibles = Array.from(new Set(
+      productosDeCategoriaSinFiltrar.map((p) => (p.subcategoria || '').trim().toUpperCase()).filter(Boolean)
+    )).sort();
 
-    const productosDeCategoria = ordenarPorDisponibilidad(porCategoria.get(categoriaCatalogoActiva) || []);
+    if (subcategoriaCatalogoActiva && !subcategoriasDisponibles.includes(subcategoriaCatalogoActiva)) {
+      subcategoriaCatalogoActiva = null;
+    }
+
+    const tabsHtml = categoriasOrdenadas.map((categoria) => {
+      const activa = categoria === categoriaCatalogoActiva;
+      const flecha = activa && subcategoriasDisponibles.length > 0
+        ? `<span class="flecha-subcategoria">${mostrarDesplegableSubcategorias ? '▲' : '▼'}</span>` : '';
+      return `<button type="button" class="tab-categoria-catalogo${activa ? ' activo' : ''}" data-categoria="${escaparHtmlPublico(categoria)}">${escaparHtmlPublico(nombreVisiblePorCategoria.get(categoria))}${flecha}</button>`;
+    }).join('');
+
+    const subcategoriasHtml = (mostrarDesplegableSubcategorias && subcategoriasDisponibles.length > 0) ? `
+      <div class="caja-subcategorias">
+        <button type="button" class="tab-subcategoria-catalogo${!subcategoriaCatalogoActiva ? ' activo' : ''}" data-subcategoria="">Todas</button>
+        ${subcategoriasDisponibles.map((sub) => `
+          <button type="button" class="tab-subcategoria-catalogo${sub === subcategoriaCatalogoActiva ? ' activo' : ''}" data-subcategoria="${escaparHtmlPublico(sub)}">${escaparHtmlPublico(sub)}</button>
+        `).join('')}
+      </div>
+    ` : '';
+
+    const productosDeCategoria = ordenarPorDisponibilidad(
+      subcategoriaCatalogoActiva
+        ? productosDeCategoriaSinFiltrar.filter((p) => (p.subcategoria || '').trim().toUpperCase() === subcategoriaCatalogoActiva)
+        : productosDeCategoriaSinFiltrar
+    );
     const gridHtml = `
-      <h3 class="titulo-categoria-catalogo">${escaparHtmlPublico(nombreVisiblePorCategoria.get(categoriaCatalogoActiva))}</h3>
       <div class="grilla-catalogo-publico">
         ${productosDeCategoria.map((p) => `
           <div class="item-catalogo-publico">
@@ -738,12 +784,29 @@
       </div>
     `;
 
-    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo">${tabsHtml}</div>`;
+    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo">${tabsHtml}${subcategoriasHtml}</div>`;
     catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
 
     catalogoTabsCategoria.querySelectorAll('.tab-categoria-catalogo').forEach((boton) => {
       boton.addEventListener('click', () => {
-        categoriaCatalogoActiva = boton.getAttribute('data-categoria');
+        const categoria = boton.getAttribute('data-categoria');
+        if (categoria === categoriaCatalogoActiva) {
+          // Tocar la MISMA categoría ya activa abre/cierra el desplegable
+          // de subcategorías, en vez de no hacer nada.
+          mostrarDesplegableSubcategorias = !mostrarDesplegableSubcategorias;
+        } else {
+          categoriaCatalogoActiva = categoria;
+          subcategoriaCatalogoActiva = null;
+          mostrarDesplegableSubcategorias = false;
+        }
+        renderizarCatalogoPublico();
+      });
+    });
+
+    catalogoTabsCategoria.querySelectorAll('.tab-subcategoria-catalogo').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        subcategoriaCatalogoActiva = boton.getAttribute('data-subcategoria') || null;
+        mostrarDesplegableSubcategorias = false;
         renderizarCatalogoPublico();
       });
     });

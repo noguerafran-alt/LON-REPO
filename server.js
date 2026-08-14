@@ -836,6 +836,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
   const fotosPorSkuGeneral = {};
   const descripcionPorSkuGeneral = {};
   const proveedorPorSkuGeneral = {};
+  const subcategoriaPorSkuGeneral = {};
   catalogoProductos.forEach((p) => {
     if (p.skuGeneral && p.precio !== '' && p.precio !== undefined) {
       precioPorSkuGeneral[p.skuGeneral] = p.precio;
@@ -847,6 +848,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
       fotosPorSkuGeneral[p.skuGeneral] = p.fotos || [];
       descripcionPorSkuGeneral[p.skuGeneral] = p.descripcion || '';
       proveedorPorSkuGeneral[p.skuGeneral] = p.proveedor || '';
+      subcategoriaPorSkuGeneral[p.skuGeneral] = p.subcategoria || '';
     }
   });
 
@@ -870,6 +872,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
       skuGeneral,
       nombre: nombre || '(sin nombre)',
       categoria,
+      subcategoria: subcategoriaPorSkuGeneral[skuGeneral] || '',
       categoriaVisible: nombresVisiblesCategorias[categoria.toUpperCase()] || categoria,
       disponible: cantidadActual > 0,
       cantidad: cantidadActual,
