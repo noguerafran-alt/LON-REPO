@@ -94,7 +94,7 @@
     font-family:'Archivo', sans-serif; border:none; border-radius:var(--radius);
     background:var(--accent); color:#FFFFFF; cursor:pointer;
   }
-  .btn-activar-camara.oculto{ display:none; }
+  .btn-activar-camara.encendida{ background:var(--stamp-red); }
   .modo-escaner-opciones{ display:flex; gap:8px; max-width:480px; margin:14px auto 0; padding:0 24px; }
   .btn-modo-escaner{
     flex:1; padding:10px; border-radius:var(--radius); border:1px solid var(--line);
@@ -980,7 +980,12 @@
   tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
 
   document.getElementById('btnActivarCamara').addEventListener('click', () => {
-    iniciarEscanerSiHaceFalta();
+    if (escanerIniciado) {
+      apagarEscanerManualmente();
+    } else {
+      escanerApagadoManualmente = false;
+      iniciarEscanerSiHaceFalta();
+    }
   });
 
   if (!restaurarSesion()) {
@@ -1652,6 +1657,10 @@
 
   let scanner = null;
   let escanerIniciado = false;
+  // El admin apago la camara a proposito con el boton (no por quedarse
+  // sin permiso ni por perder foco de la pestaña) — mientras esto sea
+  // true, reiniciarEscaner() no la vuelve a prender sola.
+  let escanerApagadoManualmente = false;
   // Se pone en true justo antes de abrir la camara nativa del celular
   // (ej. "Reconocer producto por foto", que usa <input type="file"
   // capture="environment"> en vez de la camara en vivo): eso oculta la
@@ -1660,10 +1669,21 @@
   // resultado. Se consume (y apaga) en el primer reinicio que evita.
   let suprimirProximoReinicioEscaner = false;
 
+  function actualizarBotonActivarCamara(){
+    const boton = document.getElementById('btnActivarCamara');
+    if (escanerIniciado) {
+      boton.textContent = '⏸ Apagar cámara';
+      boton.classList.add('encendida');
+    } else {
+      boton.textContent = '▶ Tocar para activar la cámara';
+      boton.classList.remove('encendida');
+    }
+  }
+
   function iniciarEscanerSiHaceFalta(){
     if (escanerIniciado) return;
     escanerIniciado = true;
-    document.getElementById('btnActivarCamara').classList.add('oculto');
+    actualizarBotonActivarCamara();
     scanner = new Html5Qrcode('reader', {
       formatsToSupport: [
         Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128,
@@ -1682,12 +1702,30 @@
       statusBar.className = 'status-bar error';
       statusBar.textContent = 'No se pudo acceder a la cámara. Revisá los permisos del navegador.';
       escanerIniciado = false;
-      document.getElementById('btnActivarCamara').classList.remove('oculto');
+      actualizarBotonActivarCamara();
     });
+  }
+
+  /* Apagar la cámara a pedido del admin (botón "Apagar cámara"): a
+     diferencia de los apagados temporales para otra cámara (asociar
+     código de barras, escanear ejemplar de un pedido), este NO se
+     tiene que volver a prender solo — por eso marca
+     escanerApagadoManualmente, que reiniciarEscaner() respeta. */
+  async function apagarEscanerManualmente(){
+    escanerApagadoManualmente = true;
+    if (scanner) {
+      try { await scanner.stop(); } catch (e) {}
+      scanner = null;
+    }
+    escanerIniciado = false;
+    actualizarBotonActivarCamara();
+    statusBar.className = 'status-bar';
+    statusBar.textContent = 'Cámara apagada.';
   }
 
   function reiniciarEscaner(){
     if (suprimirProximoReinicioEscaner) { suprimirProximoReinicioEscaner = false; return; }
+    if (escanerApagadoManualmente) return;
     if (!appDiv.classList.contains('show')) return;
     if (scanner) {
       scanner.stop().catch(() => {}).finally(() => { scanner = null; escanerIniciado = false; iniciarEscanerSiHaceFalta(); });
