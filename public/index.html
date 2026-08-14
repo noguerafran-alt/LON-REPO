@@ -120,14 +120,24 @@
   .item-carrito .info-item-carrito{ flex:1; min-width:0; }
   .item-carrito .nombre-item-carrito{ font-family:'Fraunces', serif; font-weight:600; font-size:14px; color:var(--ink); }
   .item-carrito .precio-item-carrito{ font-family:'Fraunces', serif; font-size:13px; color:var(--accent); margin-top:2px; }
-  .item-carrito .controles-item-carrito{ display:flex; align-items:center; gap:8px; }
-  .item-carrito .btn-cantidad-carrito{
-    width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background:none;
-    color:var(--ink); font-size:16px; cursor:pointer; line-height:1;
+  .item-carrito .controles-item-carrito{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+  .item-carrito .selector-cantidad-carrito{
+    display:flex; align-items:center; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
   }
-  .item-carrito .cantidad-item-carrito{ font-family:'IBM Plex Mono', monospace; font-size:13px; min-width:16px; text-align:center; }
+  .item-carrito .btn-cantidad-carrito{
+    width:28px; height:28px; border:none; background:var(--bg-alt);
+    color:var(--ink); font-size:16px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .item-carrito .btn-cantidad-carrito:hover:not(:disabled){ background:var(--accent-soft); color:var(--accent); }
+  .item-carrito .btn-cantidad-carrito:disabled{ opacity:.35; cursor:default; }
+  .item-carrito .cantidad-item-carrito{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; min-width:24px; text-align:center;
+    background:#fff;
+  }
   .item-carrito .btn-quitar-carrito{
-    background:none; border:none; color:var(--stamp-red); font-size:18px; cursor:pointer; padding:0 0 0 6px;
+    background:none; border:none; color:var(--stamp-red); font-size:16px; cursor:pointer; padding:4px;
+    display:flex; align-items:center; justify-content:center;
   }
   .total-carrito{
     display:flex; justify-content:space-between; font-family:'Fraunces', serif; font-weight:700;
@@ -1046,10 +1056,12 @@
     const mensajeAgregarCarrito = document.getElementById('mensajeAgregarCarrito');
     if (btnAgregarCarrito) {
       btnAgregarCarrito.addEventListener('click', () => {
-        agregarAlCarrito(producto);
-        mensajeAgregarCarrito.style.color = 'var(--stamp-green)';
-        mensajeAgregarCarrito.textContent = 'Agregado al carrito ✓';
-        setTimeout(() => { mensajeAgregarCarrito.textContent = ''; }, 2000);
+        const agregado = agregarAlCarrito(producto);
+        mensajeAgregarCarrito.style.color = agregado ? 'var(--stamp-green)' : 'var(--stamp-red)';
+        mensajeAgregarCarrito.textContent = agregado
+          ? 'Agregado al carrito ✓'
+          : 'No hay más stock disponible de este producto.';
+        setTimeout(() => { mensajeAgregarCarrito.textContent = ''; }, 2500);
       });
     }
 
@@ -1417,11 +1429,21 @@
     badgeCarrito.classList.toggle('oculto', cantidad === 0);
   }
 
+  /* Devuelve true si pudo agregarlo, false si no hay stock suficiente
+     (el stock guardado en el item es el que tenía el catálogo al
+     momento de agregarlo/actualizarlo — el servidor igual revalida el
+     stock real al confirmar el pedido). */
   function agregarAlCarrito(producto){
+    const stock = Number(producto.cantidad) || 0;
     const items = obtenerCarrito();
     const existente = items.find((it) => it.skuGeneral === producto.skuGeneral);
+    const cantidadActual = existente ? existente.cantidad : 0;
+
+    if (cantidadActual + 1 > stock) return false;
+
     if (existente) {
       existente.cantidad += 1;
+      existente.stock = stock;
     } else {
       items.push({
         skuGeneral: producto.skuGeneral,
@@ -1429,15 +1451,18 @@
         precio: Number(producto.precio) || 0,
         foto: fotosDelProducto(producto)[0] || '',
         cantidad: 1,
+        stock,
       });
     }
     guardarCarrito(items);
+    return true;
   }
 
   function cambiarCantidadCarrito(skuGeneral, delta){
     const items = obtenerCarrito();
     const item = items.find((it) => it.skuGeneral === skuGeneral);
     if (!item) return;
+    if (delta > 0 && item.cantidad + delta > (item.stock || 0)) return;
     item.cantidad += delta;
     const itemsFiltrados = item.cantidad <= 0 ? items.filter((it) => it.skuGeneral !== skuGeneral) : items;
     guardarCarrito(itemsFiltrados);
@@ -1467,9 +1492,11 @@
           <div class="precio-item-carrito">$${escaparHtmlPublico(String(it.precio))} c/u</div>
         </div>
         <div class="controles-item-carrito">
-          <button type="button" class="btn-cantidad-carrito" data-accion="restar">−</button>
-          <span class="cantidad-item-carrito">${it.cantidad}</span>
-          <button type="button" class="btn-cantidad-carrito" data-accion="sumar">+</button>
+          <div class="selector-cantidad-carrito">
+            <button type="button" class="btn-cantidad-carrito" data-accion="restar" aria-label="Quitar una unidad">−</button>
+            <span class="cantidad-item-carrito">${it.cantidad}</span>
+            <button type="button" class="btn-cantidad-carrito" data-accion="sumar" aria-label="Agregar una unidad" ${it.cantidad >= (it.stock || 0) ? 'disabled title="No hay más stock disponible"' : ''}>+</button>
+          </div>
           <button type="button" class="btn-quitar-carrito" data-accion="quitar" title="Quitar">✕</button>
         </div>
       </div>
