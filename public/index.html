@@ -41,6 +41,9 @@
      arriba en vez de centrarla para que siempre se pueda ver y scrollear
      todo el contenido. */
   #pantallaCheckout{ justify-content:flex-start; padding-top:32px; }
+  .barra-superior-fullscreen{
+    position:absolute; top:0; left:0; right:0; margin:0; padding:14px 24px;
+  }
 
   .login-box{ width:100%; max-width:280px; text-align:left; }
   .login-box label{
@@ -334,6 +337,13 @@
 <body>
 
 <div class="fullscreen hidden" id="pantallaContacto">
+  <div class="barra-superior-catalogo barra-superior-fullscreen">
+    <span></span>
+    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+    </a>
+    <span></span>
+  </div>
   <div class="login-box">
     <label for="inputNombreContacto">Nombre</label>
     <input type="text" id="inputNombreContacto" placeholder="Tu nombre" autocomplete="name">
@@ -419,8 +429,7 @@
   </div>
 
   <div id="catalogoListaView">
-    <p class="eyebrow" style="margin-top:16px;">Catálogo</p>
-    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="🔍 Buscar producto por nombre...">
+    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="🔍 Buscar producto por nombre..." style="margin-top:16px;">
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
