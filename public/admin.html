@@ -538,13 +538,13 @@
 
   <div id="seccionEscanear">
     <button type="button" id="btnActivarCamara" class="btn-activar-camara">▶ Tocar para activar la cámara</button>
+    <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
+    <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
     <div class="modo-escaner-opciones">
       <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR (venta)</button>
       <button type="button" class="btn-modo-escaner" id="btnModoAsociar" data-modo="asociar">🏷️ Código de barras (asociar SKU)</button>
       <button type="button" class="btn-modo-escaner" id="btnModoCafe" data-modo="cafe">☕ Café (fidelidad)</button>
     </div>
-    <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
-    <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
     <div id="reader"></div>
     <div class="status-bar" id="statusBar">Cámara apagada.</div>
     <div class="log">
