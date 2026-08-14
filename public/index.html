@@ -159,27 +159,28 @@
   #catalogoTabsCategoria{ flex:1; min-width:0; }
   #catalogoTabsCategoria .tabs-categorias-catalogo{ margin-bottom:0; }
 
-  .seccion-destacados{ margin:22px 0 6px; }
-  .seccion-destacados .titulo-destacados{
-    font-family:'Fraunces', serif; font-style:italic; font-weight:600; font-size:17px;
-    letter-spacing:0.02em; color:var(--accent-terracota); margin:0 0 10px;
+  .carrusel-destacados{ position:relative; margin:22px 0 28px; }
+  .carrusel-pista{
+    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+    padding-bottom:4px; scrollbar-width:none;
   }
-  .fila-destacados{
-    display:flex; gap:14px; overflow-x:auto; padding-bottom:6px; margin-bottom:22px;
-    scrollbar-width:thin;
+  .carrusel-pista::-webkit-scrollbar{ display:none; }
+  .carrusel-pista .item-catalogo-publico{
+    flex:0 0 200px; width:200px; scroll-snap-align:start;
   }
-  .item-destacado{
-    flex:0 0 auto; width:150px; border:1px solid var(--line); border-radius:var(--radius);
-    overflow:hidden; background:var(--field-bg); cursor:pointer; text-align:left;
+  .btn-carrusel{
+    position:absolute; top:calc(50% - 14px); transform:translateY(-50%); z-index:2;
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
+    background:var(--field-bg); color:var(--ink); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; font-size:18px; line-height:1;
+    box-shadow:0 2px 8px rgba(59,18,32,0.15);
   }
-  .item-destacado .foto-destacado{ width:150px; height:150px; background:var(--bg-alt); overflow:hidden; }
-  .item-destacado .foto-destacado img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .item-destacado .info-destacado{ padding:8px 10px; }
-  .item-destacado .nombre-destacado{
-    font-size:13px; font-weight:600; color:var(--ink); line-height:1.3;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  .btn-carrusel.izquierda{ left:-14px; }
+  .btn-carrusel.derecha{ right:-14px; }
+  @media (max-width:600px){
+    .carrusel-pista .item-catalogo-publico{ flex-basis:150px; width:150px; }
+    .btn-carrusel{ display:none; }
   }
-  .item-destacado .precio-destacado{ font-family:'Fraunces', serif; font-size:14px; color:var(--accent-terracota); margin-top:4px; }
   .buscador-catalogo{
     width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Archivo', sans-serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
@@ -595,31 +596,36 @@
     }
   }
 
-  /* "Destacados": más consultados (hoja Consultas) y más visitados
-     (aperturas del detalle de producto). Si todavía no hay datos de
-     alguno de los dos (instalación nueva), esa fila directamente no se
-     muestra — no tiene sentido un carrusel vacío. */
-  function filaDestacadosHtml(titulo, productos){
-    if (!productos || productos.length === 0) return '';
+  /* "Destacados": une más consultados (hoja Consultas) y más visitados
+     (aperturas del detalle de producto) en UN solo carrusel, sin
+     etiquetar de cuál lista viene cada uno — son las mismas tarjetas
+     que en la grilla del catálogo (mismo recuadro y tamaño), con
+     flechas para pasar de a una y avance automático. */
+  let productosDestacadosPorSku = new Map();
+  let intervaloCarruselDestacados = null;
+
+  function tarjetaDestacadoHtml(p){
     return `
-      <div class="seccion-destacados">
-        <h3 class="titulo-destacados">${escaparHtmlPublico(titulo)}</h3>
-        <div class="fila-destacados">
-          ${productos.map((p) => `
-            <button type="button" class="item-destacado" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}">
-              <div class="foto-destacado">${fotoOPlaceholder(p.foto, p.categoria)}</div>
-              <div class="info-destacado">
-                <div class="nombre-destacado">${escaparHtmlPublico(p.nombre)}</div>
-                ${p.precio ? `<div class="precio-destacado">$${escaparHtmlPublico(String(p.precio))}</div>` : ''}
-              </div>
-            </button>
-          `).join('')}
+      <div class="item-catalogo-publico">
+        <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria)}</div>
+        <div class="info-item">
+          <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
+          ${metaProductoHtml(p)}
+          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}">Ver más</button>
         </div>
       </div>
     `;
   }
 
-  let productosDestacadosPorSku = new Map();
+  function iniciarAutoavanceCarrusel(pista){
+    clearInterval(intervaloCarruselDestacados);
+    intervaloCarruselDestacados = setInterval(() => {
+      const tarjeta = pista.querySelector('.item-catalogo-publico');
+      const paso = tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
+      const alFinal = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 4;
+      pista.scrollTo({ left: alFinal ? 0 : pista.scrollLeft + paso, behavior: 'smooth' });
+    }, 4000);
+  }
 
   async function cargarDestacados(){
     try {
@@ -627,15 +633,46 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar destacados');
 
-      const masConsultados = data.masConsultados || [];
-      const masVisitados = data.masVisitados || [];
-      productosDestacadosPorSku = new Map(
-        [...masConsultados, ...masVisitados].map((p) => [p.skuGeneral, p])
-      );
+      // Unimos los dos rankings, sin repetir un mismo producto dos veces
+      // (si es de los más consultados Y de los más visitados, aparece
+      // una sola vez).
+      const combinados = [...(data.masConsultados || []), ...(data.masVisitados || [])];
+      const vistos = new Set();
+      const productos = combinados.filter((p) => {
+        if (vistos.has(p.skuGeneral)) return false;
+        vistos.add(p.skuGeneral);
+        return true;
+      });
 
-      catalogoDestacados.innerHTML =
-        filaDestacadosHtml('Más consultados', masConsultados) +
-        filaDestacadosHtml('Más visitados', masVisitados);
+      if (productos.length === 0) {
+        catalogoDestacados.innerHTML = '';
+        return;
+      }
+
+      productosDestacadosPorSku = new Map(productos.map((p) => [p.skuGeneral, p]));
+
+      catalogoDestacados.innerHTML = `
+        <div class="carrusel-destacados">
+          <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
+          <div class="carrusel-pista">${productos.map(tarjetaDestacadoHtml).join('')}</div>
+          <button type="button" class="btn-carrusel derecha" aria-label="Ver siguiente">›</button>
+        </div>
+      `;
+
+      const pista = catalogoDestacados.querySelector('.carrusel-pista');
+      const anchoPaso = () => {
+        const tarjeta = pista.querySelector('.item-catalogo-publico');
+        return tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
+      };
+      catalogoDestacados.querySelector('.btn-carrusel.izquierda').addEventListener('click', () => {
+        pista.scrollBy({ left: -anchoPaso(), behavior: 'smooth' });
+      });
+      catalogoDestacados.querySelector('.btn-carrusel.derecha').addEventListener('click', () => {
+        pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
+      });
+      pista.addEventListener('mouseenter', () => clearInterval(intervaloCarruselDestacados));
+      pista.addEventListener('mouseleave', () => iniciarAutoavanceCarrusel(pista));
+      iniciarAutoavanceCarrusel(pista);
 
       catalogoDestacados.querySelectorAll('[data-sku-destacado]').forEach((boton) => {
         boton.addEventListener('click', () => {
