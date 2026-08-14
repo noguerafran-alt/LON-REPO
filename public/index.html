@@ -1113,8 +1113,8 @@
     }
     envioEstimadoCheckout.classList.remove('oculto');
     envioEstimadoCheckout.textContent = costo
-      ? `Envío estimado a ${selectProvinciaCheckout.value}: $${costo}`
-      : 'Todavía no tenemos un costo estimado para esa provincia. Coordinamos el envío por separado.';
+      ? `Envío estimado a ${selectProvinciaCheckout.value}: $${costo} (es un estimado, se coordina el envío final por WhatsApp)`
+      : 'Todavía no tenemos un costo estimado para esa provincia. Coordinamos el envío por WhatsApp.';
   }
 
   /* ------------------------------------------------------------
@@ -1169,7 +1169,9 @@
     if (!productoEnCheckout) return 0;
     const precio = Number(productoEnCheckout.precio) || 0;
     const cantidad = Number(inputCantidadCheckout.value) || 1;
-    return precio * cantidad + costoEnvioActual();
+    // El envío NO se suma acá: es solo un estimado informativo, el costo
+    // final del envío se coordina aparte (por WhatsApp).
+    return precio * cantidad;
   }
 
   async function actualizarPanelPago(){
