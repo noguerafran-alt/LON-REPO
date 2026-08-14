@@ -1350,10 +1350,12 @@ async function crearClienteSiNoExiste(sheetsClient, spreadsheetId, sheetName, { 
 }
 
 /**
- * Registra un café escaneado para un cliente (programa de fidelidad):
- * suma 1 al contador y, si llega a CAFES_PARA_GRATIS, ese café se marca
- * gratis y el contador vuelve a 0. Devuelve null si el código no
- * corresponde a ningún cliente.
+ * Registra un café PAGO escaneado para un cliente (programa de
+ * fidelidad): suma 1 al contador y, al llegar a CAFES_PARA_GRATIS
+ * (3 cafés pagos), desbloquea el regalo y el contador vuelve a 0. El
+ * regalo se entrega en la próxima visita sin necesidad de escanear de
+ * nuevo — por eso "esGratis" se marca en el 3er escaneo, no en un 4to.
+ * Devuelve null si el código no corresponde a ningún cliente.
  */
 async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codigoFidelidad) {
   const { numeroFila, cliente } = await buscarClientePorCodigoFidelidad(sheetsClient, spreadsheetId, sheetName, codigoFidelidad);

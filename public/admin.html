@@ -1472,7 +1472,7 @@
 
       statusBar.className = 'status-bar ok';
       statusBar.textContent = data.esGratis
-        ? `🎉 ¡CAFÉ GRATIS! ${data.nombre} — arranca de nuevo (0/${data.cafesParaGratis})`
+        ? `🎁 ${data.nombre} completó ${data.cafesParaGratis} cafés — ¡el PRÓXIMO es regalo! No hace falta escanear la próxima vez.`
         : `☕ ${data.nombre} — ${data.cafesContador}/${data.cafesParaGratis}`;
     } catch (err) {
       statusBar.className = 'status-bar error';

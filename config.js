@@ -328,10 +328,12 @@ module.exports = {
   // de nuevo.
   SESSION_DURACION_HORAS: Number(process.env.SESSION_DURACION_HORAS || 24 * 30),
 
-  // Programa de fidelidad de cafe: cada cuantos cafes el siguiente es
-  // gratis (4 = "el 4to es gratis": se pagan 3, el 4to escaneo resetea
-  // el contador y se marca como gratis).
-  CAFES_PARA_GRATIS: Number(process.env.CAFES_PARA_GRATIS || 4),
+  // Programa de fidelidad de cafe: cuantos cafes PAGOS (escaneados) hacen
+  // falta para desbloquear el regalo. El regalo (un cafe u otra sorpresa)
+  // se entrega en la proxima visita SIN escanear — por eso el objetivo es
+  // 3, no 4: al llegar al 3er escaneo se marca el regalo y el contador
+  // vuelve a 0, no hace falta un 4to escaneo para "cobrar" algo gratis.
+  CAFES_PARA_GRATIS: Number(process.env.CAFES_PARA_GRATIS || 3),
 
   // Longitud del bloque de numero de serie (unidad) del SKU. Con 6,
   // "1" se transforma en "000001".
