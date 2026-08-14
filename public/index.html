@@ -42,10 +42,11 @@
      (bug conocido de justify-content:center + overflow). La anclamos
      arriba en vez de centrarla para que siempre se pueda ver y scrollear
      todo el contenido. */
-  #pantallaCheckout{ justify-content:flex-start; padding-top:32px; }
+  #pantallaCheckout{ justify-content:flex-start; padding-top:90px; }
   .barra-superior-catalogo.barra-superior-fullscreen{
     position:absolute; top:0; left:0; right:0; margin:0; padding:14px 24px;
   }
+  .barra-superior-fullscreen .volver{ background:none; border:none; cursor:pointer; padding:0; }
 
   .login-box{ width:100%; max-width:280px; text-align:left; }
   .login-box label{
@@ -488,7 +489,7 @@
 
 <div class="fullscreen hidden" id="pantallaCarrito">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <span></span>
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
     <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
@@ -505,7 +506,7 @@
 
 <div class="fullscreen hidden" id="pantallaLoginCliente">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <span></span>
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverLoginCliente" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
     <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
@@ -534,7 +535,7 @@
 
 <div class="fullscreen hidden" id="pantallaContacto">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <span></span>
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverContacto" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
     <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
@@ -558,6 +559,13 @@
 </div>
 
 <div class="fullscreen hidden" id="pantallaCheckout">
+  <div class="barra-superior-catalogo barra-superior-fullscreen">
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver">←</button>
+    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+    </a>
+    <span></span>
+  </div>
   <div class="login-box checkout-box" id="checkoutBox">
     <p class="eyebrow" id="tituloCheckout">Finalizar compra</p>
     <div class="checkout-resumen" id="checkoutResumen"></div>
@@ -1301,6 +1309,9 @@
   btnCerrarLoginCliente.addEventListener('click', () => {
     pantallaLoginCliente.classList.add('hidden');
   });
+  document.getElementById('btnVolverLoginCliente').addEventListener('click', () => {
+    pantallaLoginCliente.classList.add('hidden');
+  });
   btnSalirCliente.addEventListener('click', () => {
     cerrarSesionCliente();
     pantallaLoginCliente.classList.add('hidden');
@@ -1365,6 +1376,9 @@
     pantallaContacto.classList.remove('hidden');
   });
   btnCerrarContacto.addEventListener('click', () => {
+    pantallaContacto.classList.add('hidden');
+  });
+  document.getElementById('btnVolverContacto').addEventListener('click', () => {
     pantallaContacto.classList.add('hidden');
   });
 
@@ -1575,6 +1589,9 @@
   btnCerrarCarrito.addEventListener('click', () => {
     pantallaCarrito.classList.add('hidden');
   });
+  document.getElementById('btnVolverCarrito').addEventListener('click', () => {
+    pantallaCarrito.classList.add('hidden');
+  });
   btnIrAPagarCarrito.addEventListener('click', () => {
     if (obtenerCarrito().length === 0) return;
     pantallaCarrito.classList.add('hidden');
@@ -1731,6 +1748,9 @@
   }
 
   btnVolverCheckout.addEventListener('click', () => {
+    pantallaCheckout.classList.add('hidden');
+  });
+  document.getElementById('btnVolverFlechaCheckout').addEventListener('click', () => {
     pantallaCheckout.classList.add('hidden');
   });
 
