@@ -23,6 +23,8 @@ const {
   crearCategoriaConfig,
   getNombresVisiblesCategorias,
   actualizarNombreVisibleCategoria,
+  getTarifasEnvio,
+  actualizarTarifaEnvio,
   crearProductoNuevo,
   agregarFotoProducto,
   eliminarFotoProducto,
@@ -964,6 +966,20 @@ app.get('/catalogo-destacados', limiteLecturaPublica, async (req, res) => {
   }
 });
 
+/* Tabla de costos estimados de envío a domicilio por provincia, para
+   mostrar una estimación en el checkout público. Es una tabla fija
+   cargada a mano (no una cotización real por API todavía). */
+app.get('/tarifas-envio', limiteLecturaPublica, async (req, res) => {
+  try {
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const tarifas = await getTarifasEnvio(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ENVIOS);
+    res.json({ tarifas });
+  } catch (err) {
+    console.error('Error leyendo tarifas de envío:', err.message);
+    res.status(500).json({ error: 'No se pudieron cargar las tarifas de envío.' });
+  }
+});
+
 /* Catalogo COMPLETO para el panel admin: mismo shape que el público,
    pero incluye los productos sin stock (con su cantidad real) para que
    se pueda ver y auditar todo el catálogo desde "Editar catálogo".
@@ -1039,6 +1055,50 @@ app.post('/admin/categoria-nombre-visible', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error actualizando nombre visible de categoría:', err.message);
     res.status(500).json({ error: 'No se pudo actualizar el nombre.' });
+  }
+});
+
+/* Misma tabla de tarifas de envío que /tarifas-envio, pero para el panel
+   admin (requiere nivel 2), usada en "Editar catálogo" para cargarlas. */
+app.get('/admin/tarifas-envio', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const tarifas = await getTarifasEnvio(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ENVIOS);
+    res.json({ tarifas });
+  } catch (err) {
+    console.error('Error leyendo tarifas de envío (admin):', err.message);
+    res.status(500).json({ error: 'No se pudieron cargar las tarifas.' });
+  }
+});
+
+/* Actualiza el costo estimado de envío a domicilio de una provincia
+   (hoja Envios). Requiere admin nivel 2. */
+app.post('/admin/tarifa-envio', limiteAdmin, async (req, res) => {
+  try {
+    const { provincia, costo } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!provincia || !String(provincia).trim()) {
+      return res.status(400).json({ error: 'Falta la provincia.' });
+    }
+    const costoNumerico = enteroEnRango(costo, 0, 10000000);
+    if (costoNumerico === null) {
+      return res.status(400).json({ error: 'El costo tiene que ser un número válido.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    await actualizarTarifaEnvio(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_ENVIOS,
+      String(provincia).trim(), costoNumerico,
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error actualizando tarifa de envío:', err.message);
+    res.status(500).json({ error: 'No se pudo actualizar la tarifa.' });
   }
 });
 

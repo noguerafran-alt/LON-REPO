@@ -664,6 +664,14 @@
       <input type="text" id="inputBuscarCatalogoCompleto" placeholder="Nombre o SKU del producto..." style="margin-bottom:6px;">
       <div class="lista-productos" id="listaCatalogoCompleto" style="max-height:420px;"></div>
     </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Tarifas de envío (estimado por provincia)</label>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Costo estimado que ve el cliente en el checkout al elegir "Envío a domicilio". Es una tabla fija a mano, todavía no es una cotización real.</p>
+      <div id="listaTarifasEnvio">Cargando provincias...</div>
+    </div>
   </div>
 
   <div id="panelPedidos" style="display:none;">
@@ -1010,6 +1018,7 @@
     if (esCatalogo) {
       cargarCategoriasVisibles();
       cargarCatalogoCompletoAdmin();
+      cargarTarifasEnvio();
     }
     if (esPedidos) {
       cargarPedidos();
@@ -2803,6 +2812,72 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: adminToken, categoria, nombreVisible: input.value.trim() }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+          mensaje.textContent = 'Guardado ✓';
+          mensaje.style.color = 'var(--stamp-green)';
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+        } finally {
+          boton.disabled = false;
+          boton.textContent = 'Guardar';
+        }
+      });
+    });
+  }
+
+  const PROVINCIAS_ARGENTINA = [
+    'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes',
+    'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones',
+    'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe',
+    'Santiago del Estero', 'Tierra del Fuego', 'Tucumán',
+  ];
+
+  const listaTarifasEnvio = document.getElementById('listaTarifasEnvio');
+
+  async function cargarTarifasEnvio(){
+    listaTarifasEnvio.innerHTML = '<div style="padding:12px; font-size:13px; color:var(--ink-muted);">Cargando...</div>';
+    try {
+      const res = await fetch(`/admin/tarifas-envio?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar tarifas');
+      renderizarListaTarifasEnvio(data.tarifas || []);
+    } catch (err) {
+      listaTarifasEnvio.innerHTML = `<div style="padding:12px; font-size:13px; color:var(--stamp-red);">No se pudo cargar: ${err.message}</div>`;
+    }
+  }
+
+  function renderizarListaTarifasEnvio(tarifas){
+    const costoPorProvincia = {};
+    tarifas.forEach((t) => { costoPorProvincia[t.provincia.toUpperCase()] = t.costo; });
+
+    listaTarifasEnvio.innerHTML = PROVINCIAS_ARGENTINA.map((provincia) => `
+      <div class="fila-categoria-visible" data-provincia="${escaparHtml(provincia)}">
+        <span class="categoria-interna">${escaparHtml(provincia)}</span>
+        <input type="number" class="input-nombre-visible" min="0" step="1" placeholder="Costo estimado" value="${costoPorProvincia[provincia.toUpperCase()] || ''}">
+        <button type="button" class="btn-guardar-nombre-visible">Guardar</button>
+        <span class="mensaje-nombre-visible" style="font-size:12.5px;"></span>
+      </div>
+    `).join('');
+
+    listaTarifasEnvio.querySelectorAll('.fila-categoria-visible').forEach((fila) => {
+      const provincia = fila.getAttribute('data-provincia');
+      const input = fila.querySelector('.input-nombre-visible');
+      const boton = fila.querySelector('.btn-guardar-nombre-visible');
+      const mensaje = fila.querySelector('.mensaje-nombre-visible');
+
+      boton.addEventListener('click', async () => {
+        boton.disabled = true;
+        boton.textContent = 'Guardando...';
+        mensaje.textContent = '';
+        mensaje.style.color = '';
+        try {
+          const res = await fetch('/admin/tarifa-envio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, provincia, costo: Number(input.value) || 0 }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Error desconocido');

@@ -623,6 +623,66 @@ async function actualizarNombreVisibleCategoria(sheetsClient, spreadsheetId, she
 }
 
 /**
+ * Lee la hoja Envios y devuelve la tabla de costos estimados de envío a
+ * domicilio por provincia: [{ provincia, costo }]. Se usa en el checkout
+ * público mientras no está integrada la cotización real por API.
+ */
+async function getTarifasEnvio(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_ENVIOS;
+  const ultimaLetra = columnaALetra(cols.costo);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const tarifas = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const provincia = row[cols.provincia] ? String(row[cols.provincia]).trim() : '';
+    if (!provincia) continue;
+    const costo = Number(row[cols.costo]);
+    tarifas.push({ provincia, costo: Number.isFinite(costo) ? costo : 0 });
+  }
+
+  return tarifas;
+}
+
+/**
+ * Actualiza (o crea si no existe) el costo de envío a domicilio de una
+ * provincia en la hoja Envios.
+ */
+async function actualizarTarifaEnvio(sheetsClient, spreadsheetId, sheetName, provincia, costo) {
+  const cols = config.COLUMNAS_ENVIOS;
+  const ultimaLetra = columnaALetra(cols.costo);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const provinciaNormalizada = String(provincia).trim().toUpperCase();
+
+  let numeroFila = null;
+  for (let i = 1; i < rows.length; i++) {
+    const provinciaFila = rows[i][cols.provincia] ? String(rows[i][cols.provincia]).trim().toUpperCase() : '';
+    if (provinciaFila === provinciaNormalizada) { numeroFila = i + 1; break; }
+  }
+
+  if (numeroFila === null) {
+    const fila = new Array(cols.costo + 1).fill('');
+    fila[cols.provincia] = String(provincia).trim();
+    fila[cols.costo] = costo;
+    await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
+    return;
+  }
+
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!${columnaALetra(cols.costo)}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[costo]] },
+  });
+}
+
+/**
  * Crea un producto nuevo en la hoja Productos: calcula el siguiente numero
  * de producto libre para el prefijo dado, arma el SKU general, agrega la
  * fila (Producto, Categoria, Subcategoria, SKU general, Precio, Foto) y
@@ -1691,6 +1751,8 @@ module.exports = {
   crearCategoriaConfig,
   getNombresVisiblesCategorias,
   actualizarNombreVisibleCategoria,
+  getTarifasEnvio,
+  actualizarTarifaEnvio,
   getSiguienteNumeroProducto,
   crearProductoNuevo,
   buscarFilaProductoPorSkuGeneral,

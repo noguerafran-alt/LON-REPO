@@ -49,6 +49,7 @@ module.exports = {
   HOJA_CODIGOS_BARRA: process.env.GOOGLE_CODIGOS_BARRA_SHEET_NAME || 'CODIGOS_BARRA', // asociacion entre codigos de barra externos (ISBN, EAN, etc) y el SKU interno
   HOJA_VISITAS: process.env.GOOGLE_VISITAS_SHEET_NAME || 'VISITAS', // A=SKU general, B=cantidad de visitas, C=ultima fecha — para "Destacados: mas visitados" en el catalogo publico
   HOJA_ADMIN_USERS: process.env.GOOGLE_ADMIN_USERS_SHEET_NAME || 'AdminUsers',    // usuarios autorizados a entrar al panel admin (login con Google), con su nivel de acceso
+  HOJA_ENVIOS: process.env.GOOGLE_ENVIOS_SHEET_NAME || 'Envios', // A=Provincia, B=Costo estimado de envio a domicilio — tabla fija mientras no esta la cotizacion real por API
 
   /* ------------------------------------------------------------
    * 3) COLUMNAS — en que columna (0 = A, 1 = B, ...) esta cada dato.
@@ -149,6 +150,15 @@ module.exports = {
     skuGeneral: 0,    // A
     visitas: 1,       // B
     ultimaFecha: 2,   // C
+  },
+
+  // Columnas de la hoja Envios (planilla de PRODUCTOS). Una fila por
+  // provincia con el costo estimado de envio a domicilio. Tabla fija que
+  // se usa en el checkout mientras no este integrada la cotizacion real
+  // por API (MiCorreo).
+  COLUMNAS_ENVIOS: {
+    provincia: 0, // A
+    costo: 1,     // B
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca
