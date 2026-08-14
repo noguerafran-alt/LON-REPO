@@ -1981,6 +1981,141 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
   }
 });
 
+/* Crea un pedido a partir de un carrito con varios productos a la vez.
+   Genera UNA fila en PEDIDOS por producto (mismo esquema que /crear-pago,
+   una fila = un producto = un pedidoId propio), pero valida TODOS los
+   items antes de crear ninguno (si uno falla, no se crea nada) y las
+   agrupa con una referencia de carrito compartida en las notas, para
+   que el admin las vea relacionadas. El monto a transferir es la suma
+   de todos los items. Por ahora solo admite transferencia (Payway con
+   un solo link de pago no tiene forma limpia de cobrar varios pedidos
+   a la vez, y todavía ni está habilitado). */
+app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
+  try {
+    const {
+      items, nombre, email, telefono,
+      direccion, ciudad, provincia, codigoPostal, metodoEnvio, notas,
+      metodoPago,
+    } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'El carrito está vacío.' });
+    }
+    if (items.length > 20) {
+      return res.status(400).json({ error: 'Demasiados productos distintos en un mismo pedido (máximo 20).' });
+    }
+    if (!nombre || !String(nombre).trim()) {
+      return res.status(400).json({ error: 'Falta el nombre del comprador.' });
+    }
+    if (!email || !esEmailValido(email)) {
+      return res.status(400).json({ error: 'Ingresá un email válido (lo necesitamos para mandarte la confirmación del pedido).' });
+    }
+    if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
+      return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
+    }
+    if (metodoPago !== 'transferencia') {
+      return res.status(400).json({ error: 'Por ahora el carrito solo admite pago por transferencia.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const catalogo = await construirCatalogoConStock(sheetsClient, { soloConStock: false });
+
+    const itemsValidados = [];
+    for (const item of (items || [])) {
+      const skuGeneral = item && item.skuGeneral ? String(item.skuGeneral).trim() : '';
+      if (!skuGeneral) {
+        return res.status(400).json({ error: 'Uno de los productos del carrito no tiene SKU.' });
+      }
+
+      const cantidadNum = enteroEnRango(item.cantidad, 1, 100);
+      if (cantidadNum === null) {
+        return res.status(400).json({ error: `Cantidad inválida para ${skuGeneral}.` });
+      }
+
+      const producto = catalogo.find((p) => p.skuGeneral.toLowerCase() === skuGeneral.toLowerCase());
+      if (!producto) {
+        return res.status(404).json({ error: `No se encontró el producto ${skuGeneral}.` });
+      }
+
+      const precioNum = Number(producto.precio);
+      if (!precioNum || precioNum <= 0) {
+        return res.status(400).json({ error: `"${producto.nombre}" todavía no tiene precio cargado, no se puede comprar online.` });
+      }
+      if (cantidadNum > producto.cantidad) {
+        return res.status(400).json({
+          error: producto.cantidad > 0
+            ? `Solo quedan ${producto.cantidad} unidad${producto.cantidad === 1 ? '' : 'es'} de "${producto.nombre}".`
+            : `"${producto.nombre}" ya no tiene stock disponible.`,
+        });
+      }
+
+      itemsValidados.push({ producto, cantidad: cantidadNum, precio: precioNum });
+    }
+
+    const totalCarrito = itemsValidados.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
+    const grupoCarritoId = `CARR-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const { fecha, hora } = fechaYHoraActual();
+    const pedidoIds = [];
+
+    for (let i = 0; i < itemsValidados.length; i++) {
+      const it = itemsValidados[i];
+      const pedidoId = generarPedidoId();
+      pedidoIds.push(pedidoId);
+
+      const notaCarrito = `Carrito ${grupoCarritoId} (${i + 1}/${itemsValidados.length})`;
+      const notasCompletas = notas && String(notas).trim() ? `${String(notas).trim()} — ${notaCarrito}` : notaCarrito;
+
+      await crearPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, {
+        pedidoId,
+        fecha: `${fecha} ${hora}`,
+        skuGeneral: it.producto.skuGeneral,
+        producto: it.producto.nombre,
+        precio: it.precio,
+        cantidad: it.cantidad,
+        total: it.precio * it.cantidad,
+        nombreCliente: sanitizarTexto(nombre, 150),
+        emailCliente: sanitizarTexto(email, 254),
+        telefonoCliente: sanitizarTelefono(telefono),
+        direccion: sanitizarTexto(direccion, 250),
+        ciudad: sanitizarTexto(ciudad, 100),
+        provincia: sanitizarTexto(provincia, 100),
+        codigoPostal: sanitizarCodigoPostal(codigoPostal),
+        metodoEnvio: metodoEnvio || 'Retiro en el local',
+        estado: 'Pendiente de pago',
+        transportista: '',
+        numeroSeguimiento: '',
+        pagoExternoId: '',
+        notas: sanitizarTexto(notasCompletas, 500),
+        metodoPago: 'Transferencia',
+        stockReservado: '',
+        skuUnidad: '',
+      });
+    }
+
+    const datosTransferencia = {
+      alias: config.TRANSFERENCIA_ALIAS,
+      titular: config.TRANSFERENCIA_TITULAR,
+      cbu: config.TRANSFERENCIA_CBU,
+      banco: config.TRANSFERENCIA_BANCO,
+      monto: totalCarrito,
+    };
+
+    emailService.enviarEmailTransferenciaCarrito({
+      destinatario: email,
+      nombreCliente: nombre,
+      pedidoIds,
+      items: itemsValidados.map((it) => ({ producto: it.producto.nombre, cantidad: it.cantidad })),
+      monto: totalCarrito,
+      transferencia: datosTransferencia,
+    }).catch((err) => console.error('Error en el envío de mail de carrito (no bloquea el pedido):', err.message));
+
+    res.json({ ok: true, pedidoIds, transferencia: datosTransferencia });
+  } catch (err) {
+    console.error('Error creando pedido de carrito:', err.message);
+    res.status(500).json({ error: 'No se pudo procesar el pedido.' });
+  }
+});
+
 /* Reconcilia un pedido contra el estado real del pago en Payway,
    buscandolo por pagoExternoId (no por pedidoId, porque el webhook y la
    pagina de exito solo tienen el id que asigno Payway). */

@@ -102,6 +102,39 @@
   }
   .barra-superior-catalogo .btn-icono-simetrico{ color:var(--header-text); }
   .acciones-header-catalogo{ display:flex; align-items:center; gap:14px; justify-self:end; }
+  .btn-carrito-header{ position:relative; }
+  .badge-carrito{
+    position:absolute; top:-6px; right:-10px; min-width:16px; height:16px; padding:0 3px;
+    border-radius:8px; background:var(--accent-terracota); color:#fff; font-size:10px;
+    font-family:'IBM Plex Mono', monospace; line-height:16px; text-align:center;
+  }
+  .badge-carrito.oculto{ display:none; }
+  .item-carrito{
+    display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line);
+  }
+  .item-carrito .foto-item-carrito{
+    width:52px; height:52px; border-radius:var(--radius); background:var(--bg-alt); flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .item-carrito .foto-item-carrito img{ width:100%; height:100%; object-fit:contain; }
+  .item-carrito .info-item-carrito{ flex:1; min-width:0; }
+  .item-carrito .nombre-item-carrito{ font-family:'Fraunces', serif; font-weight:600; font-size:14px; color:var(--ink); }
+  .item-carrito .precio-item-carrito{ font-family:'Fraunces', serif; font-size:13px; color:var(--accent); margin-top:2px; }
+  .item-carrito .controles-item-carrito{ display:flex; align-items:center; gap:8px; }
+  .item-carrito .btn-cantidad-carrito{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background:none;
+    color:var(--ink); font-size:16px; cursor:pointer; line-height:1;
+  }
+  .item-carrito .cantidad-item-carrito{ font-family:'IBM Plex Mono', monospace; font-size:13px; min-width:16px; text-align:center; }
+  .item-carrito .btn-quitar-carrito{
+    background:none; border:none; color:var(--stamp-red); font-size:18px; cursor:pointer; padding:0 0 0 6px;
+  }
+  .total-carrito{
+    display:flex; justify-content:space-between; font-family:'Fraunces', serif; font-weight:700;
+    font-size:16px; color:var(--accent); padding:14px 0; margin-bottom:12px;
+  }
+  .carrito-vacio{ text-align:center; color:var(--ink-muted); padding:40px 0; }
+  .total-carrito.oculto{ display:none; }
   #loginClienteLogueado.oculto, #loginClienteFormulario.oculto{ display:none; }
   .tarjeta-fidelidad-cafe{
     background:var(--bg-alt); border:1px solid var(--line); border-radius:var(--radius);
@@ -316,6 +349,12 @@
     color:#FFFFFF; cursor:pointer;
   }
   .detalle-producto .btn-comprar:disabled{ opacity:.5; cursor:default; }
+  .detalle-producto .btn-agregar-carrito{
+    display:block; width:100%; max-width:320px; margin:10px auto 0; padding:13px; font-size:15px; font-weight:600;
+    font-family:'Fraunces', serif; border:1px solid var(--accent); border-radius:var(--radius); background:none;
+    color:var(--accent); cursor:pointer;
+  }
+  .detalle-producto .btn-agregar-carrito:disabled{ opacity:.5; cursor:default; }
   .detalle-producto .sin-stock-aviso{ margin-top:14px; font-size:13px; color:var(--stamp-red); }
   #catalogoDetalleContenido{ max-width:900px; margin:0 auto; text-align:center; }
   .seccion-relacionados{ margin-top:36px; max-width:900px; text-align:left; }
@@ -355,6 +394,13 @@
     font-family:'Fraunces', serif; color:var(--accent); font-weight:700;
     font-variant-numeric:tabular-nums; margin-top:4px;
   }
+  .checkout-resumen .item-resumen-carrito{ display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+  .checkout-resumen .item-resumen-carrito + .item-resumen-carrito{ border-top:1px solid var(--line); }
+  .checkout-resumen .total-resumen-carrito{
+    display:flex; justify-content:space-between; font-weight:700; color:var(--accent);
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--line);
+  }
+  #checkoutBox.modo-carrito #campoCantidadCheckout{ display:none; }
   .metodo-envio-opciones{ display:flex; gap:10px; margin-bottom:6px; }
   .metodo-envio-opciones label{
     flex:1; display:flex; align-items:center; gap:6px; text-transform:none; letter-spacing:0;
@@ -411,6 +457,23 @@
 </head>
 <body>
 
+<div class="fullscreen hidden" id="pantallaCarrito">
+  <div class="barra-superior-catalogo barra-superior-fullscreen">
+    <span></span>
+    <a href="/admin.html" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+    </a>
+    <span></span>
+  </div>
+  <div class="login-box" style="max-width:380px;">
+    <p class="eyebrow">Tu carrito</p>
+    <div id="listaItemsCarrito"></div>
+    <div class="total-carrito oculto" id="totalCarrito"></div>
+    <button type="button" id="btnIrAPagarCarrito">Continuar compra</button>
+    <button class="acceso-admin-link" id="btnCerrarCarrito" style="width:100%;">Seguir viendo el catálogo</button>
+  </div>
+</div>
+
 <div class="fullscreen hidden" id="pantallaLoginCliente">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <span></span>
@@ -466,12 +529,14 @@
 </div>
 
 <div class="fullscreen hidden" id="pantallaCheckout">
-  <div class="login-box checkout-box">
-    <p class="eyebrow">Finalizar compra</p>
+  <div class="login-box checkout-box" id="checkoutBox">
+    <p class="eyebrow" id="tituloCheckout">Finalizar compra</p>
     <div class="checkout-resumen" id="checkoutResumen"></div>
 
-    <label for="inputCantidadCheckout">Cantidad</label>
-    <input type="number" id="inputCantidadCheckout" min="1" step="1" value="1">
+    <div id="campoCantidadCheckout">
+      <label for="inputCantidadCheckout">Cantidad</label>
+      <input type="number" id="inputCantidadCheckout" min="1" step="1" value="1">
+    </div>
 
     <label for="inputNombreCheckout">Nombre y apellido</label>
     <input type="text" id="inputNombreCheckout" placeholder="Tu nombre" autocomplete="name">
@@ -535,6 +600,9 @@
     </a>
     <div class="acciones-header-catalogo">
       <button class="btn-icono-simetrico" id="btnMostrarContacto" title="Dejanos tu contacto" aria-label="Dejanos tu contacto">✉️</button>
+      <button class="btn-icono-simetrico btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito">
+        🛒<span class="badge-carrito oculto" id="badgeCarrito">0</span>
+      </button>
       <button class="btn-icono-simetrico btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar">👤</button>
     </div>
   </div>
@@ -575,6 +643,7 @@
   let mostrarDesplegableSubcategorias = false;
   let terminoBusquedaCatalogo = '';
   let productoEnCheckout = null;
+  let modoCheckoutCarrito = false;
 
   function productosCatalogoFiltrados(){
     if (!terminoBusquedaCatalogo) return catalogoPublicoProductos;
@@ -956,7 +1025,9 @@
         <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
         <div class="meta">${producto.disponible ? 'En stock' : 'Sin stock'}</div>
         ${producto.precio ? `<div class="precio">$${escaparHtmlPublico(String(producto.precio))}</div>` : ''}
-        <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>Comprar</button>
+        <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>Comprar ahora</button>
+        <button type="button" class="btn-agregar-carrito" id="btnAgregarCarrito" ${puedeComprar ? '' : 'disabled'}>Agregar al carrito</button>
+        <div id="mensajeAgregarCarrito" style="font-size:12.5px; margin-top:6px; min-height:1em;"></div>
         ${!puedeComprar ? '<div class="sin-stock-aviso">' + (producto.disponible ? 'Todavía no tiene precio cargado para comprar online.' : 'Sin stock por el momento.') + '</div>' : ''}
         ${producto.descripcion ? `<p class="descripcion-producto">${escaparHtmlPublico(producto.descripcion)}</p>` : ''}
       </div>
@@ -969,6 +1040,17 @@
     const btnComprar = document.getElementById('btnComprarProducto');
     if (btnComprar) {
       btnComprar.addEventListener('click', () => abrirCheckout(producto));
+    }
+
+    const btnAgregarCarrito = document.getElementById('btnAgregarCarrito');
+    const mensajeAgregarCarrito = document.getElementById('mensajeAgregarCarrito');
+    if (btnAgregarCarrito) {
+      btnAgregarCarrito.addEventListener('click', () => {
+        agregarAlCarrito(producto);
+        mensajeAgregarCarrito.style.color = 'var(--stamp-green)';
+        mensajeAgregarCarrito.textContent = 'Agregado al carrito ✓';
+        setTimeout(() => { mensajeAgregarCarrito.textContent = ''; }, 2000);
+      });
     }
 
     if (fotos.length > 1) {
@@ -1303,6 +1385,124 @@
   }
 
   /* ------------------------------------------------------------
+   * CARRITO (localStorage, independiente del login de cliente)
+   * ------------------------------------------------------------ */
+  const CLAVE_CARRITO = 'lon_carrito';
+  const pantallaCarrito = document.getElementById('pantallaCarrito');
+  const btnAbrirCarrito = document.getElementById('btnAbrirCarrito');
+  const btnCerrarCarrito = document.getElementById('btnCerrarCarrito');
+  const badgeCarrito = document.getElementById('badgeCarrito');
+  const listaItemsCarrito = document.getElementById('listaItemsCarrito');
+  const totalCarritoDiv = document.getElementById('totalCarrito');
+  const btnIrAPagarCarrito = document.getElementById('btnIrAPagarCarrito');
+
+  function obtenerCarrito(){
+    try {
+      const crudo = localStorage.getItem(CLAVE_CARRITO);
+      const datos = crudo ? JSON.parse(crudo) : [];
+      return Array.isArray(datos) ? datos : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function guardarCarrito(items){
+    try { localStorage.setItem(CLAVE_CARRITO, JSON.stringify(items)); } catch (e) {}
+    actualizarBadgeCarrito();
+  }
+
+  function actualizarBadgeCarrito(){
+    const cantidad = obtenerCarrito().reduce((acc, it) => acc + it.cantidad, 0);
+    badgeCarrito.textContent = String(cantidad);
+    badgeCarrito.classList.toggle('oculto', cantidad === 0);
+  }
+
+  function agregarAlCarrito(producto){
+    const items = obtenerCarrito();
+    const existente = items.find((it) => it.skuGeneral === producto.skuGeneral);
+    if (existente) {
+      existente.cantidad += 1;
+    } else {
+      items.push({
+        skuGeneral: producto.skuGeneral,
+        nombre: producto.nombre,
+        precio: Number(producto.precio) || 0,
+        foto: fotosDelProducto(producto)[0] || '',
+        cantidad: 1,
+      });
+    }
+    guardarCarrito(items);
+  }
+
+  function cambiarCantidadCarrito(skuGeneral, delta){
+    const items = obtenerCarrito();
+    const item = items.find((it) => it.skuGeneral === skuGeneral);
+    if (!item) return;
+    item.cantidad += delta;
+    const itemsFiltrados = item.cantidad <= 0 ? items.filter((it) => it.skuGeneral !== skuGeneral) : items;
+    guardarCarrito(itemsFiltrados);
+    renderizarCarrito();
+  }
+
+  function quitarDelCarrito(skuGeneral){
+    guardarCarrito(obtenerCarrito().filter((it) => it.skuGeneral !== skuGeneral));
+    renderizarCarrito();
+  }
+
+  function renderizarCarrito(){
+    const items = obtenerCarrito();
+    if (items.length === 0) {
+      listaItemsCarrito.innerHTML = '<div class="carrito-vacio">Todavía no agregaste nada.</div>';
+      totalCarritoDiv.classList.add('oculto');
+      btnIrAPagarCarrito.disabled = true;
+      return;
+    }
+
+    btnIrAPagarCarrito.disabled = false;
+    listaItemsCarrito.innerHTML = items.map((it) => `
+      <div class="item-carrito" data-sku="${escaparHtmlPublico(it.skuGeneral)}">
+        <div class="foto-item-carrito">${it.foto ? `<img src="${escaparHtmlPublico(it.foto)}" alt="">` : ''}</div>
+        <div class="info-item-carrito">
+          <div class="nombre-item-carrito">${escaparHtmlPublico(it.nombre)}</div>
+          <div class="precio-item-carrito">$${escaparHtmlPublico(String(it.precio))} c/u</div>
+        </div>
+        <div class="controles-item-carrito">
+          <button type="button" class="btn-cantidad-carrito" data-accion="restar">−</button>
+          <span class="cantidad-item-carrito">${it.cantidad}</span>
+          <button type="button" class="btn-cantidad-carrito" data-accion="sumar">+</button>
+          <button type="button" class="btn-quitar-carrito" data-accion="quitar" title="Quitar">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    const total = items.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
+    totalCarritoDiv.classList.remove('oculto');
+    totalCarritoDiv.innerHTML = `<span>Total</span><span>$${total}</span>`;
+
+    listaItemsCarrito.querySelectorAll('.item-carrito').forEach((fila) => {
+      const sku = fila.getAttribute('data-sku');
+      fila.querySelector('[data-accion="sumar"]').addEventListener('click', () => cambiarCantidadCarrito(sku, 1));
+      fila.querySelector('[data-accion="restar"]').addEventListener('click', () => cambiarCantidadCarrito(sku, -1));
+      fila.querySelector('[data-accion="quitar"]').addEventListener('click', () => quitarDelCarrito(sku));
+    });
+  }
+
+  actualizarBadgeCarrito();
+
+  btnAbrirCarrito.addEventListener('click', () => {
+    renderizarCarrito();
+    pantallaCarrito.classList.remove('hidden');
+  });
+  btnCerrarCarrito.addEventListener('click', () => {
+    pantallaCarrito.classList.add('hidden');
+  });
+  btnIrAPagarCarrito.addEventListener('click', () => {
+    if (obtenerCarrito().length === 0) return;
+    pantallaCarrito.classList.add('hidden');
+    abrirCheckoutDesdeCarrito();
+  });
+
+  /* ------------------------------------------------------------
    * CHECKOUT (Payway + Transferencia bancaria)
    * ------------------------------------------------------------ */
   const pantallaCheckout = document.getElementById('pantallaCheckout');
@@ -1351,11 +1551,14 @@
   }
 
   function calcularTotalCheckout(){
+    // El envío NO se suma acá: es solo un estimado informativo, el costo
+    // final del envío se coordina aparte (por WhatsApp).
+    if (modoCheckoutCarrito) {
+      return obtenerCarrito().reduce((acc, it) => acc + it.precio * it.cantidad, 0);
+    }
     if (!productoEnCheckout) return 0;
     const precio = Number(productoEnCheckout.precio) || 0;
     const cantidad = Number(inputCantidadCheckout.value) || 1;
-    // El envío NO se suma acá: es solo un estimado informativo, el costo
-    // final del envío se coordina aparte (por WhatsApp).
     return precio * cantidad;
   }
 
@@ -1384,9 +1587,12 @@
     transferenciaDatosDiv.innerHTML = filas.join('');
   }
 
-  function abrirCheckout(producto){
-    productoEnCheckout = producto;
-    inputCantidadCheckout.value = 1;
+  const checkoutBox = document.getElementById('checkoutBox');
+  const tituloCheckout = document.getElementById('tituloCheckout');
+
+  /* Campos comunes a ambos modos de checkout (comprador + entrega),
+     reseteados siempre que se abre la pantalla. */
+  function resetearCamposCompradorCheckout(){
     // Si el cliente esta logueado, precargamos nombre/email (los puede
     // editar igual) para no tener que volver a tipearlos cada compra.
     document.getElementById('inputNombreCheckout').value = sesionCliente ? sesionCliente.nombre : '';
@@ -1404,11 +1610,42 @@
     mensajeCheckout.textContent = '';
     mensajeCheckout.className = 'checkout-mensaje';
     btnPagarCheckout.disabled = false;
+  }
+
+  function abrirCheckout(producto){
+    modoCheckoutCarrito = false;
+    productoEnCheckout = producto;
+    inputCantidadCheckout.value = 1;
+    checkoutBox.classList.remove('modo-carrito');
+    tituloCheckout.textContent = 'Finalizar compra';
+    btnVolverCheckout.textContent = '← Volver al producto';
+    resetearCamposCompradorCheckout();
 
     checkoutResumen.innerHTML = `
       <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
       <div class="precio">$${escaparHtmlPublico(String(producto.precio))} c/u</div>
     `;
+
+    actualizarPanelPago();
+    pantallaCheckout.classList.remove('hidden');
+  }
+
+  function abrirCheckoutDesdeCarrito(){
+    modoCheckoutCarrito = true;
+    productoEnCheckout = null;
+    checkoutBox.classList.add('modo-carrito');
+    tituloCheckout.textContent = 'Finalizar compra (carrito)';
+    btnVolverCheckout.textContent = '← Volver al carrito';
+    resetearCamposCompradorCheckout();
+
+    const items = obtenerCarrito();
+    const total = items.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
+    checkoutResumen.innerHTML = items.map((it) => `
+      <div class="item-resumen-carrito">
+        <span class="nombre">${escaparHtmlPublico(it.nombre)} x${it.cantidad}</span>
+        <span>$${escaparHtmlPublico(String(it.precio * it.cantidad))}</span>
+      </div>
+    `).join('') + `<div class="total-resumen-carrito"><span>Total</span><span>$${total}</span></div>`;
 
     actualizarPanelPago();
     pantallaCheckout.classList.remove('hidden');
@@ -1441,6 +1678,7 @@
   });
 
   btnPagarCheckout.addEventListener('click', async () => {
+    if (modoCheckoutCarrito) { await confirmarPagoCarrito(); return; }
     if (!productoEnCheckout) return;
 
     const cantidad = Number(inputCantidadCheckout.value) || 1;
@@ -1512,6 +1750,73 @@
       btnPagarCheckout.textContent = metodoPago === 'payway' ? 'Pagar con Payway' : 'Confirmar pedido (transferencia)';
     }
   });
+
+  async function confirmarPagoCarrito(){
+    const items = obtenerCarrito();
+    if (items.length === 0) return;
+
+    const nombre = document.getElementById('inputNombreCheckout').value.trim();
+    const email = document.getElementById('inputEmailCheckout').value.trim();
+    const telefono = document.getElementById('inputTelefonoCheckout').value.trim();
+    const metodoEnvio = document.querySelector('input[name="metodoEnvio"]:checked').value;
+    const direccion = document.getElementById('inputDireccionCheckout').value.trim();
+    const ciudad = document.getElementById('inputCiudadCheckout').value.trim();
+    const provincia = document.getElementById('inputProvinciaCheckout').value.trim();
+    const codigoPostal = document.getElementById('inputCPCheckout').value.trim();
+    const notas = document.getElementById('inputNotasCheckout').value.trim();
+
+    mensajeCheckout.className = 'checkout-mensaje';
+    mensajeCheckout.textContent = '';
+
+    if (!nombre) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = 'Ingresá tu nombre y apellido.';
+      document.getElementById('inputNombreCheckout').focus();
+      return;
+    }
+    if (!email) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = 'Ingresá tu email — lo necesitamos para mandarte la confirmación del pedido.';
+      document.getElementById('inputEmailCheckout').focus();
+      return;
+    }
+    if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = 'Completá al menos dirección y ciudad para el envío.';
+      document.getElementById(!direccion ? 'inputDireccionCheckout' : 'inputCiudadCheckout').focus();
+      return;
+    }
+
+    btnPagarCheckout.disabled = true;
+    btnPagarCheckout.textContent = 'Confirmando pedido...';
+
+    try {
+      const res = await fetch('/crear-pago-carrito', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((it) => ({ skuGeneral: it.skuGeneral, cantidad: it.cantidad })),
+          nombre, email, telefono,
+          metodoEnvio, direccion, ciudad, provincia, codigoPostal, notas,
+          metodoPago: 'transferencia',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      const t = data.transferencia || {};
+      mensajeCheckout.className = 'checkout-mensaje ok';
+      mensajeCheckout.textContent = `¡Listo! Tu pedido es ${data.pedidoIds.join(', ')}. Transferí $${t.monto} y guardá esos números como referencia. Coordinamos la entrega apenas confirmemos el pago.`;
+      btnPagarCheckout.textContent = 'Pedido creado ✓';
+      btnPagarCheckout.disabled = true;
+      guardarCarrito([]);
+    } catch (err) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = `No se pudo confirmar el pedido: ${err.message}`;
+      btnPagarCheckout.disabled = false;
+      btnPagarCheckout.textContent = 'Confirmar pedido (transferencia)';
+    }
+  }
 </script>
 
 <div class="flotantes-contacto">

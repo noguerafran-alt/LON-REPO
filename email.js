@@ -123,4 +123,78 @@ Monto: $${escapeHtml(String(monto))}</p>
   }
 }
 
-module.exports = { enviarEmailTransferencia };
+/**
+ * Igual que enviarEmailTransferencia pero para un pedido con varios
+ * productos a la vez (carrito): en vez de un producto/cantidad, lista
+ * cada item con su cantidad, y en vez de un pedidoId lista todos los
+ * generados (uno por producto).
+ *
+ * datos = {
+ *   destinatario, nombreCliente, pedidoIds: [...], items: [{producto, cantidad}],
+ *   monto, transferencia: { alias, titular, cbu, banco },
+ * }
+ */
+async function enviarEmailTransferenciaCarrito(datos) {
+  const {
+    destinatario, nombreCliente, pedidoIds = [], items = [], monto, transferencia = {},
+  } = datos;
+
+  if (!destinatario) return false;
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.warn('No se configuraron EMAIL_USER / EMAIL_APP_PASSWORD — no se pudo enviar el mail de confirmación del pedido', pedidoIds.join(', '));
+    return false;
+  }
+
+  const lineasDatos = [
+    transferencia.alias ? `Alias: ${transferencia.alias}` : '',
+    transferencia.cbu ? `CBU: ${transferencia.cbu}` : '',
+    transferencia.titular ? `Titular: ${transferencia.titular}` : '',
+    transferencia.banco ? `Banco: ${transferencia.banco}` : '',
+  ].filter(Boolean);
+
+  const lineasItems = items.map((it) => `- ${it.producto}${Number(it.cantidad) > 1 ? ` x${it.cantidad}` : ''}`);
+
+  const texto = `Hola ${nombreCliente || ''}!
+
+Gracias por tu compra. Estos son los datos para transferir:
+
+${lineasDatos.join('\n')}
+Monto: $${monto}
+
+Guardá estos números de pedido como referencia: ${pedidoIds.join(', ')}
+Productos:
+${lineasItems.join('\n')}
+
+Apenas confirmemos que llegó el pago, coordinamos la entrega.
+
+LON Philosophy`;
+
+  const html = `
+    <p>Hola ${escapeHtml(nombreCliente || '')}!</p>
+    <p>Gracias por tu compra. Estos son los datos para transferir:</p>
+    <p style="font-family:monospace; white-space:pre-line; background:#f4f0e8; padding:12px 14px; border-radius:4px;">${escapeHtml(lineasDatos.join('\n'))}
+Monto: $${escapeHtml(String(monto))}</p>
+    <p>Guardá estos números de pedido como referencia: <strong>${escapeHtml(pedidoIds.join(', '))}</strong></p>
+    <p>Productos:<br>${lineasItems.map((l) => escapeHtml(l)).join('<br>')}</p>
+    <p>Apenas confirmemos que llegó el pago, coordinamos la entrega.</p>
+    <p>LON Philosophy</p>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"${config.EMAIL_FROM_NAME}" <${config.EMAIL_USER}>`,
+      to: destinatario,
+      subject: `Tu pedido (${pedidoIds.length} productos) — datos para transferir`,
+      text: texto,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error enviando el mail de confirmación del pedido de carrito:', err.message);
+    return false;
+  }
+}
+
+module.exports = { enviarEmailTransferencia, enviarEmailTransferenciaCarrito };
