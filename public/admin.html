@@ -1286,6 +1286,7 @@
   const btnCerrarReconocer = document.getElementById('btnCerrarReconocer');
 
   btnReconocerFoto.addEventListener('click', () => {
+    suprimirProximoReinicioEscaner = true;
     inputFotoReconocer.value = '';
     inputFotoReconocer.click();
   });
@@ -1651,6 +1652,13 @@
 
   let scanner = null;
   let escanerIniciado = false;
+  // Se pone en true justo antes de abrir la camara nativa del celular
+  // (ej. "Reconocer producto por foto", que usa <input type="file"
+  // capture="environment"> en vez de la camara en vivo): eso oculta la
+  // pestaña un instante y dispara visibilitychange al volver, lo que
+  // sin este freno reactivaria el escaner QR de golpe encima del
+  // resultado. Se consume (y apaga) en el primer reinicio que evita.
+  let suprimirProximoReinicioEscaner = false;
 
   function iniciarEscanerSiHaceFalta(){
     if (escanerIniciado) return;
@@ -1679,6 +1687,7 @@
   }
 
   function reiniciarEscaner(){
+    if (suprimirProximoReinicioEscaner) { suprimirProximoReinicioEscaner = false; return; }
     if (!appDiv.classList.contains('show')) return;
     if (scanner) {
       scanner.stop().catch(() => {}).finally(() => { scanner = null; escanerIniciado = false; iniciarEscanerSiHaceFalta(); });
