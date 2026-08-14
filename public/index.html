@@ -265,12 +265,19 @@
   .tabs-categorias-catalogo{
     display:flex; flex-direction:column; gap:8px; margin-bottom:20px;
   }
+  .contenedor-scroll-categorias{ display:flex; align-items:center; gap:4px; min-width:0; }
   .fila-tabs-categorias-scroll{
-    display:flex; flex-wrap:nowrap; align-items:flex-start; gap:8px;
+    display:flex; flex-wrap:nowrap; align-items:flex-start; gap:8px; flex:1; min-width:0;
     overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
   }
   .fila-tabs-categorias-scroll::-webkit-scrollbar{ display:none; }
   .espaciador-tabs-categoria{ flex:0 0 auto; }
+  .btn-flecha-categorias{
+    flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:1px solid var(--line);
+    background:var(--field-bg); color:var(--ink); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; font-size:15px; line-height:1; padding:0;
+  }
+  .btn-flecha-categorias:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
   .tab-categoria-catalogo{
     display:inline-flex; align-items:center; flex:0 0 auto; white-space:nowrap;
     background:none; border:1px solid var(--line); color:var(--ink-muted);
@@ -973,8 +980,24 @@
       </div>
     `;
 
-    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo"><div class="fila-tabs-categorias-scroll">${tabsHtml}<div class="espaciador-tabs-categoria"></div></div>${subcategoriasHtml}</div>`;
+    catalogoTabsCategoria.innerHTML = `
+      <div class="tabs-categorias-catalogo">
+        <div class="contenedor-scroll-categorias">
+          <button type="button" class="btn-flecha-categorias" id="btnCategoriasIzquierda" aria-label="Ver categorías anteriores">‹</button>
+          <div class="fila-tabs-categorias-scroll">${tabsHtml}<div class="espaciador-tabs-categoria"></div></div>
+          <button type="button" class="btn-flecha-categorias" id="btnCategoriasDerecha" aria-label="Ver más categorías">›</button>
+        </div>
+        ${subcategoriasHtml}
+      </div>
+    `;
     catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
+
+    document.getElementById('btnCategoriasIzquierda').addEventListener('click', () => {
+      catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll').scrollBy({ left: -160, behavior: 'smooth' });
+    });
+    document.getElementById('btnCategoriasDerecha').addEventListener('click', () => {
+      catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll').scrollBy({ left: 160, behavior: 'smooth' });
+    });
 
     // La categoría activa tiene que quedar primera (más a la izquierda) en
     // el scroll horizontal, incluso si es la última de la lista — para
