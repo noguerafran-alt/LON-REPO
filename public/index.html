@@ -263,10 +263,15 @@
     margin:0 0 12px;
   }
   .tabs-categorias-catalogo{
-    display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px; margin-bottom:20px;
+    display:flex; flex-direction:column; gap:8px; margin-bottom:20px;
   }
+  .fila-tabs-categorias-scroll{
+    display:flex; flex-wrap:nowrap; align-items:flex-start; gap:8px;
+    overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
+  }
+  .fila-tabs-categorias-scroll::-webkit-scrollbar{ display:none; }
   .tab-categoria-catalogo{
-    display:inline-flex; align-items:center;
+    display:inline-flex; align-items:center; flex:0 0 auto; white-space:nowrap;
     background:none; border:1px solid var(--line); color:var(--ink-muted);
     border-radius:var(--radius); padding:0 14px; height:40px; box-sizing:border-box;
     font-family:'Fraunces', serif; font-style:italic; font-weight:600; font-size:16px; letter-spacing:0.01em;
@@ -967,7 +972,7 @@
       </div>
     `;
 
-    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo">${tabsHtml}${subcategoriasHtml}</div>`;
+    catalogoTabsCategoria.innerHTML = `<div class="tabs-categorias-catalogo"><div class="fila-tabs-categorias-scroll">${tabsHtml}</div>${subcategoriasHtml}</div>`;
     catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
 
     catalogoTabsCategoria.querySelectorAll('.tab-categoria-catalogo').forEach((boton) => {
