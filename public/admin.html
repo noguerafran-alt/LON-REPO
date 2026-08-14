@@ -544,7 +544,7 @@
     <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
     <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
     <div id="reader"></div>
-    <div class="status-bar" id="statusBar">Esperando código QR...</div>
+    <div class="status-bar" id="statusBar">Cámara apagada.</div>
     <div class="log">
       <h2>Últimos escaneados</h2>
       <div id="logList"></div>
@@ -800,6 +800,26 @@
 </div>
 
 <script>
+
+  // Todo campo de texto libre del panel admin se escribe en MAYÚSCULAS
+  // (nombres, proveedores, búsquedas, email de usuario, etc). Un solo
+  // listener con "capture:true" en vez de uno por campo: se dispara
+  // ANTES que cualquier otro listener del mismo input (fase de
+  // captura, no de burbuja), así cuando otro código lee el valor para
+  // guardar estado, ya está en mayúsculas — no hay campos nuevos (ni
+  // los que se arman dinámicamente, como las filas de "seleccionados")
+  // que se queden afuera por olvido.
+  document.addEventListener('input', (evento) => {
+    const el = evento.target;
+    const esTextoLibre = el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text');
+    if (!esTextoLibre) return;
+    const mayusculas = el.value.toUpperCase();
+    if (mayusculas === el.value) return;
+    const inicio = el.selectionStart;
+    const fin = el.selectionEnd;
+    el.value = mayusculas;
+    if (inicio !== null && fin !== null) el.setSelectionRange(inicio, fin);
+  }, true);
 
   // Sesión del panel admin. `adminToken` es el token firmado que devuelve
   // el servidor tras verificar el login con Google — es lo que se manda
@@ -1285,19 +1305,31 @@
   const btnModoVenta = document.getElementById('btnModoVenta');
   const btnModoAsociar = document.getElementById('btnModoAsociar');
 
+  /* El texto de espera depende del modo, pero SOLO tiene sentido
+     mostrarlo si la cámara está realmente prendida — si está apagada,
+     siempre tiene que decir "Cámara apagada.", nunca "Esperando..."
+     (eso confundía, parecía que estaba escaneando sin estarlo). */
+  function mensajeEsperaSegunModo(){
+    return modoEscaner === 'asociar'
+      ? 'Escaneá el código de barras del producto (ISBN, EAN, etc)...'
+      : 'Esperando código QR...';
+  }
+  function actualizarStatusBarSegunEstadoCamara(){
+    statusBar.className = 'status-bar';
+    statusBar.textContent = escanerIniciado ? mensajeEsperaSegunModo() : 'Cámara apagada.';
+  }
+
   btnModoVenta.addEventListener('click', () => {
     modoEscaner = 'venta';
     btnModoVenta.classList.add('activo');
     btnModoAsociar.classList.remove('activo');
-    statusBar.className = 'status-bar';
-    statusBar.textContent = 'Esperando código QR...';
+    actualizarStatusBarSegunEstadoCamara();
   });
   btnModoAsociar.addEventListener('click', () => {
     modoEscaner = 'asociar';
     btnModoAsociar.classList.add('activo');
     btnModoVenta.classList.remove('activo');
-    statusBar.className = 'status-bar';
-    statusBar.textContent = 'Escaneá el código de barras del producto (ISBN, EAN, etc)...';
+    actualizarStatusBarSegunEstadoCamara();
   });
 
   /* ------------------------------------------------------------
@@ -1708,6 +1740,7 @@
     if (escanerIniciado) return;
     escanerIniciado = true;
     actualizarBotonActivarCamara();
+    actualizarStatusBarSegunEstadoCamara();
     scanner = new Html5Qrcode('reader', {
       formatsToSupport: [
         Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128,
@@ -1743,8 +1776,7 @@
     }
     escanerIniciado = false;
     actualizarBotonActivarCamara();
-    statusBar.className = 'status-bar';
-    statusBar.textContent = 'Cámara apagada.';
+    actualizarStatusBarSegunEstadoCamara();
   }
 
   function reiniciarEscaner(){
@@ -2112,10 +2144,6 @@
         if (item) item.precio = evento.target.value;
       });
       fila.querySelector('.input-proveedor-fila').addEventListener('input', (evento) => {
-        const inicio = evento.target.selectionStart;
-        const fin = evento.target.selectionEnd;
-        evento.target.value = evento.target.value.toUpperCase();
-        evento.target.setSelectionRange(inicio, fin);
         const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
         if (item) item.proveedor = evento.target.value;
       });
@@ -2646,21 +2674,6 @@
   limitarInputCategoria(document.getElementById('inputCodigoCategoriaNueva'), { maxLength: 3 });
   limitarInputCategoria(document.getElementById('inputSubcategoriaNueva'), { conEspacios: true });
   limitarInputCategoria(document.getElementById('inputCodigoSubcategoriaNueva'), { maxLength: 3 });
-
-  /* El nombre de un producto nuevo se escribe siempre en MAYÚSCULAS
-     (a diferencia de categoría/subcategoría, acá no se le sacan
-     números ni signos — solo se fuerza el mayúsculas). */
-  function forzarMayusculas(input){
-    input.addEventListener('input', () => {
-      const inicio = input.selectionStart;
-      const fin = input.selectionEnd;
-      input.value = input.value.toUpperCase();
-      input.setSelectionRange(inicio, fin);
-    });
-  }
-  forzarMayusculas(document.getElementById('inputNombreProductoNuevo'));
-  forzarMayusculas(document.getElementById('inputNombreProductoNuevoAsociar'));
-  forzarMayusculas(document.getElementById('inputProveedorProductoNuevo'));
 
   btnCrearConfigCategoria.addEventListener('click', async () => {
     const categoria = document.getElementById('inputCategoriaNueva').value.trim();
