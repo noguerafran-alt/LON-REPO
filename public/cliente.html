@@ -261,12 +261,31 @@
     pendingSku = null;
   }
 
+  // Si la persona ya inició sesión con Google en el catálogo ("Mi
+  // cuenta"), esa sesión queda guardada en localStorage (mismo origen,
+  // se comparte con esta página) — usamos ese nombre/email para la
+  // consulta en vez de pedírselo de nuevo acá.
+  function getSesionClienteValida(){
+    try {
+      const crudo = localStorage.getItem('lon_cliente_sesion');
+      if (!crudo) return null;
+      const datos = JSON.parse(crudo);
+      if (!datos || !datos.token || !datos.exp || Date.now() > datos.exp) return null;
+      return datos;
+    } catch (e) { return null; }
+  }
+
   async function guardarConsultaCliente(sku){
+    const sesion = getSesionClienteValida();
     try {
       await fetch('/consulta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sku })
+        body: JSON.stringify({
+          sku,
+          nombre: sesion ? sesion.nombre : '',
+          email: sesion ? sesion.email : '',
+        })
       });
     } catch (err) {
       console.warn('No se pudo registrar la consulta:', err);

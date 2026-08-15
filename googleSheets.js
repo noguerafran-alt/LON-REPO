@@ -1854,6 +1854,20 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
       requestBody: { values: [[precioFinalVenta !== null ? precioFinalVenta : '']] },
     });
 
+    // La columna F es un aviso de "se vendió distinto al precio de
+    // catálogo" — si no había precio de catálogo con qué compararlo, no
+    // es una diferencia real, es el único precio que tenemos. La
+    // limpiamos para que no quede el mismo número repetido en E y F.
+    if (precioManualFila !== null && (datosProducto.precio === null || datosProducto.precio === undefined)) {
+      const letraPrecioManual = columnaALetra(colsVentas.precioManual); // columna F
+      await sheetsClient.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!${letraPrecioManual}${filaReal}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [['']] },
+      });
+    }
+
     skusYaVendidos.add(skuCompletoNormalizado);
     procesadas++;
   }
