@@ -954,12 +954,33 @@
     }
   }
 
+  // Slug legible para la URL, armado a partir del nombre (sin acentos, en
+  // minúscula, separado por guiones) — así la barra de direcciones muestra
+  // "30-artistas-argentinos" en vez del SKU interno. Si el nombre queda
+  // vacío una vez limpiado, se usa el SKU como respaldo.
+  function slugProducto(producto){
+    const base = String(producto.nombre || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // saca acentos
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return base || producto.skuGeneral;
+  }
+
+  // Busca el producto correspondiente al valor de ?producto= de la URL:
+  // primero por el slug del nombre (formato actual), y si no matchea, por
+  // SKU general (compatibilidad con links ya compartidos con el formato
+  // viejo, que llevaban el SKU directo).
+  function buscarProductoPorValorUrl(valor){
+    if (!valor) return null;
+    return catalogoPublicoProductos.find((p) => slugProducto(p) === valor)
+      || catalogoPublicoProductos.find((p) => p.skuGeneral === valor)
+      || null;
+  }
+
   function abrirProductoDesdeUrlSiHaceFalta(){
     const params = new URLSearchParams(window.location.search);
-    const skuGeneralBuscado = params.get('producto');
-    if (!skuGeneralBuscado) return;
-
-    const encontrado = catalogoPublicoProductos.find((p) => p.skuGeneral === skuGeneralBuscado);
+    const encontrado = buscarProductoPorValorUrl(params.get('producto'));
     if (encontrado) mostrarDetalleProductoPublico(encontrado, false);
   }
 
@@ -968,11 +989,8 @@
   // ya quedó como corresponde (la cambió el propio navegador).
   window.addEventListener('popstate', () => {
     const params = new URLSearchParams(window.location.search);
-    const sku = params.get('producto');
-    if (sku) {
-      const encontrado = catalogoPublicoProductos.find((p) => p.skuGeneral === sku);
-      if (encontrado) { mostrarDetalleProductoPublico(encontrado, false); return; }
-    }
+    const encontrado = buscarProductoPorValorUrl(params.get('producto'));
+    if (encontrado) { mostrarDetalleProductoPublico(encontrado, false); return; }
     mostrarVistaListaCatalogo();
   });
 
@@ -1200,15 +1218,17 @@
   }
 
   function mostrarDetalleProductoPublico(producto, actualizarUrl = true){
-    // Reflejamos el producto en la URL (?producto=SKU) para que un
+    // Reflejamos el producto en la URL (?producto=nombre-del-producto) —
+    // legible en la barra de direcciones en vez del SKU — para que un
     // refresh (o compartir el link) te deje en el mismo detalle en vez
     // de mandarte al catálogo principal. actualizarUrl=false cuando esto
     // se llama DESDE la propia URL (carga inicial o "atrás"/"adelante"
     // del navegador), para no pushear un estado duplicado.
     if (actualizarUrl && producto.skuGeneral) {
       const url = new URL(window.location);
-      if (url.searchParams.get('producto') !== producto.skuGeneral) {
-        url.searchParams.set('producto', producto.skuGeneral);
+      const slug = slugProducto(producto);
+      if (url.searchParams.get('producto') !== slug) {
+        url.searchParams.set('producto', slug);
         history.pushState({ producto: producto.skuGeneral }, '', url);
       }
     }
