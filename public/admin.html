@@ -136,6 +136,11 @@
     font-size:13px; font-weight:600; cursor:pointer;
   }
   .btn-modo-escaner.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .input-venta-lector{
+    width:100%; padding:12px 14px; font-size:15px; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
+  }
+  .input-venta-lector:focus{ outline:none; border-color:var(--accent); }
   .btn-reconocer-foto{
     display:block; width:calc(100% - 48px); max-width:480px; margin:10px auto 0; padding:12px;
     border-radius:var(--radius); border:1px solid var(--accent); background:transparent; color:var(--accent);
@@ -561,9 +566,14 @@
     <button type="button" class="btn-reconocer-foto" id="btnVentaManual">🔎 Venta manual (buscar producto)</button>
     <div class="modo-escaner-opciones">
       <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR / código de barras (venta)</button>
+      <button type="button" class="btn-modo-escaner" id="btnModoLector" data-modo="lector">⌨️ Vender por lector</button>
       <button type="button" class="btn-modo-escaner" id="btnModoCafe" data-modo="cafe">☕ Café (fidelidad)</button>
     </div>
     <div id="reader"></div>
+    <div id="bloqueVentaLector" style="display:none; max-width:480px; margin:16px auto 0; padding:0 24px;">
+      <input type="text" id="inputVentaLector" class="input-venta-lector" placeholder="Escaneá con el lector, o escribí nombre/SKU..." autocomplete="off">
+      <div class="lista-productos" id="listaVentaLector" style="max-height:260px; margin-top:8px; display:none;"></div>
+    </div>
     <div class="status-bar" id="statusBar">Cámara apagada.</div>
     <div class="log">
       <h2>Últimos escaneados</h2>
@@ -1399,14 +1409,20 @@
   /* ------------------------------------------------------------
    * MODO DE ESCANEO: "venta" (QR o código de barras — el servidor
    * resuelve solo si es un SKU interno o un código de barras externo ya
-   * asociado, ver showModal más abajo) o "cafe" (QR de fidelidad del
-   * cliente -> suma 1 café). Asociar un código de barras nuevo a un SKU
-   * se hace desde la pestaña "Productos", no acá.
+   * asociado, ver showModal más abajo), "lector" (sin cámara: un lector
+   * de mano tipea el código como si fuera un teclado, o se busca el
+   * producto por nombre) o "cafe" (QR de fidelidad del cliente -> suma
+   * 1 café). Asociar un código de barras nuevo a un SKU se hace desde
+   * la pestaña "Productos", no acá.
    * ------------------------------------------------------------ */
   let modoEscaner = 'venta';
   const btnModoVenta = document.getElementById('btnModoVenta');
+  const btnModoLector = document.getElementById('btnModoLector');
   const btnModoCafe = document.getElementById('btnModoCafe');
-  const botonesModoEscaner = [btnModoVenta, btnModoCafe];
+  const botonesModoEscaner = [btnModoVenta, btnModoLector, btnModoCafe];
+  const btnActivarCamaraEl = document.getElementById('btnActivarCamara');
+  const readerEl = document.getElementById('reader');
+  const bloqueVentaLector = document.getElementById('bloqueVentaLector');
 
   /* El texto de espera depende del modo, pero SOLO tiene sentido
      mostrarlo si la cámara está realmente prendida — si está apagada,
@@ -1417,17 +1433,104 @@
     return 'Esperando código QR o de barras...';
   }
   function actualizarStatusBarSegunEstadoCamara(){
+    if (modoEscaner === 'lector') return; // este modo no usa la cámara, no toca el status-bar
     statusBar.className = 'status-bar';
     statusBar.textContent = escanerIniciado ? mensajeEsperaSegunModo() : 'Cámara apagada.';
   }
 
   function elegirModoEscaner(modo, botonActivo){
+    const modoAnterior = modoEscaner;
     modoEscaner = modo;
     botonesModoEscaner.forEach((b) => b.classList.toggle('activo', b === botonActivo));
+
+    const esLector = modo === 'lector';
+    readerEl.style.display = esLector ? 'none' : '';
+    btnActivarCamaraEl.style.display = esLector ? 'none' : '';
+    bloqueVentaLector.style.display = esLector ? 'block' : 'none';
+    statusBar.style.display = esLector ? 'none' : '';
+
+    if (esLector) {
+      // Este modo no usa la cámara: si estaba prendida, se apaga sola.
+      if (escanerIniciado) apagarEscanerManualmente();
+      if (!catalogoPublicoVentaManualCargado) cargarCatalogoPublicoVentaManual();
+      inputVentaLector.value = '';
+      listaVentaLector.style.display = 'none';
+      inputVentaLector.focus();
+    } else if (modoAnterior === 'lector') {
+      inputVentaLector.value = '';
+      listaVentaLector.style.display = 'none';
+    }
+
     actualizarStatusBarSegunEstadoCamara();
   }
   btnModoVenta.addEventListener('click', () => elegirModoEscaner('venta', btnModoVenta));
+  btnModoLector.addEventListener('click', () => elegirModoEscaner('lector', btnModoLector));
   btnModoCafe.addEventListener('click', () => elegirModoEscaner('cafe', btnModoCafe));
+
+  /* ------------------------------------------------------------
+   * VENDER POR LECTOR: sin cámara — un lector de mano tipea el código
+   * acá mismo (como si fuera un teclado) y manda Enter, o se busca el
+   * producto por nombre/SKU como en "Venta manual" pero mostrando los
+   * resultados en esta misma página, sin ventana flotante. En los dos
+   * casos se termina llamando a handleScan() con el SKU correspondiente
+   * — el mismo camino que un escaneo con cámara: mismo modal de venta,
+   * mismo log de "Últimos escaneados", mismo total acumulado.
+   * ------------------------------------------------------------ */
+  const inputVentaLector = document.getElementById('inputVentaLector');
+  const listaVentaLector = document.getElementById('listaVentaLector');
+
+  function renderizarListaVentaLector(){
+    const busqueda = inputVentaLector.value.trim().toLowerCase();
+    if (!busqueda) {
+      listaVentaLector.style.display = 'none';
+      listaVentaLector.innerHTML = '';
+      return;
+    }
+
+    const filtrados = catalogoPublicoVentaManual.filter((p) => {
+      const enNombre = (p.nombre || '').toLowerCase().includes(busqueda);
+      const enSku = (p.skuGeneral || '').toLowerCase().includes(busqueda);
+      return enNombre || enSku;
+    }).slice(0, 20);
+
+    listaVentaLector.style.display = 'block';
+    if (filtrados.length === 0) {
+      listaVentaLector.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">No se encontraron productos.</div>';
+      return;
+    }
+
+    listaVentaLector.innerHTML = filtrados.map((p) => `
+      <div class="item-producto" data-sku="${escaparHtml(p.skuGeneral)}">
+        ${p.foto ? `<img class="foto-mini" src="${escaparHtml(p.foto)}" alt="">` : '<div class="foto-mini-vacia">—</div>'}
+        <div class="lista-producto-info" data-accion="elegir">
+          <span class="lista-producto-nombre">${escaparHtml(p.nombre || '(sin nombre)')}</span>
+          <span class="lista-producto-meta">${escaparHtml(p.categoriaVisible || p.categoria)}${p.subcategoria ? ' / ' + escaparHtml(p.subcategoria) : ''}${p.precio ? ' · $' + escaparHtml(String(p.precio)) : ''}</span>
+        </div>
+      </div>
+    `).join('');
+
+    listaVentaLector.querySelectorAll('.item-producto').forEach((el) => {
+      el.addEventListener('click', () => {
+        const skuGeneral = el.getAttribute('data-sku');
+        inputVentaLector.value = '';
+        listaVentaLector.style.display = 'none';
+        listaVentaLector.innerHTML = '';
+        handleScan(skuGeneral);
+      });
+    });
+  }
+  inputVentaLector.addEventListener('input', renderizarListaVentaLector);
+
+  inputVentaLector.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'Enter') return;
+    evento.preventDefault();
+    const escaneado = inputVentaLector.value.trim();
+    if (!escaneado) return;
+    inputVentaLector.value = '';
+    listaVentaLector.style.display = 'none';
+    listaVentaLector.innerHTML = '';
+    handleScan(escaneado);
+  });
 
   /* ------------------------------------------------------------
    * RECONOCER PRODUCTO POR FOTO: saca una foto (cámara nativa del
