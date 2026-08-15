@@ -894,8 +894,22 @@
     if (!skuGeneralBuscado) return;
 
     const encontrado = catalogoPublicoProductos.find((p) => p.skuGeneral === skuGeneralBuscado);
-    if (encontrado) mostrarDetalleProductoPublico(encontrado);
+    if (encontrado) mostrarDetalleProductoPublico(encontrado, false);
   }
+
+  // Atrás/adelante del navegador: si la URL tiene ?producto=, mostrar ese
+  // detalle; si no, volver al listado. actualizarUrl=false porque la URL
+  // ya quedó como corresponde (la cambió el propio navegador).
+  window.addEventListener('popstate', () => {
+    const params = new URLSearchParams(window.location.search);
+    const sku = params.get('producto');
+    if (sku) {
+      const encontrado = catalogoPublicoProductos.find((p) => p.skuGeneral === sku);
+      if (encontrado) { mostrarDetalleProductoPublico(encontrado, false); return; }
+    }
+    catalogoDetalleView.style.display = 'none';
+    catalogoListaView.style.display = 'block';
+  });
 
   function renderizarCatalogoPublico(){
     if (catalogoPublicoProductos.length === 0) {
@@ -1104,7 +1118,20 @@
     return [];
   }
 
-  function mostrarDetalleProductoPublico(producto){
+  function mostrarDetalleProductoPublico(producto, actualizarUrl = true){
+    // Reflejamos el producto en la URL (?producto=SKU) para que un
+    // refresh (o compartir el link) te deje en el mismo detalle en vez
+    // de mandarte al catálogo principal. actualizarUrl=false cuando esto
+    // se llama DESDE la propia URL (carga inicial o "atrás"/"adelante"
+    // del navegador), para no pushear un estado duplicado.
+    if (actualizarUrl && producto.skuGeneral) {
+      const url = new URL(window.location);
+      if (url.searchParams.get('producto') !== producto.skuGeneral) {
+        url.searchParams.set('producto', producto.skuGeneral);
+        history.pushState({ producto: producto.skuGeneral }, '', url);
+      }
+    }
+
     // Registramos la visita para "Destacados: más visitados" — en
     // segundo plano, sin bloquear ni avisar nada si falla (no es
     // crítico para poder ver el producto).
@@ -1236,6 +1263,11 @@
   btnVolverDeDetalle.addEventListener('click', () => {
     catalogoDetalleView.style.display = 'none';
     catalogoListaView.style.display = 'block';
+    const url = new URL(window.location);
+    if (url.searchParams.has('producto')) {
+      url.searchParams.delete('producto');
+      history.pushState({}, '', url);
+    }
   });
 
   const btnMostrarBuscadorCatalogo = document.getElementById('btnMostrarBuscadorCatalogo');

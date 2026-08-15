@@ -982,13 +982,22 @@
     tabCatalogo.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
-    mostrarSeccionAdmin('escanear');
+    // Recordamos en qué pestaña estaba para que un refresh no lo mande
+    // siempre de vuelta a "Escanear" — si nunca hubo ninguna guardada (o
+    // era invalida), arranca en "Escanear" como antes.
+    let seccionGuardada = 'escanear';
+    try {
+      const guardada = localStorage.getItem('admin_seccion_activa');
+      if (['escanear', 'generar', 'catalogo', 'pedidos', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
+    } catch (e) {}
+    mostrarSeccionAdmin(seccionGuardada);
   }
 
   function mostrarSeccionAdmin(seccion){
     // Nivel 1 no puede quedar parado en una seccion que no le corresponde
     // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
     if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'usuarios')) seccion = 'escanear';
+    try { localStorage.setItem('admin_seccion_activa', seccion); } catch (e) {}
 
     const esEscanear = seccion === 'escanear';
     const esPedidos = seccion === 'pedidos';
