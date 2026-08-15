@@ -582,6 +582,16 @@
       <div id="mensajeCrearProducto" style="margin-top:10px;"></div>
     </div>
 
+    <div class="campo" id="productosSeleccionadosBox" style="display:none;">
+      <label>Productos seleccionados</label>
+      <div id="listaProductosSeleccionados"></div>
+    </div>
+
+    <button class="btn-generar" id="btnGenerarUnidadesConfirmar" disabled>Generar unidades</button>
+    <div id="mensajeGeneracion"></div>
+
+    <hr class="separador-panel">
+
     <div class="campo">
       <label for="selectCategoria">Categoría</label>
       <select id="selectCategoria"><option value="">Todas las categorías</option></select>
@@ -597,21 +607,11 @@
       <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">📷 Tocá el ícono de la cámara en un producto para subirle o cambiarle la foto.</p>
     </div>
 
-    <div class="campo" id="productosSeleccionadosBox" style="display:none;">
-      <label>Productos seleccionados</label>
-      <div id="listaProductosSeleccionados"></div>
-    </div>
-
-    <button class="btn-generar" id="btnGenerarUnidadesConfirmar" disabled>Generar unidades</button>
-    <div id="mensajeGeneracion"></div>
-
     <hr class="separador-panel">
 
     <div class="campo">
-      <label>Fotos ya subidas</label>
-      <button class="btn-imprimir" id="btnOptimizarFotos" style="width:100%;">OPTIMIZAR FOTOS EXISTENTES</button>
-      <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">Genera la versión chica de las fotos que subiste antes, para que el catálogo cargue rápido. Se corre una sola vez; las fotos nuevas ya salen optimizadas solas.</p>
-      <div id="mensajeOptimizarFotos" style="font-size:13px; margin-top:8px;"></div>
+      <label>Productos nuevos generados desde la app</label>
+      <div id="resumenGeneradosApp" style="font-size:15px; color:var(--ink-muted);">Cargando...</div>
     </div>
 
     <hr class="separador-panel">
@@ -622,13 +622,6 @@
         <button class="btn-imprimir" id="btnGenerarEtiquetasApp">IMPRIMIR</button>
         <button class="btn-imprimir btn-imprimir-rojo" id="btnVaciarImprimirApp">LIMPIAR IMPRESORA</button>
       </div>
-    </div>
-
-    <hr class="separador-panel">
-
-    <div class="campo">
-      <label>Productos nuevos generados desde la app</label>
-      <div id="resumenGeneradosApp" style="font-size:15px; color:var(--ink-muted);">Cargando...</div>
     </div>
 
     <hr class="separador-panel">
@@ -650,6 +643,15 @@
         <button class="btn-generar" id="btnCrearConfigCategoria">Agregar categoría</button>
         <div id="mensajeConfigCategoria" style="margin-top:10px;"></div>
       </div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Fotos ya subidas</label>
+      <button class="btn-imprimir" id="btnOptimizarFotos" style="width:100%;">OPTIMIZAR FOTOS EXISTENTES</button>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">Genera la versión chica de las fotos que subiste antes, para que el catálogo cargue rápido. Se corre una sola vez; las fotos nuevas ya salen optimizadas solas.</p>
+      <div id="mensajeOptimizarFotos" style="font-size:13px; margin-top:8px;"></div>
     </div>
   </div>
 
