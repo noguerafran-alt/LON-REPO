@@ -1904,6 +1904,18 @@ async function procesarVentasNuevas(sheetsClient, spreadsheetId) {
       requestBody: { values: [[precioFinalVenta !== null ? precioFinalVenta : '']] },
     });
 
+    // Columna I: precio de catálogo en el momento de procesar la venta,
+    // SIEMPRE (haya habido precio manual o no) — sirve para comparar
+    // contra E/F y ver si el precio de catálogo cambió después de esta
+    // venta. A diferencia de E, esta columna nunca usa el precio manual.
+    const letraPrecioCatalogo = columnaALetra(colsVentas.precioCatalogoAlVender); // columna I
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!${letraPrecioCatalogo}${filaReal}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[datosProducto.precio !== null && datosProducto.precio !== undefined ? datosProducto.precio : '']] },
+    });
+
     // La columna F es un aviso de "se vendió distinto al precio de
     // catálogo" — si no había precio de catálogo con qué compararlo, no
     // es una diferencia real, es el único precio que tenemos. La

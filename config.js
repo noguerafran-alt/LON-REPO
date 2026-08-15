@@ -107,6 +107,7 @@ module.exports = {
     precioManual: 5,  // F: opcional, lo carga el admin al vender si el precio final fue distinto al de catalogo — el procesador lo usa en vez del precio de Productos para llenar E
     pedidoId: 6,      // G: numero de pedido online, si esta unidad sale por un pedido web
     vendedor: 7,      // H: email de la cuenta admin logueada que registro la venta (o el despacho del pedido) — nunca lo manda el navegador, sale de la sesion verificada en el servidor
+    precioCatalogoAlVender: 8, // I: precio que tenia el catalogo (Productos) en el momento de procesar la venta, SIEMPRE (haya habido precio manual o no) — para poder comparar contra E/F y ver si el precio de catalogo cambio despues
   },
 
   // Columnas de la hoja STOCK (en la planilla de VENTAS).
