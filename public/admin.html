@@ -350,6 +350,10 @@
   }
   .fila-seleccionado .input-precio-fila{ width:100px; }
   .fila-seleccionado .input-proveedor-fila{ width:140px; }
+  /* Marca en rojo el precio/proveedor mientras siga siendo el valor que
+     ya existía en el catálogo, para que no pase desapercibido que se va
+     a reusar — deja de aplicar apenas el admin lo edita. */
+  .valor-precargado{ color:var(--stamp-red); font-weight:600; }
   .fila-seleccionado button.quitar{ background:none; border:none; color:var(--stamp-red); font-size:18px; line-height:1; cursor:pointer; padding:4px 8px; }
 
   .acceso-admin-link{
@@ -1984,10 +1988,18 @@
   function elegirProducto(producto, { enfocar = true } = {}){
     const yaEsta = productosSeleccionados.some((s) => s.producto.skuGeneral === producto.skuGeneral);
     if (!yaEsta) {
+      const precioPrecargado = producto.precio != null ? String(producto.precio) : '';
+      const proveedorPrecargado = producto.proveedor || '';
       productosSeleccionados.unshift({
         producto, cantidad: '',
-        precio: producto.precio != null ? String(producto.precio) : '',
-        proveedor: producto.proveedor || '',
+        precio: precioPrecargado,
+        proveedor: proveedorPrecargado,
+        // Se guardan aparte para poder marcar en rojo los campos que
+        // todavía tienen el valor que ya existía en el catálogo (para
+        // que no pase desapercibido que se va a reusar ese precio/
+        // proveedor) — en cuanto el admin lo edita, deja de coincidir y
+        // el campo vuelve al color normal.
+        precioPrecargado, proveedorPrecargado,
       });
       renderizarProductosSeleccionados();
     }
@@ -2218,28 +2230,39 @@
         return;
       }
       box.style.display = 'block';
-      lista.innerHTML = productosSeleccionados.map((s) => `
+      lista.innerHTML = productosSeleccionados.map((s) => {
+        // Precio/proveedor en rojo mientras el valor siga siendo el que
+        // ya existía en el catálogo (para que no pase desapercibido que
+        // se va a reusar) — apenas el admin lo edita, deja de coincidir.
+        const precioEsPrecargado = s.precioPrecargado !== '' && String(s.precio) === s.precioPrecargado;
+        const proveedorEsPrecargado = s.proveedorPrecargado !== '' && String(s.proveedor) === s.proveedorPrecargado;
+        return `
         <div class="fila-seleccionado" data-sku="${escaparHtml(s.producto.skuGeneral)}">
           <div class="info">
             <div class="nombre">${escaparHtml(s.producto.producto || '(sin nombre)')}</div>
             <div class="meta">${escaparHtml(s.producto.skuGeneral)} · ${escaparHtml(s.producto.categoria)}${s.producto.subcategoria ? ' / ' + escaparHtml(s.producto.subcategoria) : ''}</div>
           </div>
-          <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(String(s.precio))}">
-          <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(s.proveedor || '')}">
+          <input type="number" class="input-precio-fila ${precioEsPrecargado ? 'valor-precargado' : ''}" min="0" step="1" placeholder="Precio" value="${escaparHtml(String(s.precio))}">
+          <input type="text" class="input-proveedor-fila ${proveedorEsPrecargado ? 'valor-precargado' : ''}" placeholder="Proveedor" maxlength="120" value="${escaparHtml(s.proveedor || '')}">
           <input type="number" class="input-cantidad-fila" min="1" step="1" placeholder="Cant." value="${escaparHtml(String(s.cantidad))}">
           <button type="button" class="quitar" title="Quitar">×</button>
         </div>
-      `).join('');
+      `;
+      }).join('');
 
       lista.querySelectorAll('.fila-seleccionado').forEach((fila) => {
         const skuGeneral = fila.getAttribute('data-sku');
-        fila.querySelector('.input-precio-fila').addEventListener('input', (evento) => {
+        const inputPrecio = fila.querySelector('.input-precio-fila');
+        const inputProveedor = fila.querySelector('.input-proveedor-fila');
+        inputPrecio.addEventListener('input', (evento) => {
           const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
           if (item) item.precio = evento.target.value;
+          inputPrecio.classList.toggle('valor-precargado', item && item.precioPrecargado !== '' && evento.target.value === item.precioPrecargado);
         });
-        fila.querySelector('.input-proveedor-fila').addEventListener('input', (evento) => {
+        inputProveedor.addEventListener('input', (evento) => {
           const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
           if (item) item.proveedor = evento.target.value;
+          inputProveedor.classList.toggle('valor-precargado', item && item.proveedorPrecargado !== '' && evento.target.value === item.proveedorPrecargado);
         });
         fila.querySelector('.input-cantidad-fila').addEventListener('input', (evento) => {
           const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
