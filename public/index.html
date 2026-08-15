@@ -660,9 +660,9 @@
     <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
-  <div id="catalogoDetalleView" style="display:none;">
-    <button class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <div id="catalogoDetalleContenido" style="margin-top:16px;"></div>
+  <div id="catalogoDetalleView" style="display:none; position:relative;">
+    <button class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" style="position:absolute; left:0; top:54px;">←</button>
+    <div id="catalogoDetalleContenido" style="margin-top:0;"></div>
   </div>
 </div>
 
@@ -809,9 +809,31 @@
     intervaloCarruselDestacados = setInterval(() => {
       const tarjeta = pista.querySelector('.item-catalogo-publico');
       const paso = tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
-      const alFinal = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 4;
-      pista.scrollTo({ left: alFinal ? 0 : pista.scrollLeft + paso, behavior: 'smooth' });
+      // No hace falta revisar si estamos al final: hay clones invisibles en
+      // las dos puntas (ver cargarDestacados) que absorben el scroll, y el
+      // listener de "scroll" reacomoda solo sin animación al llegar a un
+      // clon — así de vuelta la sensación es de scroll infinito real,
+      // funcione con flechas, auto-avance o deslizando con el dedo.
+      pista.scrollBy({ left: paso, behavior: 'smooth' });
     }, 4000);
+  }
+
+  /* Reacomoda sin animación (salto invisible) cuando el scroll entra en
+     alguno de los dos clones de las puntas, para que dé la sensación de
+     loop infinito sin importar cómo se haya scrolleado (flecha,
+     auto-avance o dedo). Se llama con un debounce corto después de cada
+     evento "scroll", para no interrumpir un scroll en curso. */
+  function reacomodarSiEsClon(pista){
+    if (pista.children.length < 3) return; // sin clones, nada que hacer
+    const maxScroll = pista.scrollWidth - pista.clientWidth;
+    const pistaRect = pista.getBoundingClientRect();
+    if (pista.scrollLeft <= 2) {
+      const ultimoReal = pista.children[pista.children.length - 2];
+      pista.scrollLeft += (ultimoReal.getBoundingClientRect().left - pistaRect.left);
+    } else if (pista.scrollLeft >= maxScroll - 2) {
+      const primerReal = pista.children[1];
+      pista.scrollLeft += (primerReal.getBoundingClientRect().left - pistaRect.left);
+    }
   }
 
   async function cargarDestacados(){
@@ -838,10 +860,21 @@
 
       productosDestacadosPorSku = new Map(productos.map((p) => [p.skuGeneral, p]));
 
+      // Carrusel realmente infinito (no solo con las flechas): se agrega
+      // un clon de la última tarjeta al principio y uno de la primera al
+      // final. Así el scroll NUNCA "pega contra una pared" — al arrastrar
+      // con el dedo (o con las flechas, o el auto-avance) siempre hay algo
+      // para seguir scrolleando, y reacomodarSiEsClon() salta sin
+      // animación al equivalente real apenas se entra en un clon.
+      const tarjetasHtml = productos.map(tarjetaDestacadoHtml);
+      const conClones = productos.length > 1
+        ? [tarjetasHtml[tarjetasHtml.length - 1], ...tarjetasHtml, tarjetasHtml[0]].join('')
+        : tarjetasHtml.join('');
+
       catalogoDestacados.innerHTML = `
         <div class="carrusel-destacados">
           <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
-          <div class="carrusel-pista">${productos.map(tarjetaDestacadoHtml).join('')}</div>
+          <div class="carrusel-pista">${conClones}</div>
           <button type="button" class="btn-carrusel derecha" aria-label="Ver siguiente">›</button>
         </div>
       `;
@@ -851,23 +884,27 @@
         const tarjeta = pista.querySelector('.item-catalogo-publico');
         return tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
       };
-      // Scroll circular: al llegar a una punta, la flecha te manda a la
-      // otra en vez de quedarse sin hacer nada.
+
+      if (productos.length > 1) {
+        // Arranca mostrando la primera tarjeta REAL (después del clon del
+        // último), sin que se note el salto inicial.
+        const primerReal = pista.children[1];
+        pista.scrollLeft += (primerReal.getBoundingClientRect().left - pista.getBoundingClientRect().left);
+      }
+
       catalogoDestacados.querySelector('.btn-carrusel.izquierda').addEventListener('click', () => {
-        if (pista.scrollLeft <= 4) {
-          pista.scrollTo({ left: pista.scrollWidth, behavior: 'smooth' });
-        } else {
-          pista.scrollBy({ left: -anchoPaso(), behavior: 'smooth' });
-        }
+        pista.scrollBy({ left: -anchoPaso(), behavior: 'smooth' });
       });
       catalogoDestacados.querySelector('.btn-carrusel.derecha').addEventListener('click', () => {
-        const alFinal = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 4;
-        if (alFinal) {
-          pista.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
-        }
+        pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
       });
+
+      let timeoutScrollPista = null;
+      pista.addEventListener('scroll', () => {
+        clearTimeout(timeoutScrollPista);
+        timeoutScrollPista = setTimeout(() => reacomodarSiEsClon(pista), 120);
+      });
+
       pista.addEventListener('mouseenter', () => clearInterval(intervaloCarruselDestacados));
       pista.addEventListener('mouseleave', () => iniciarAutoavanceCarrusel(pista));
       iniciarAutoavanceCarrusel(pista);
