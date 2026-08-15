@@ -658,6 +658,8 @@
   <div id="panelCatalogo" style="display:none;">
     <div class="campo">
       <label>Catálogo completo (incluye sin stock)</label>
+      <select id="selectCategoriaCatalogoCompleto" style="margin-bottom:6px;"><option value="">Todas las categorías</option></select>
+      <select id="selectSubcategoriaCatalogoCompleto" style="margin-bottom:6px;"><option value="">Todas las subcategorías</option></select>
       <input type="text" id="inputBuscarCatalogoCompleto" placeholder="Nombre o SKU del producto..." style="margin-bottom:6px;">
       <div class="lista-productos" id="listaCatalogoCompleto" style="max-height:420px;"></div>
     </div>
@@ -2776,6 +2778,8 @@
 
   const listaCatalogoCompleto = document.getElementById('listaCatalogoCompleto');
   const inputBuscarCatalogoCompleto = document.getElementById('inputBuscarCatalogoCompleto');
+  const selectCategoriaCatalogoCompleto = document.getElementById('selectCategoriaCatalogoCompleto');
+  const selectSubcategoriaCatalogoCompleto = document.getElementById('selectSubcategoriaCatalogoCompleto');
   let catalogoCompletoAdmin = [];
 
   async function cargarCatalogoCompletoAdmin(){
@@ -2785,17 +2789,52 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar el catálogo');
       catalogoCompletoAdmin = data.productos || [];
+      llenarSelectCategoriasCatalogoCompleto();
+      llenarSelectSubcategoriasCatalogoCompleto();
       renderizarListaCatalogoCompleto();
     } catch (err) {
       listaCatalogoCompleto.innerHTML = `<div style="padding:12px; font-size:15px; color:var(--stamp-red);">No se pudo cargar: ${err.message}</div>`;
     }
   }
 
+  function llenarSelectCategoriasCatalogoCompleto(){
+    const categorias = Array.from(new Set(catalogoCompletoAdmin.map((p) => p.categoria).filter(Boolean))).sort();
+    selectCategoriaCatalogoCompleto.innerHTML = '<option value="">Todas las categorías</option>'
+      + categorias.map((c) => `<option value="${escaparHtml(c)}">${escaparHtml(c)}</option>`).join('');
+  }
+
+  function llenarSelectSubcategoriasCatalogoCompleto(){
+    const categoriaElegida = selectCategoriaCatalogoCompleto.value;
+    const disponibles = catalogoCompletoAdmin
+      .filter((p) => !categoriaElegida || p.categoria === categoriaElegida)
+      .map((p) => p.subcategoria)
+      .filter(Boolean);
+    const subcategorias = Array.from(new Set(disponibles)).sort();
+    selectSubcategoriaCatalogoCompleto.innerHTML = '<option value="">Todas las subcategorías</option>'
+      + subcategorias.map((s) => `<option value="${escaparHtml(s)}">${escaparHtml(s)}</option>`).join('');
+  }
+
+  selectCategoriaCatalogoCompleto.addEventListener('change', () => {
+    llenarSelectSubcategoriasCatalogoCompleto();
+    renderizarListaCatalogoCompleto();
+  });
+  selectSubcategoriaCatalogoCompleto.addEventListener('change', renderizarListaCatalogoCompleto);
+
   function renderizarListaCatalogoCompleto(){
+    const categoriaElegida = selectCategoriaCatalogoCompleto.value;
+    const subcategoriaElegida = selectSubcategoriaCatalogoCompleto.value;
     const busqueda = inputBuscarCatalogoCompleto.value.trim().toLowerCase();
-    const filtrados = busqueda
-      ? catalogoCompletoAdmin.filter((p) => (p.nombre || '').toLowerCase().includes(busqueda) || (p.skuGeneral || '').toLowerCase().includes(busqueda))
-      : catalogoCompletoAdmin;
+
+    const filtrados = catalogoCompletoAdmin.filter((p) => {
+      if (categoriaElegida && p.categoria !== categoriaElegida) return false;
+      if (subcategoriaElegida && p.subcategoria !== subcategoriaElegida) return false;
+      if (busqueda) {
+        const enNombre = (p.nombre || '').toLowerCase().includes(busqueda);
+        const enSku = (p.skuGeneral || '').toLowerCase().includes(busqueda);
+        if (!enNombre && !enSku) return false;
+      }
+      return true;
+    });
 
     if (catalogoCompletoAdmin.length === 0) {
       listaCatalogoCompleto.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Todavía no hay productos cargados.</div>';
