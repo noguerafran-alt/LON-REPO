@@ -607,6 +607,14 @@
       <p style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0;">📷 Tocá el ícono de la cámara en un producto para subirle o cambiarle la foto.</p>
     </div>
 
+    <div class="campo" id="productosSeleccionadosBox2" style="display:none;">
+      <label>Productos seleccionados</label>
+      <div id="listaProductosSeleccionados2"></div>
+    </div>
+
+    <button class="btn-generar" id="btnGenerarUnidadesConfirmar2" disabled>Generar unidades</button>
+    <div id="mensajeGeneracion2"></div>
+
     <hr class="separador-panel">
 
     <div class="campo">
@@ -1728,7 +1736,11 @@
   const productosSeleccionadosBox = document.getElementById('productosSeleccionadosBox');
   const listaProductosSeleccionados = document.getElementById('listaProductosSeleccionados');
   const btnGenerarUnidadesConfirmar = document.getElementById('btnGenerarUnidadesConfirmar');
+  const btnGenerarUnidadesConfirmar2 = document.getElementById('btnGenerarUnidadesConfirmar2');
+  const botonesGenerarUnidades = [btnGenerarUnidadesConfirmar, btnGenerarUnidadesConfirmar2];
   const mensajeGeneracion = document.getElementById('mensajeGeneracion');
+  const mensajeGeneracion2 = document.getElementById('mensajeGeneracion2');
+  const mensajesGeneracion = [mensajeGeneracion, mensajeGeneracion2];
 
   function escaparHtml(texto){
     const div = document.createElement('div');
@@ -2034,64 +2046,74 @@
     renderizarProductosSeleccionados();
   }
 
-  function renderizarProductosSeleccionados(){
-    if (productosSeleccionados.length === 0) {
-      productosSeleccionadosBox.style.display = 'none';
-      listaProductosSeleccionados.innerHTML = '';
-      actualizarEstadoBotonGenerar();
-      return;
-    }
-    productosSeleccionadosBox.style.display = 'block';
-    listaProductosSeleccionados.innerHTML = productosSeleccionados.map((s) => `
-      <div class="fila-seleccionado" data-sku="${escaparHtml(s.producto.skuGeneral)}">
-        <div class="info">
-          <div class="nombre">${escaparHtml(s.producto.producto || '(sin nombre)')}</div>
-          <div class="meta">${escaparHtml(s.producto.skuGeneral)} · ${escaparHtml(s.producto.categoria)}${s.producto.subcategoria ? ' / ' + escaparHtml(s.producto.subcategoria) : ''}</div>
-        </div>
-        <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(String(s.precio))}">
-        <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(s.proveedor || '')}">
-        <input type="number" class="input-cantidad-fila" min="1" step="1" placeholder="Cant." value="${escaparHtml(String(s.cantidad))}">
-        <button type="button" class="quitar" title="Quitar">×</button>
-      </div>
-    `).join('');
+  // Hay DOS copias de "Productos seleccionados" + su botón "Generar
+  // unidades": una debajo de "Crear producto nuevo" (para lo recién
+  // creado) y otra debajo de Categoría/Subcategoría/Buscar (para elegir
+  // algo ya existente) — ambas apuntan al mismo estado compartido
+  // (productosSeleccionados), asi que da lo mismo generar desde
+  // cualquiera de las dos.
+  const paresSeleccionados = [
+    { box: productosSeleccionadosBox, lista: listaProductosSeleccionados },
+    { box: document.getElementById('productosSeleccionadosBox2'), lista: document.getElementById('listaProductosSeleccionados2') },
+  ];
 
-    listaProductosSeleccionados.querySelectorAll('.fila-seleccionado').forEach((fila) => {
-      const skuGeneral = fila.getAttribute('data-sku');
-      fila.querySelector('.input-precio-fila').addEventListener('input', (evento) => {
-        const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
-        if (item) item.precio = evento.target.value;
+  function renderizarProductosSeleccionados(){
+    paresSeleccionados.forEach(({ box, lista }) => {
+      if (productosSeleccionados.length === 0) {
+        box.style.display = 'none';
+        lista.innerHTML = '';
+        return;
+      }
+      box.style.display = 'block';
+      lista.innerHTML = productosSeleccionados.map((s) => `
+        <div class="fila-seleccionado" data-sku="${escaparHtml(s.producto.skuGeneral)}">
+          <div class="info">
+            <div class="nombre">${escaparHtml(s.producto.producto || '(sin nombre)')}</div>
+            <div class="meta">${escaparHtml(s.producto.skuGeneral)} · ${escaparHtml(s.producto.categoria)}${s.producto.subcategoria ? ' / ' + escaparHtml(s.producto.subcategoria) : ''}</div>
+          </div>
+          <input type="number" class="input-precio-fila" min="0" step="1" placeholder="Precio" value="${escaparHtml(String(s.precio))}">
+          <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(s.proveedor || '')}">
+          <input type="number" class="input-cantidad-fila" min="1" step="1" placeholder="Cant." value="${escaparHtml(String(s.cantidad))}">
+          <button type="button" class="quitar" title="Quitar">×</button>
+        </div>
+      `).join('');
+
+      lista.querySelectorAll('.fila-seleccionado').forEach((fila) => {
+        const skuGeneral = fila.getAttribute('data-sku');
+        fila.querySelector('.input-precio-fila').addEventListener('input', (evento) => {
+          const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
+          if (item) item.precio = evento.target.value;
+        });
+        fila.querySelector('.input-proveedor-fila').addEventListener('input', (evento) => {
+          const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
+          if (item) item.proveedor = evento.target.value;
+        });
+        fila.querySelector('.input-cantidad-fila').addEventListener('input', (evento) => {
+          const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
+          if (item) item.cantidad = evento.target.value;
+          actualizarEstadoBotonGenerar();
+        });
+        fila.querySelector('.quitar').addEventListener('click', () => quitarProductoSeleccionado(skuGeneral));
       });
-      fila.querySelector('.input-proveedor-fila').addEventListener('input', (evento) => {
-        const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
-        if (item) item.proveedor = evento.target.value;
-      });
-      fila.querySelector('.input-cantidad-fila').addEventListener('input', (evento) => {
-        const item = productosSeleccionados.find((s) => s.producto.skuGeneral === skuGeneral);
-        if (item) item.cantidad = evento.target.value;
-        actualizarEstadoBotonGenerar();
-      });
-      fila.querySelector('.quitar').addEventListener('click', () => quitarProductoSeleccionado(skuGeneral));
     });
     actualizarEstadoBotonGenerar();
   }
 
   function actualizarEstadoBotonGenerar(){
     const hayAlMenosUnoValido = productosSeleccionados.some((s) => Number.isInteger(Number(s.cantidad)) && Number(s.cantidad) > 0);
-    btnGenerarUnidadesConfirmar.disabled = !hayAlMenosUnoValido;
+    botonesGenerarUnidades.forEach((b) => { b.disabled = !hayAlMenosUnoValido; });
   }
 
   selectCategoria.addEventListener('change', () => { llenarSelectSubcategorias(); renderizarListaProductos(); });
   selectSubcategoria.addEventListener('change', renderizarListaProductos);
   inputBuscarProducto.addEventListener('input', renderizarListaProductos);
 
-  btnGenerarUnidadesConfirmar.addEventListener('click', async () => {
+  async function confirmarGenerarUnidades(){
     const itemsAGenerar = productosSeleccionados.filter((s) => Number.isInteger(Number(s.cantidad)) && Number(s.cantidad) > 0);
     if (itemsAGenerar.length === 0) return;
 
-    btnGenerarUnidadesConfirmar.disabled = true;
-    btnGenerarUnidadesConfirmar.textContent = 'Generando...';
-    mensajeGeneracion.className = 'mensaje-generacion';
-    mensajeGeneracion.textContent = '';
+    botonesGenerarUnidades.forEach((b) => { b.disabled = true; b.textContent = 'Generando...'; });
+    mensajesGeneracion.forEach((m) => { m.className = 'mensaje-generacion'; m.textContent = ''; });
 
     const resultados = [];
     const errores = [];
@@ -2119,20 +2141,20 @@
       }
     }
 
-    if (resultados.length > 0) {
-      mensajeGeneracion.className = errores.length > 0 ? 'mensaje-generacion error' : 'mensaje-generacion ok';
-      mensajeGeneracion.textContent = resultados.join('\n\n') + (errores.length > 0 ? `\n\nErrores:\n${errores.join('\n')}` : '');
-    } else {
-      mensajeGeneracion.className = 'mensaje-generacion error';
-      mensajeGeneracion.textContent = `No se pudo generar nada:\n${errores.join('\n')}`;
-    }
+    const clase = resultados.length > 0 ? (errores.length > 0 ? 'mensaje-generacion error' : 'mensaje-generacion ok') : 'mensaje-generacion error';
+    const texto = resultados.length > 0
+      ? resultados.join('\n\n') + (errores.length > 0 ? `\n\nErrores:\n${errores.join('\n')}` : '')
+      : `No se pudo generar nada:\n${errores.join('\n')}`;
+    mensajesGeneracion.forEach((m) => { m.className = clase; m.textContent = texto; });
 
     productosSeleccionados = [];
     renderizarProductosSeleccionados();
     cargarResumenGeneradosApp();
-    btnGenerarUnidadesConfirmar.textContent = 'Generar unidades';
+    botonesGenerarUnidades.forEach((b) => { b.textContent = 'Generar unidades'; });
     actualizarEstadoBotonGenerar();
-  });
+  }
+  btnGenerarUnidadesConfirmar.addEventListener('click', confirmarGenerarUnidades);
+  btnGenerarUnidadesConfirmar2.addEventListener('click', confirmarGenerarUnidades);
 
   /* ------------------------------------------------------------
    * FOTOS (galeria de hasta 4) Y DESCRIPCION DEL PRODUCTO
