@@ -810,7 +810,7 @@
     <h2 style="font-size:18px; margin:0 0 10px;">Buscá el producto</h2>
     <select id="selectCategoriaVentaManual"><option value="">Todas las categorías</option></select>
     <select id="selectSubcategoriaVentaManual"><option value="">Todas las subcategorías</option></select>
-    <input type="text" id="inputBuscarVentaManual" placeholder="Nombre del producto...">
+    <input type="text" id="inputBuscarVentaManual" placeholder="Nombre o SKU del producto..." autocomplete="off">
     <div class="lista-productos" id="listaVentaManual" style="max-height:320px;"></div>
     <button type="button" id="btnCerrarVentaManual" style="width:100%; margin-top:10px; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
   </div>
@@ -1583,7 +1583,11 @@
     const filtrados = catalogoPublicoVentaManual.filter((p) => {
       if (categoriaElegida && (p.categoriaVisible || p.categoria) !== categoriaElegida) return false;
       if (subcategoriaElegida && p.subcategoria !== subcategoriaElegida) return false;
-      if (busqueda && !(p.nombre || '').toLowerCase().includes(busqueda)) return false;
+      if (busqueda) {
+        const enNombre = (p.nombre || '').toLowerCase().includes(busqueda);
+        const enSku = (p.skuGeneral || '').toLowerCase().includes(busqueda);
+        if (!enNombre && !enSku) return false;
+      }
       return true;
     });
 
@@ -1634,6 +1638,28 @@
   });
   selectSubcategoriaVentaManual.addEventListener('change', renderizarListaVentaManual);
   inputBuscarVentaManual.addEventListener('input', renderizarListaVentaManual);
+
+  // Un lector de código de barras de mano "tipea" el código acá mismo
+  // (funciona como teclado) y manda Enter — buscamos directo por SKU
+  // general en vez de esperar a que el admin toque un resultado.
+  inputBuscarVentaManual.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'Enter') return;
+    evento.preventDefault();
+    const escaneado = inputBuscarVentaManual.value.trim().toUpperCase();
+    if (!escaneado) return;
+
+    let producto = catalogoPublicoVentaManual.find((p) => (p.skuGeneral || '').toUpperCase() === escaneado);
+    if (!producto) {
+      // Por si lo que se escaneó fue el SKU completo de una unidad
+      // puntual (con serial) y no el SKU general del producto.
+      const skuGeneralDelEscaneo = extraerSkuGeneralCliente(escaneado).toUpperCase();
+      producto = catalogoPublicoVentaManual.find((p) => (p.skuGeneral || '').toUpperCase() === skuGeneralDelEscaneo);
+    }
+    if (!producto) return; // no matchea nada todavia, se deja como busqueda de texto normal
+
+    cerrarModalVentaManual();
+    showModal(producto.skuGeneral);
+  });
 
   function handleScan(decodedText){
     const now = Date.now();
