@@ -699,6 +699,55 @@ async function actualizarTarifaEnvio(sheetsClient, spreadsheetId, sheetName, pro
 }
 
 /**
+ * Arma el link publico a la ficha de un producto en el catalogo. Es el
+ * mismo formato de URL que usa el catalogo para abrir un producto
+ * directo (?producto=SKU). Devuelve '' si no hay PUBLIC_URL configurada.
+ */
+function armarLinkCatalogo(skuGeneral) {
+  if (!config.PUBLIC_URL || !skuGeneral) return '';
+  return `${config.PUBLIC_URL}/?producto=${encodeURIComponent(skuGeneral)}`;
+}
+
+/**
+ * Rellena la columna K ("link al catalogo") de TODAS las filas de la hoja
+ * Productos, para poder abrir cada producto desde la planilla y revisarlo.
+ * Se escribe todo de una sola pasada (un update sobre el rango entero) en
+ * vez de fila por fila, que con muchos productos seria lentisimo y comeria
+ * la cuota de la API.
+ *
+ * Ojo: el catalogo publico solo lista productos con stock, asi que el link
+ * de un producto sin unidades no va a abrir su ficha.
+ */
+async function actualizarLinksCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_PRODUCTOS;
+  const letraLink = columnaALetra(cols.linkCatalogo);
+
+  const response = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId, range: `${sheetName}!A:${letraLink}`,
+  });
+  const rows = response.data.values || [];
+  if (rows.length < 2) return { actualizados: 0 };
+
+  let actualizados = 0;
+  const valores = [];
+  for (let i = 1; i < rows.length; i++) {
+    const skuGeneral = rows[i][cols.skuGeneral] ? String(rows[i][cols.skuGeneral]).trim() : '';
+    const link = armarLinkCatalogo(skuGeneral);
+    if (link) actualizados++;
+    valores.push([link]);
+  }
+
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!${letraLink}2:${letraLink}${rows.length}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: valores },
+  });
+
+  return { actualizados };
+}
+
+/**
  * Crea un producto nuevo en la hoja Productos: calcula el siguiente numero
  * de producto libre para el prefijo dado, arma el SKU general, agrega la
  * fila (Producto, Categoria, Subcategoria, SKU general, Precio, Foto) y
@@ -711,7 +760,7 @@ async function crearProductoNuevo(sheetsClient, { spreadsheetId, sheetNameProduc
   const skuGeneral = `${prefijoSku}-${numeroTexto}`;
 
   const cols = config.COLUMNAS_PRODUCTOS;
-  const cantidadColumnas = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.proveedor) + 1;
+  const cantidadColumnas = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.proveedor, cols.linkCatalogo) + 1;
   const fila = new Array(cantidadColumnas).fill('');
   fila[cols.producto] = producto;
   fila[cols.categoria] = categoria;
@@ -720,6 +769,7 @@ async function crearProductoNuevo(sheetsClient, { spreadsheetId, sheetNameProduc
   fila[cols.precio] = precio;
   fila[cols.foto] = '';
   fila[cols.proveedor] = proveedor || '';
+  fila[cols.linkCatalogo] = armarLinkCatalogo(skuGeneral);
 
   await appendRow(sheetsClient, spreadsheetId, sheetNameProductos, fila);
 
@@ -1984,6 +2034,7 @@ module.exports = {
   registrarCafeCliente,
   getSiguienteNumeroProducto,
   crearProductoNuevo,
+  actualizarLinksCatalogoProductos,
   buscarFilaProductoPorSkuGeneral,
   agregarFotoProducto,
   eliminarFotoProducto,

@@ -36,6 +36,7 @@ const {
   actualizarPrecioProducto,
   actualizarProveedorProducto,
   eliminarProductoCompleto,
+  actualizarLinksCatalogoProductos,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
@@ -747,6 +748,33 @@ app.get('/admin/catalogo', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error leyendo el catálogo:', err.message);
     res.status(500).json({ error: 'No se pudo leer el catálogo de productos.' });
+  }
+});
+
+/* Rellena la columna K de la hoja Productos con el link al producto en
+   el catalogo publico, para poder revisarlos desde la planilla. Los
+   productos nuevos ya nacen con su link; esto es para completar los que
+   ya estaban cargados de antes. Requiere admin nivel 2. */
+app.post('/admin/actualizar-links-catalogo', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    if (!config.PUBLIC_URL) {
+      return res.status(400).json({
+        error: 'Falta configurar PUBLIC_URL (la dirección pública de la app) para poder armar los links.',
+      });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { actualizados } = await actualizarLinksCatalogoProductos(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS,
+    );
+
+    res.json({ ok: true, actualizados });
+  } catch (err) {
+    console.error('Error actualizando los links del catálogo:', err.message);
+    res.status(500).json({ error: 'No se pudieron actualizar los links en la planilla.' });
   }
 });
 

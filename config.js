@@ -77,6 +77,12 @@ module.exports = {
     ultimaModificacionPrecio: 7,
     descripcion: 8,     // I: descripcion libre del producto (opcional), se muestra en la pagina de detalle del catalogo publico
     proveedor: 9,       // J: proveedor del producto (opcional, uso interno — nunca se muestra en el catalogo publico)
+    // K: link directo al producto en el catalogo publico, para poder
+    // revisarlo desde la planilla. Lo escribe la app (al crear un
+    // producto y desde el boton "Actualizar links" del panel admin).
+    // Ojo: el catalogo publico solo lista productos CON stock, asi que
+    // el link de un producto sin unidades no va a abrir nada.
+    linkCatalogo: 10,
   },
 
   COLUMNAS_CONTADOR_UNIDADES: {

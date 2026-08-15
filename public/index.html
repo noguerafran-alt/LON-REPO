@@ -282,9 +282,13 @@
   .fila-tabs-categorias-scroll{
     display:flex; flex-wrap:nowrap; align-items:flex-start; gap:8px; flex:1; min-width:0;
     overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
+    /* Igual que el carrusel de destacados: sin esto, al deslizar hacia
+       atrás estando en el principio, el navegador del celular se queda
+       con el gesto (volver atrás / rebote) en vez de scrollear. */
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
   }
   .fila-tabs-categorias-scroll::-webkit-scrollbar{ display:none; }
-  .espaciador-tabs-categoria{ flex:0 0 auto; }
   .btn-flecha-categorias{
     flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:1px solid var(--line);
     background:var(--field-bg); color:var(--ink); cursor:pointer; display:flex;
@@ -889,10 +893,11 @@
       let anchoCopia = 0;
       if (hayLoop) {
         anchoCopia = pista.children[productos.length].offsetLeft - pista.children[0].offsetLeft;
-        // Si una copia entera entra casi completa en pantalla, no queda
-        // colchón suficiente para recentrar sin que se note; en ese caso
-        // se deja como carrusel común (se sigue pudiendo scrollear).
-        if (pista.clientWidth >= anchoCopia * 1.5) {
+        if (anchoCopia <= pista.clientWidth) {
+          // Entran todas las tarjetas en pantalla: con tres copias se
+          // verían los mismos productos repetidos uno al lado del otro.
+          // Se deja una sola copia, sin loop.
+          pista.innerHTML = tarjetasHtml.join('');
           anchoCopia = 0;
         } else {
           pista.scrollLeft = anchoCopia;
@@ -1095,11 +1100,16 @@
       </div>
     `;
 
+    // Tres copias de las categorías, misma técnica que el carrusel de
+    // destacados: así el dedo nunca choca contra una punta y la vuelta de
+    // 360° también funciona deslizando, no solo con las flechas. Si todas
+    // las categorías entran en pantalla no hace falta (y se verían
+    // repetidas), así que abajo se descartan las copias sobrantes.
     catalogoTabsCategoria.innerHTML = `
       <div class="tabs-categorias-catalogo">
         <div class="contenedor-scroll-categorias">
           <button type="button" class="btn-flecha-categorias" id="btnCategoriasIzquierda" aria-label="Ver categorías anteriores">‹</button>
-          <div class="fila-tabs-categorias-scroll">${tabsHtml}<div class="espaciador-tabs-categoria"></div></div>
+          <div class="fila-tabs-categorias-scroll">${tabsHtml}${tabsHtml}${tabsHtml}</div>
           <button type="button" class="btn-flecha-categorias" id="btnCategoriasDerecha" aria-label="Ver más categorías">›</button>
         </div>
         ${subcategoriasHtml}
@@ -1107,38 +1117,49 @@
     `;
     catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
 
-    // Scroll circular, igual que el carrusel de destacados: en una punta,
-    // la flecha te manda a la otra.
-    document.getElementById('btnCategoriasIzquierda').addEventListener('click', () => {
-      const fila = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
-      if (fila.scrollLeft <= 4) {
-        fila.scrollTo({ left: fila.scrollWidth, behavior: 'smooth' });
+    const filaTabsScroll = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
+    const cantidadCategorias = filaTabsScroll.children.length / 3;
+    let anchoCopiaTabs = filaTabsScroll.children[cantidadCategorias].offsetLeft - filaTabsScroll.children[0].offsetLeft;
+
+    if (anchoCopiaTabs <= filaTabsScroll.clientWidth) {
+      // Entran todas: una sola copia, sin loop (si no se verían dos veces
+      // las mismas categorías, una al lado de la otra).
+      filaTabsScroll.innerHTML = tabsHtml;
+      anchoCopiaTabs = 0;
+    } else {
+      // La categoría activa queda primera (más a la izquierda), tomándola
+      // de la copia del medio para que haya de dónde scrollear para los
+      // dos lados. Ya no hace falta el espaciador que se usaba antes: las
+      // copias siguientes le dan lugar de sobra para correrse.
+      const activas = filaTabsScroll.querySelectorAll('.tab-categoria-catalogo.activo');
+      const tabActiva = activas[1] || activas[0];
+      if (tabActiva) {
+        filaTabsScroll.scrollLeft += (tabActiva.getBoundingClientRect().left - filaTabsScroll.getBoundingClientRect().left);
       } else {
-        fila.scrollBy({ left: -160, behavior: 'smooth' });
+        filaTabsScroll.scrollLeft = anchoCopiaTabs;
       }
+    }
+
+    document.getElementById('btnCategoriasIzquierda').addEventListener('click', () => {
+      filaTabsScroll.scrollBy({ left: -160, behavior: 'smooth' });
     });
     document.getElementById('btnCategoriasDerecha').addEventListener('click', () => {
-      const fila = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
-      const alFinal = fila.scrollLeft + fila.clientWidth >= fila.scrollWidth - 4;
-      if (alFinal) {
-        fila.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        fila.scrollBy({ left: 160, behavior: 'smooth' });
-      }
+      filaTabsScroll.scrollBy({ left: 160, behavior: 'smooth' });
     });
 
-    // La categoría activa tiene que quedar primera (más a la izquierda) en
-    // el scroll horizontal, incluso si es la última de la lista — para
-    // eso el espaciador de arriba le da lugar de sobra para correrse.
-    const filaTabsScroll = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
-    const tabActiva = catalogoTabsCategoria.querySelector('.tab-categoria-catalogo.activo');
-    if (filaTabsScroll && tabActiva) {
-      const espaciador = filaTabsScroll.querySelector('.espaciador-tabs-categoria');
-      if (espaciador) espaciador.style.width = `${filaTabsScroll.clientWidth}px`;
-      const contRect = filaTabsScroll.getBoundingClientRect();
-      const tabRect = tabActiva.getBoundingClientRect();
-      filaTabsScroll.scrollLeft += (tabRect.left - contRect.left);
-    }
+    let timeoutScrollTabs = null;
+    let dedoEnTabs = false;
+    filaTabsScroll.addEventListener('scroll', () => {
+      clearTimeout(timeoutScrollTabs);
+      if (dedoEnTabs) return;
+      timeoutScrollTabs = setTimeout(() => recentrarCarrusel(filaTabsScroll, anchoCopiaTabs), 140);
+    });
+    filaTabsScroll.addEventListener('touchstart', () => { dedoEnTabs = true; }, { passive: true });
+    filaTabsScroll.addEventListener('touchend', () => {
+      dedoEnTabs = false;
+      clearTimeout(timeoutScrollTabs);
+      timeoutScrollTabs = setTimeout(() => recentrarCarrusel(filaTabsScroll, anchoCopiaTabs), 140);
+    }, { passive: true });
 
     catalogoTabsCategoria.querySelectorAll('.tab-categoria-catalogo').forEach((boton) => {
       boton.addEventListener('click', () => {

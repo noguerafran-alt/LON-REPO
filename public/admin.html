@@ -675,6 +675,15 @@
     <hr class="separador-panel">
 
     <div class="campo">
+      <label>Links al catálogo en la planilla</label>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Completa la columna K de la hoja Productos con el link directo a cada producto en el catálogo, para revisarlos desde la planilla. Los productos nuevos ya se crean con su link; esto es para los que ya estaban cargados. Ojo: el catálogo solo muestra productos con stock, así que el link de un producto sin unidades no abre nada.</p>
+      <button class="btn-generar" id="btnActualizarLinksCatalogo">Actualizar links en la planilla</button>
+      <div id="mensajeLinksCatalogo" style="margin-top:8px; font-size:13px;"></div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
       <label>Nombres de categorías (catálogo público)</label>
       <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Así se llama cada categoría puertas adentro (SKU, filtros del admin) y así podés mostrarla distinto a los clientes en el catálogo. Dejalo vacío para mostrar la categoría tal cual.</p>
       <select id="selectCategoriaVisible" style="margin-bottom:10px;"><option value="">Elegí una categoría para editar...</option></select>
@@ -3037,6 +3046,41 @@
   }
 
   inputBuscarCatalogoCompleto.addEventListener('input', renderizarListaCatalogoCompleto);
+
+  /* ------------------------------------------------------------
+   * Completar la columna K de la hoja Productos con el link a cada
+   * producto en el catalogo publico. Se puede repetir sin riesgo:
+   * reescribe la columna entera con el link que corresponde a cada SKU.
+   * ------------------------------------------------------------ */
+  const btnActualizarLinksCatalogo = document.getElementById('btnActualizarLinksCatalogo');
+  const mensajeLinksCatalogo = document.getElementById('mensajeLinksCatalogo');
+
+  btnActualizarLinksCatalogo.addEventListener('click', async () => {
+    btnActualizarLinksCatalogo.disabled = true;
+    const textoOriginal = btnActualizarLinksCatalogo.textContent;
+    btnActualizarLinksCatalogo.textContent = 'ACTUALIZANDO...';
+    mensajeLinksCatalogo.style.color = 'var(--ink-muted)';
+    mensajeLinksCatalogo.textContent = 'Escribiendo la columna K en la planilla...';
+
+    try {
+      const res = await fetch('/admin/actualizar-links-catalogo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      mensajeLinksCatalogo.style.color = 'var(--stamp-green)';
+      mensajeLinksCatalogo.textContent = `Listo: ${data.actualizados} link(s) escrito(s) en la columna K.`;
+    } catch (err) {
+      mensajeLinksCatalogo.style.color = 'var(--stamp-red)';
+      mensajeLinksCatalogo.textContent = `No se pudo actualizar: ${err.message}`;
+    } finally {
+      btnActualizarLinksCatalogo.disabled = false;
+      btnActualizarLinksCatalogo.textContent = textoOriginal;
+    }
+  });
 
   /* ------------------------------------------------------------
    * Optimizar las fotos subidas antes de que existiera la generacion
