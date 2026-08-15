@@ -999,6 +999,12 @@
     tabCatalogo.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
+    // "Generar más unidades" del modal de escaneo manda a la pestaña de
+    // Productos, que tampoco es de nivel 1 — se ocultaba la pestaña pero
+    // no este atajo, así que nivel 1 lo veía en el modal (aunque el
+    // servidor lo iba a rechazar igual al intentar generar).
+    btnGenerarDesdeEscaneo.style.display = esNivel2() ? '' : 'none';
+
     // Recordamos en qué pestaña estaba para que un refresh no lo mande
     // siempre de vuelta a "Escanear" — si nunca hubo ninguna guardada (o
     // era invalida), arranca en "Escanear" como antes.
