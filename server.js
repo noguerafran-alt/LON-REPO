@@ -737,9 +737,11 @@ app.post('/scan', limiteAdmin, async (req, res) => {
     // Columnas: A=SKU, B=Fecha, C=Hora, D=Marca (la completa el procesador
     // automático), E=Precio Venta (idem), F=Precio Manual (opcional, lo
     // carga el admin al momento de vender si el precio final fue distinto
-    // al de catálogo — el procesador lo usa en vez del precio de Productos).
+    // al de catálogo — el procesador lo usa en vez del precio de Productos),
+    // G=numero de pedido (no aplica acá, vacio), H=Vendedor (el email sale
+    // de la sesion ya verificada, nunca de lo que mande el navegador).
     const precioManualLimpio = precioManual !== undefined && precioManual !== null && precioManual !== '' ? Number(precioManual) : '';
-    await appendRow(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, [sku, fecha, hora, '', '', precioManualLimpio]);
+    await appendRow(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, [sku, fecha, hora, '', '', precioManualLimpio, '', sesion.email]);
 
     res.json({ ok: true });
   } catch (err) {
@@ -2447,10 +2449,11 @@ app.post('/admin/pedidos/registrar-unidad', limiteAdmin, async (req, res) => {
       aviso = 'Este pedido no tenía el stock reservado (nunca se marcó como pagado), así que se descontó ahora.';
     }
 
-    // 4) Anotamos la salida en VENTAS con el numero de pedido (columna G).
+    // 4) Anotamos la salida en VENTAS con el numero de pedido (columna G)
+    // y quien registro el despacho (columna H).
     const { fecha, hora } = fechaYHoraActual();
     await appendRow(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, [
-      skuLimpio, fecha, hora, '', '', '', String(pedidoId).trim(),
+      skuLimpio, fecha, hora, '', '', '', String(pedidoId).trim(), sesion.email,
     ]);
 
     // 5) Y lo dejamos asentado en la fila del pedido.

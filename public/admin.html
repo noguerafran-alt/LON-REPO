@@ -155,6 +155,13 @@
   .selector-cantidad-cafe span{
     flex:1; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:18px; background:#fff;
   }
+  .modal-venta-manual{ max-width:420px; text-align:left; max-height:88vh; overflow-y:auto; }
+  .modal-venta-manual select, .modal-venta-manual input[type="text"]{
+    width:100%; padding:10px 12px; font-size:15px; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
+    color:var(--field-text); margin-bottom:8px;
+  }
+  .modal-venta-manual select:focus, .modal-venta-manual input:focus{ outline:none; border-color:var(--accent); }
   .modal-reconocer{ max-width:400px; text-align:left; max-height:88vh; overflow-y:auto; }
   .lista-candidatos-reconocer{ margin:14px 0; }
   .item-candidato-reconocer{
@@ -547,8 +554,7 @@
       <button type="button" id="btnReiniciarTotalVenta">Nueva venta</button>
     </div>
     <button type="button" id="btnActivarCamara" class="btn-activar-camara">▶ Tocar para activar la cámara</button>
-    <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
-    <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
+    <button type="button" class="btn-reconocer-foto" id="btnVentaManual">🔎 Venta manual (buscar producto)</button>
     <div class="modo-escaner-opciones">
       <button type="button" class="btn-modo-escaner activo" id="btnModoVenta" data-modo="venta">📷 QR / código de barras (venta)</button>
       <button type="button" class="btn-modo-escaner" id="btnModoCafe" data-modo="cafe">☕ Café (fidelidad)</button>
@@ -559,6 +565,8 @@
       <h2>Últimos escaneados</h2>
       <div id="logList"></div>
     </div>
+    <button type="button" class="btn-reconocer-foto" id="btnReconocerFoto">🔍 Reconocer producto por foto</button>
+    <input type="file" id="inputFotoReconocer" accept="image/*" capture="environment" style="display:none;">
   </div>
 
   <div id="panelGenerarUnidades" style="display:none;">
@@ -789,6 +797,18 @@
     <p style="font-size:13px; color:var(--ink-muted); margin:0 0 4px;" id="mensajeReconocer">Comparando con las fotos cargadas...</p>
     <div class="lista-candidatos-reconocer" id="listaCandidatosReconocer"></div>
     <button type="button" id="btnCerrarReconocer" style="width:100%; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayVentaManual">
+  <div class="modal modal-venta-manual" id="modalVentaManual">
+    <p class="label">Venta manual</p>
+    <h2 style="font-size:18px; margin:0 0 10px;">Buscá el producto</h2>
+    <select id="selectCategoriaVentaManual"><option value="">Todas las categorías</option></select>
+    <select id="selectSubcategoriaVentaManual"><option value="">Todas las subcategorías</option></select>
+    <input type="text" id="inputBuscarVentaManual" placeholder="Nombre del producto...">
+    <div class="lista-productos" id="listaVentaManual" style="max-height:320px;"></div>
+    <button type="button" id="btnCerrarVentaManual" style="width:100%; margin-top:10px; padding:12px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;">Cancelar</button>
   </div>
 </div>
 
@@ -1498,6 +1518,118 @@
       btnReconocerFoto.disabled = false;
     }
   });
+
+  /* ------------------------------------------------------------
+   * VENTA MANUAL: buscar el producto por categoría/subcategoría/nombre
+   * en vez de escanearlo. Usa el mismo catálogo público que ve el
+   * cliente (solo productos con stock, no hace falta nivel 2). Al
+   * elegir uno, el servidor asigna sola la próxima unidad sin vender de
+   * ese SKU general — mismo mecanismo que "Reconocer producto por
+   * foto" o un código de barras externo.
+   * ------------------------------------------------------------ */
+  const btnVentaManual = document.getElementById('btnVentaManual');
+  const overlayVentaManual = document.getElementById('overlayVentaManual');
+  const selectCategoriaVentaManual = document.getElementById('selectCategoriaVentaManual');
+  const selectSubcategoriaVentaManual = document.getElementById('selectSubcategoriaVentaManual');
+  const inputBuscarVentaManual = document.getElementById('inputBuscarVentaManual');
+  const listaVentaManual = document.getElementById('listaVentaManual');
+  const btnCerrarVentaManual = document.getElementById('btnCerrarVentaManual');
+
+  let catalogoPublicoVentaManual = [];
+  let catalogoPublicoVentaManualCargado = false;
+
+  async function cargarCatalogoPublicoVentaManual(){
+    listaVentaManual.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Cargando catálogo...</div>';
+    try {
+      const res = await fetch('/catalogo-publico');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar el catálogo');
+      catalogoPublicoVentaManual = data.productos || [];
+      catalogoPublicoVentaManualCargado = true;
+      llenarSelectCategoriasVentaManual();
+      llenarSelectSubcategoriasVentaManual();
+      renderizarListaVentaManual();
+    } catch (err) {
+      listaVentaManual.innerHTML = `<div style="padding:12px; font-size:15px; color:var(--stamp-red);">No se pudo cargar: ${escaparHtml(err.message)}</div>`;
+    }
+  }
+
+  function llenarSelectCategoriasVentaManual(){
+    const categorias = Array.from(new Set(catalogoPublicoVentaManual.map((p) => p.categoriaVisible || p.categoria).filter(Boolean))).sort();
+    selectCategoriaVentaManual.innerHTML = '<option value="">Todas las categorías</option>'
+      + categorias.map((c) => `<option value="${escaparHtml(c)}">${escaparHtml(c)}</option>`).join('');
+  }
+
+  function llenarSelectSubcategoriasVentaManual(){
+    const categoriaElegida = selectCategoriaVentaManual.value;
+    const disponibles = catalogoPublicoVentaManual
+      .filter((p) => !categoriaElegida || (p.categoriaVisible || p.categoria) === categoriaElegida)
+      .map((p) => p.subcategoria)
+      .filter(Boolean);
+    const subcategorias = Array.from(new Set(disponibles)).sort();
+    selectSubcategoriaVentaManual.innerHTML = '<option value="">Todas las subcategorías</option>'
+      + subcategorias.map((s) => `<option value="${escaparHtml(s)}">${escaparHtml(s)}</option>`).join('');
+  }
+
+  function renderizarListaVentaManual(){
+    const categoriaElegida = selectCategoriaVentaManual.value;
+    const subcategoriaElegida = selectSubcategoriaVentaManual.value;
+    const busqueda = inputBuscarVentaManual.value.trim().toLowerCase();
+
+    const filtrados = catalogoPublicoVentaManual.filter((p) => {
+      if (categoriaElegida && (p.categoriaVisible || p.categoria) !== categoriaElegida) return false;
+      if (subcategoriaElegida && p.subcategoria !== subcategoriaElegida) return false;
+      if (busqueda && !(p.nombre || '').toLowerCase().includes(busqueda)) return false;
+      return true;
+    });
+
+    if (catalogoPublicoVentaManual.length === 0) {
+      listaVentaManual.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">No hay productos con stock en el catálogo.</div>';
+      return;
+    }
+    if (filtrados.length === 0) {
+      listaVentaManual.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">No se encontraron productos.</div>';
+      return;
+    }
+
+    listaVentaManual.innerHTML = filtrados.slice(0, 100).map((p) => `
+      <div class="item-producto" data-sku="${escaparHtml(p.skuGeneral)}">
+        ${p.foto ? `<img class="foto-mini" src="${escaparHtml(p.foto)}" alt="">` : '<div class="foto-mini-vacia">—</div>'}
+        <div class="lista-producto-info" data-accion="elegir">
+          <span class="lista-producto-nombre">${escaparHtml(p.nombre || '(sin nombre)')}</span>
+          <span class="lista-producto-meta">${escaparHtml(p.categoriaVisible || p.categoria)}${p.subcategoria ? ' / ' + escaparHtml(p.subcategoria) : ''}${p.precio ? ' · $' + escaparHtml(String(p.precio)) : ''}</span>
+        </div>
+      </div>
+    `).join('');
+
+    listaVentaManual.querySelectorAll('.item-producto').forEach((el) => {
+      el.addEventListener('click', () => {
+        const skuGeneral = el.getAttribute('data-sku');
+        cerrarModalVentaManual();
+        showModal(skuGeneral);
+      });
+    });
+  }
+
+  function cerrarModalVentaManual(){
+    overlayVentaManual.classList.remove('show');
+  }
+
+  btnVentaManual.addEventListener('click', () => {
+    overlayVentaManual.classList.add('show');
+    if (!catalogoPublicoVentaManualCargado) {
+      cargarCatalogoPublicoVentaManual();
+    } else {
+      renderizarListaVentaManual();
+    }
+  });
+  btnCerrarVentaManual.addEventListener('click', cerrarModalVentaManual);
+  selectCategoriaVentaManual.addEventListener('change', () => {
+    llenarSelectSubcategoriasVentaManual();
+    renderizarListaVentaManual();
+  });
+  selectSubcategoriaVentaManual.addEventListener('change', renderizarListaVentaManual);
+  inputBuscarVentaManual.addEventListener('input', renderizarListaVentaManual);
 
   function handleScan(decodedText){
     const now = Date.now();
