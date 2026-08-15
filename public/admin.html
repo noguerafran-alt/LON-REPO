@@ -665,7 +665,8 @@
     <div class="campo">
       <label>Nombres de categorías (catálogo público)</label>
       <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Así se llama cada categoría puertas adentro (SKU, filtros del admin) y así podés mostrarla distinto a los clientes en el catálogo. Dejalo vacío para mostrar la categoría tal cual.</p>
-      <div id="listaCategoriasVisibles">Cargando categorías...</div>
+      <select id="selectCategoriaVisible" style="margin-bottom:10px;"><option value="">Elegí una categoría para editar...</option></select>
+      <div id="filaCategoriaVisibleActiva" style="display:none;"></div>
     </div>
 
     <hr class="separador-panel">
@@ -2629,66 +2630,81 @@
    * PANEL: CATÁLOGO — nombres de categorías que ven los clientes, y
    * vista de solo lectura del catálogo completo (incluye sin stock).
    * ------------------------------------------------------------ */
-  const listaCategoriasVisibles = document.getElementById('listaCategoriasVisibles');
+  const selectCategoriaVisible = document.getElementById('selectCategoriaVisible');
+  const filaCategoriaVisibleActiva = document.getElementById('filaCategoriaVisibleActiva');
+  let categoriasVisiblesCache = [];
 
   async function cargarCategoriasVisibles(){
-    listaCategoriasVisibles.innerHTML = '<div style="padding:12px; font-size:13px; color:var(--ink-muted);">Cargando...</div>';
+    selectCategoriaVisible.innerHTML = '<option value="">Cargando categorías...</option>';
+    filaCategoriaVisibleActiva.style.display = 'none';
     try {
       const res = await fetch(`/admin/categorias-nombres?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar categorías');
-      renderizarListaCategoriasVisibles(data.categorias || []);
+      categoriasVisiblesCache = data.categorias || [];
+      renderizarSelectCategoriasVisibles();
     } catch (err) {
-      listaCategoriasVisibles.innerHTML = `<div style="padding:12px; font-size:13px; color:var(--stamp-red);">No se pudo cargar: ${err.message}</div>`;
+      selectCategoriaVisible.innerHTML = `<option value="">No se pudo cargar: ${escaparHtml(err.message)}</option>`;
     }
   }
 
-  function renderizarListaCategoriasVisibles(categorias){
-    if (categorias.length === 0) {
-      listaCategoriasVisibles.innerHTML = '<div style="padding:12px; font-size:13px; color:var(--ink-muted);">Todavía no hay categorías con productos.</div>';
+  function renderizarSelectCategoriasVisibles(){
+    if (categoriasVisiblesCache.length === 0) {
+      selectCategoriaVisible.innerHTML = '<option value="">Todavía no hay categorías con productos</option>';
       return;
     }
+    selectCategoriaVisible.innerHTML = '<option value="">Elegí una categoría para editar...</option>'
+      + categoriasVisiblesCache.map((c) => `<option value="${escaparHtml(c.categoria)}">${escaparHtml(c.categoria)}</option>`).join('');
+  }
 
-    listaCategoriasVisibles.innerHTML = categorias.map((c) => `
+  selectCategoriaVisible.addEventListener('change', () => {
+    const categoria = selectCategoriaVisible.value;
+    if (!categoria) {
+      filaCategoriaVisibleActiva.style.display = 'none';
+      return;
+    }
+    const c = categoriasVisiblesCache.find((item) => item.categoria === categoria);
+    if (!c) return;
+
+    filaCategoriaVisibleActiva.style.display = 'block';
+    filaCategoriaVisibleActiva.innerHTML = `
       <div class="fila-categoria-visible" data-categoria="${escaparHtml(c.categoria)}">
         <span class="categoria-interna">${escaparHtml(c.categoria)}</span>
         <input type="text" class="input-nombre-visible" placeholder="Nombre para clientes (igual que arriba si lo dejás vacío)" value="${escaparHtml(c.nombreVisible || '')}" maxlength="80">
         <button type="button" class="btn-guardar-nombre-visible">Guardar</button>
         <span class="mensaje-nombre-visible" style="font-size:12.5px;"></span>
       </div>
-    `).join('');
+    `;
 
-    listaCategoriasVisibles.querySelectorAll('.fila-categoria-visible').forEach((fila) => {
-      const categoria = fila.getAttribute('data-categoria');
-      const input = fila.querySelector('.input-nombre-visible');
-      const boton = fila.querySelector('.btn-guardar-nombre-visible');
-      const mensaje = fila.querySelector('.mensaje-nombre-visible');
+    const input = filaCategoriaVisibleActiva.querySelector('.input-nombre-visible');
+    const boton = filaCategoriaVisibleActiva.querySelector('.btn-guardar-nombre-visible');
+    const mensaje = filaCategoriaVisibleActiva.querySelector('.mensaje-nombre-visible');
 
-      boton.addEventListener('click', async () => {
-        boton.disabled = true;
-        boton.textContent = 'Guardando...';
-        mensaje.textContent = '';
-        mensaje.style.color = '';
-        try {
-          const res = await fetch('/admin/categoria-nombre-visible', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: adminToken, categoria, nombreVisible: input.value.trim() }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Error desconocido');
-          mensaje.textContent = 'Guardado ✓';
-          mensaje.style.color = 'var(--stamp-green)';
-        } catch (err) {
-          mensaje.textContent = `Error: ${err.message}`;
-          mensaje.style.color = 'var(--stamp-red)';
-        } finally {
-          boton.disabled = false;
-          boton.textContent = 'Guardar';
-        }
-      });
+    boton.addEventListener('click', async () => {
+      boton.disabled = true;
+      boton.textContent = 'Guardando...';
+      mensaje.textContent = '';
+      mensaje.style.color = '';
+      try {
+        const res = await fetch('/admin/categoria-nombre-visible', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: adminToken, categoria, nombreVisible: input.value.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error desconocido');
+        c.nombreVisible = input.value.trim();
+        mensaje.textContent = 'Guardado ✓';
+        mensaje.style.color = 'var(--stamp-green)';
+      } catch (err) {
+        mensaje.textContent = `Error: ${err.message}`;
+        mensaje.style.color = 'var(--stamp-red)';
+      } finally {
+        boton.disabled = false;
+        boton.textContent = 'Guardar';
+      }
     });
-  }
+  });
 
   const PROVINCIAS_ARGENTINA = [
     'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes',
