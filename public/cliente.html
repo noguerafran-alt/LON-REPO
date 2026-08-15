@@ -73,38 +73,6 @@
   .status-bar.ok{ background:var(--stamp-green-soft); border-color:var(--stamp-green); color:var(--stamp-green); }
   .status-bar.error{ background:var(--stamp-red-soft); border-color:var(--stamp-red); color:var(--stamp-red); }
 
-  .bloque-contacto{
-    padding:0 24px; margin-top:20px; display:flex; flex-direction:column; align-items:center; text-align:center;
-  }
-  .btn-contacto{
-    background:var(--accent); color:#FFFFFF; border:none; border-radius:var(--radius);
-    padding:14px 28px; font-size:15px; font-weight:700; font-family:'Archivo', sans-serif;
-    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15);
-  }
-  .bloque-contacto .login-box{ margin-top:16px; }
-
-  .login-box{ width:100%; max-width:280px; text-align:left; margin:0 auto; }
-  .login-box label{
-    display:block; font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--ink-muted); margin:0 0 6px 1px;
-  }
-  .login-box input{
-    width:100%; padding:13px 14px; font-size:15px; font-family:'Archivo', sans-serif;
-    border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
-    margin-bottom:16px; color:var(--field-text);
-  }
-  .login-box input::placeholder{ color:#9a9488; }
-  .login-box input:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-  .opcional-tag{ text-transform:none; letter-spacing:0; font-weight:400; }
-  .login-box button{
-    width:100%; padding:14px; font-size:15px; font-weight:600; font-family:'Archivo', sans-serif;
-    border:none; border-radius:var(--radius); background:var(--ink); color:var(--bg); cursor:pointer;
-    margin-bottom:10px;
-  }
-  .aviso-privacidad{
-    font-size:11px; color:var(--ink-muted); max-width:280px; margin:14px auto 0; line-height:1.4;
-  }
-
   .log{ margin:44px 24px 44px; flex:1; overflow-y:auto; }
   .log h2{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-muted); margin:0 0 10px; font-weight:400; }
   .log-item{
@@ -169,53 +137,9 @@
   }
   .footer-legal a{ color:var(--ink-muted); text-decoration:none; }
 
-  .fullscreen{
-    position:fixed; inset:0; background:var(--bg); z-index:2000;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:28px; padding-bottom:56px; text-align:center; overflow-y:auto;
-  }
-  .fullscreen.hidden{ display:none; }
-  .fullscreen h1{
-    font-family:'Fraunces', serif; font-weight:600; font-size:26px; margin:0 0 6px;
-    letter-spacing:-0.01em; color:var(--ink);
-  }
-  .fullscreen p.sub{ color:var(--ink-muted); font-size:14px; margin:0 0 26px; max-width:280px; }
-  .gate-botones{ width:100%; max-width:280px; display:flex; flex-direction:column; gap:12px; }
-  .gate-botones button{
-    padding:16px; font-size:15px; font-weight:700; font-family:'Archivo', sans-serif;
-    border-radius:var(--radius); cursor:pointer;
-  }
-  .btn-gate-contacto{ background:var(--accent); color:#FFFFFF; border:none; }
-  .btn-gate-continuar{ background:none; color:var(--ink-muted); border:1px solid var(--line); }
 </style>
 </head>
 <body>
-
-<div class="fullscreen" id="pantallaGate">
-  <p class="eyebrow">Antes de empezar</p>
-  <h1>¡Hola!</h1>
-  <p class="sub">¿Querés dejarnos tu contacto o preferís pasar directo a ver los precios?</p>
-  <div class="gate-botones">
-    <button class="btn-gate-contacto" id="btnGateContacto">✉️ Dejanos tu contacto</button>
-    <button class="btn-gate-continuar" id="btnGateContinuar">Continuar a ver precios</button>
-  </div>
-</div>
-
-<div class="fullscreen hidden" id="pantallaGateFormulario">
-  <div class="login-box">
-    <label for="inputNombreGate">Nombre</label>
-    <input type="text" id="inputNombreGate" placeholder="Tu nombre" autocomplete="name">
-
-    <label for="inputEmailGate">Email <span class="opcional-tag">(opcional)</span></label>
-    <input type="email" id="inputEmailGate" placeholder="tu@email.com" autocomplete="email">
-
-    <label for="inputTelefonoGate">Teléfono <span class="opcional-tag">(opcional)</span></label>
-    <input type="tel" id="inputTelefonoGate" placeholder="Tu teléfono" autocomplete="tel">
-
-    <button id="btnGateEnviar">Continuar</button>
-  </div>
-  <p class="aviso-privacidad">Tus datos se usan únicamente para responder tu consulta y no se comparten con terceros. Podés pedir que los eliminemos cuando quieras.</p>
-</div>
 
 <div class="barra-superior-catalogo">
   <a class="volver btn-volver-flecha" href="/" title="Volver al catálogo" aria-label="Volver al catálogo">←</a>
@@ -228,24 +152,6 @@
 <div id="reader"></div>
 <p class="instruccion-escaneo">Apuntá la cámara al código QR del producto</p>
 <div class="status-bar" id="statusBar">Esperando código QR...</div>
-
-<div class="bloque-contacto">
-  <button class="btn-contacto" id="btnMostrarContacto">✉️ Dejanos tu contacto</button>
-  <div id="boxContacto" style="display:none; margin-top:16px;" class="login-box">
-    <label for="inputNombreContacto">Nombre</label>
-    <input type="text" id="inputNombreContacto" placeholder="Tu nombre" autocomplete="name">
-
-    <label for="inputEmailContacto">Email <span class="opcional-tag">(opcional)</span></label>
-    <input type="email" id="inputEmailContacto" placeholder="tu@email.com" autocomplete="email">
-
-    <label for="inputTelefonoContacto">Teléfono <span class="opcional-tag">(opcional)</span></label>
-    <input type="tel" id="inputTelefonoContacto" placeholder="Tu teléfono" autocomplete="tel">
-
-    <button id="btnEnviarContacto">Enviar</button>
-    <div id="mensajeContacto" style="margin-top:8px; font-size:13px;"></div>
-    <p class="aviso-privacidad">Tus datos se usan únicamente para responder tu consulta y no se comparten con terceros. Podés pedir que los eliminemos cuando quieras.</p>
-  </div>
-</div>
 
 <div class="log">
   <h2>Últimos escaneados</h2>
@@ -356,20 +262,11 @@
   }
 
   async function guardarConsultaCliente(sku){
-    // Revisamos el localStorage justo ahora (no solo lo que se cargo al
-    // abrir la pagina), por si el contacto se dejo en otra pestana/momento
-    // mientras esta pagina ya estaba abierta.
-    const datosActuales = getContactoGuardado() || clienteDatos;
     try {
       await fetch('/consulta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sku,
-          nombre: datosActuales.nombre,
-          email: datosActuales.email,
-          telefono: datosActuales.telefono,
-        })
+        body: JSON.stringify({ sku })
       });
     } catch (err) {
       console.warn('No se pudo registrar la consulta:', err);
@@ -506,137 +403,7 @@
     if (evento.persisted) reiniciarEscaner();
   });
 
-  /* ------------------------------------------------------------
-   * PANTALLA DE BIENVENIDA: contacto u omitir
-   * Si la persona ya dejo su contacto antes (en este navegador), no
-   * se le vuelve a pedir: pasamos directo a la camara.
-   * ------------------------------------------------------------ */
-  const CLAVE_CONTACTO_GUARDADO = 'lon_contacto_cliente';
-  let clienteDatos = { nombre: '', email: '', telefono: '' };
-
-  function getContactoGuardado(){
-    try {
-      const crudo = localStorage.getItem(CLAVE_CONTACTO_GUARDADO);
-      return crudo ? JSON.parse(crudo) : null;
-    } catch (e) { return null; }
-  }
-  function guardarContactoLocal(datos){
-    try { localStorage.setItem(CLAVE_CONTACTO_GUARDADO, JSON.stringify(datos)); } catch (e) {}
-  }
-
-  /* Si ya inició sesión con Google en el catálogo ("Mi cuenta"), esa
-     sesión queda en localStorage (mismo origen, la comparte con esta
-     página) — no tiene sentido volver a pedirle el contacto, ya
-     sabemos quién es. */
-  const CLAVE_SESION_CLIENTE = 'lon_cliente_sesion';
-  function getSesionClienteValida(){
-    try {
-      const crudo = localStorage.getItem(CLAVE_SESION_CLIENTE);
-      if (!crudo) return null;
-      const datos = JSON.parse(crudo);
-      if (!datos || !datos.token || !datos.exp || Date.now() > datos.exp) return null;
-      return datos;
-    } catch (e) { return null; }
-  }
-
-  const pantallaGate = document.getElementById('pantallaGate');
-  const pantallaGateFormulario = document.getElementById('pantallaGateFormulario');
-
-  function continuarDespuesDelGate(){
-    pantallaGate.classList.add('hidden');
-    pantallaGateFormulario.classList.add('hidden');
-    iniciarEscanerSiHaceFalta();
-  }
-
-  const sesionClienteGate = getSesionClienteValida();
-  const contactoGuardado = getContactoGuardado();
-  if (sesionClienteGate) {
-    clienteDatos = { nombre: sesionClienteGate.nombre, email: sesionClienteGate.email, telefono: '' };
-    continuarDespuesDelGate();
-    document.querySelector('.bloque-contacto').style.display = 'none';
-  } else if (contactoGuardado) {
-    clienteDatos = contactoGuardado;
-    continuarDespuesDelGate();
-    document.querySelector('.bloque-contacto').style.display = 'none';
-  }
-
-  document.getElementById('btnGateContinuar').addEventListener('click', () => {
-    continuarDespuesDelGate();
-  });
-
-  document.getElementById('btnGateContacto').addEventListener('click', () => {
-    pantallaGate.classList.add('hidden');
-    pantallaGateFormulario.classList.remove('hidden');
-  });
-
-  document.getElementById('btnGateEnviar').addEventListener('click', () => {
-    clienteDatos = {
-      nombre: document.getElementById('inputNombreGate').value.trim(),
-      email: document.getElementById('inputEmailGate').value.trim(),
-      telefono: document.getElementById('inputTelefonoGate').value.trim(),
-    };
-    guardarContactoLocal(clienteDatos);
-    continuarDespuesDelGate();
-    document.querySelector('.bloque-contacto').style.display = 'none';
-  });
-
-  /* ------------------------------------------------------------
-   * DEJANOS TU CONTACTO (inline)
-   * ------------------------------------------------------------ */
-  const btnMostrarContacto = document.getElementById('btnMostrarContacto');
-  const boxContacto = document.getElementById('boxContacto');
-  const btnEnviarContacto = document.getElementById('btnEnviarContacto');
-  const mensajeContacto = document.getElementById('mensajeContacto');
-
-  btnMostrarContacto.addEventListener('click', () => {
-    if (getContactoGuardado()) {
-      boxContacto.style.display = 'none';
-      mensajeContacto.style.color = 'var(--stamp-green)';
-      mensajeContacto.textContent = '¡Ya tenemos tu contacto guardado, gracias!';
-      return;
-    }
-    const mostrando = boxContacto.style.display !== 'none';
-    boxContacto.style.display = mostrando ? 'none' : 'block';
-  });
-
-  btnEnviarContacto.addEventListener('click', async () => {
-    const nombre = document.getElementById('inputNombreContacto').value.trim();
-    const email = document.getElementById('inputEmailContacto').value.trim();
-    const telefono = document.getElementById('inputTelefonoContacto').value.trim();
-
-    mensajeContacto.style.color = '';
-    mensajeContacto.textContent = '';
-    btnEnviarContacto.disabled = true;
-    btnEnviarContacto.textContent = 'Enviando...';
-
-    try {
-      const res = await fetch('/consulta', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sku: '', nombre, email, telefono }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error desconocido');
-
-      mensajeContacto.style.color = 'var(--stamp-green)';
-      mensajeContacto.textContent = '¡Gracias! Ya registramos tu contacto.';
-      clienteDatos = { nombre, email, telefono };
-      guardarContactoLocal(clienteDatos);
-      document.getElementById('inputNombreContacto').value = '';
-      document.getElementById('inputEmailContacto').value = '';
-      document.getElementById('inputTelefonoContacto').value = '';
-      setTimeout(() => {
-        const bloque = document.querySelector('.bloque-contacto');
-        if (bloque) bloque.style.display = 'none';
-      }, 2500);
-    } catch (err) {
-      mensajeContacto.style.color = 'var(--stamp-red)';
-      mensajeContacto.textContent = `No se pudo enviar: ${err.message}`;
-    } finally {
-      btnEnviarContacto.disabled = false;
-      btnEnviarContacto.textContent = 'Enviar';
-    }
-  });
+  iniciarEscanerSiHaceFalta();
 </script>
 </body>
 </html>

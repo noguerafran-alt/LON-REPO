@@ -46,7 +46,7 @@
   /* Estas 3 pantallas tienen el mismo header fijo arriba (~78px de alto);
      con solo el padding:28px por defecto de .fullscreen, el contenido
      quedaba pegado justo debajo. */
-  #pantallaCarrito, #pantallaLoginCliente, #pantallaContacto{ justify-content:flex-start; padding-top:130px; }
+  #pantallaCarrito, #pantallaLoginCliente{ justify-content:flex-start; padding-top:130px; }
   .barra-superior-catalogo.barra-superior-fullscreen{
     position:absolute; top:0; left:0; right:0; margin:0; padding:14px 24px;
   }
@@ -540,31 +540,6 @@
   </div>
 </div>
 
-<div class="fullscreen hidden" id="pantallaContacto">
-  <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <button type="button" class="volver btn-volver-flecha" id="btnVolverContacto" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
-      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
-    </a>
-    <span></span>
-  </div>
-  <div class="login-box">
-    <label for="inputNombreContacto">Nombre</label>
-    <input type="text" id="inputNombreContacto" placeholder="Tu nombre" autocomplete="name">
-
-    <label for="inputEmailContacto">Email <span class="opcional-tag">(opcional)</span></label>
-    <input type="email" id="inputEmailContacto" placeholder="tu@email.com" autocomplete="email">
-
-    <label for="inputTelefonoContacto">Teléfono <span class="opcional-tag">(opcional)</span></label>
-    <input type="tel" id="inputTelefonoContacto" placeholder="Tu teléfono" autocomplete="tel">
-
-    <button id="btnEnviarContacto">Enviar</button>
-    <button class="acceso-admin-link" id="btnCerrarContacto" style="width:100%;">Cancelar</button>
-    <div id="mensajeContacto" style="margin-top:8px; font-size:13px;"></div>
-  </div>
-  <p class="aviso-privacidad">Tus datos se usan únicamente para responder tu consulta y no se comparten con terceros. Podés pedir que los eliminemos cuando quieras.</p>
-</div>
-
 <div class="fullscreen hidden" id="pantallaCheckout">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver">←</button>
@@ -646,7 +621,6 @@
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <div class="acciones-header-catalogo">
-      <button class="btn-icono-simetrico" id="btnMostrarContacto" title="Dejanos tu contacto" aria-label="Dejanos tu contacto">✉️</button>
       <button class="btn-icono-simetrico btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito">
         🛒<span class="badge-carrito oculto" id="badgeCarrito">0</span>
       </button>
@@ -1492,58 +1466,6 @@
     }
   }
   inicializarGoogleLoginCliente();
-
-  /* ------------------------------------------------------------
-   * DEJANOS TU CONTACTO
-   * ------------------------------------------------------------ */
-  const pantallaContacto = document.getElementById('pantallaContacto');
-  const btnMostrarContacto = document.getElementById('btnMostrarContacto');
-  const btnCerrarContacto = document.getElementById('btnCerrarContacto');
-  const btnEnviarContacto = document.getElementById('btnEnviarContacto');
-  const mensajeContacto = document.getElementById('mensajeContacto');
-
-  btnMostrarContacto.addEventListener('click', () => {
-    pantallaContacto.classList.remove('hidden');
-  });
-  btnCerrarContacto.addEventListener('click', () => {
-    pantallaContacto.classList.add('hidden');
-  });
-  document.getElementById('btnVolverContacto').addEventListener('click', () => {
-    pantallaContacto.classList.add('hidden');
-  });
-
-  btnEnviarContacto.addEventListener('click', async () => {
-    const nombre = document.getElementById('inputNombreContacto').value.trim();
-    const email = document.getElementById('inputEmailContacto').value.trim();
-    const telefono = document.getElementById('inputTelefonoContacto').value.trim();
-
-    mensajeContacto.style.color = '';
-    mensajeContacto.textContent = '';
-    btnEnviarContacto.disabled = true;
-    btnEnviarContacto.textContent = 'Enviando...';
-
-    try {
-      const res = await fetch('/consulta', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sku: '', nombre, email, telefono }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error desconocido');
-
-      mensajeContacto.style.color = 'var(--stamp-green)';
-      mensajeContacto.textContent = '¡Gracias! Ya registramos tu contacto.';
-      document.getElementById('inputNombreContacto').value = '';
-      document.getElementById('inputEmailContacto').value = '';
-      document.getElementById('inputTelefonoContacto').value = '';
-    } catch (err) {
-      mensajeContacto.style.color = 'var(--stamp-red)';
-      mensajeContacto.textContent = `No se pudo enviar: ${err.message}`;
-    } finally {
-      btnEnviarContacto.disabled = false;
-      btnEnviarContacto.textContent = 'Enviar';
-    }
-  });
 
   /* ------------------------------------------------------------
    * TARIFAS DE ENVÍO (estimado por provincia, tabla fija admin)
