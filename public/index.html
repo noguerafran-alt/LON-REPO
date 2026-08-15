@@ -852,11 +852,22 @@
         const tarjeta = pista.querySelector('.item-catalogo-publico');
         return tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
       };
+      // Scroll circular: al llegar a una punta, la flecha te manda a la
+      // otra en vez de quedarse sin hacer nada.
       catalogoDestacados.querySelector('.btn-carrusel.izquierda').addEventListener('click', () => {
-        pista.scrollBy({ left: -anchoPaso(), behavior: 'smooth' });
+        if (pista.scrollLeft <= 4) {
+          pista.scrollTo({ left: pista.scrollWidth, behavior: 'smooth' });
+        } else {
+          pista.scrollBy({ left: -anchoPaso(), behavior: 'smooth' });
+        }
       });
       catalogoDestacados.querySelector('.btn-carrusel.derecha').addEventListener('click', () => {
-        pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
+        const alFinal = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 4;
+        if (alFinal) {
+          pista.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
+        }
       });
       pista.addEventListener('mouseenter', () => clearInterval(intervaloCarruselDestacados));
       pista.addEventListener('mouseleave', () => iniciarAutoavanceCarrusel(pista));
@@ -1022,11 +1033,24 @@
     `;
     catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtml}</div>`;
 
+    // Scroll circular, igual que el carrusel de destacados: en una punta,
+    // la flecha te manda a la otra.
     document.getElementById('btnCategoriasIzquierda').addEventListener('click', () => {
-      catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll').scrollBy({ left: -160, behavior: 'smooth' });
+      const fila = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
+      if (fila.scrollLeft <= 4) {
+        fila.scrollTo({ left: fila.scrollWidth, behavior: 'smooth' });
+      } else {
+        fila.scrollBy({ left: -160, behavior: 'smooth' });
+      }
     });
     document.getElementById('btnCategoriasDerecha').addEventListener('click', () => {
-      catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll').scrollBy({ left: 160, behavior: 'smooth' });
+      const fila = catalogoTabsCategoria.querySelector('.fila-tabs-categorias-scroll');
+      const alFinal = fila.scrollLeft + fila.clientWidth >= fila.scrollWidth - 4;
+      if (alFinal) {
+        fila.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        fila.scrollBy({ left: 160, behavior: 'smooth' });
+      }
     });
 
     // La categoría activa tiene que quedar primera (más a la izquierda) en
