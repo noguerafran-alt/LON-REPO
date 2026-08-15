@@ -562,6 +562,21 @@ app.get('/producto/:sku', limiteLecturaPublica, async (req, res) => {
     let skuResuelto = skuEscaneado; // caso normal: QR interno, el mismo codigo escaneado es el SKU a usar
     let esCodigoBarraExterno = false;
 
+    // extraerSkuGeneral SIEMPRE saca el último bloque separado por "-",
+    // sin mirar si es un número de serie de verdad — si lo que llegó ya
+    // era el SKU general tal cual (por ejemplo, "Vender" desde Catálogo
+    // completo en el admin, que busca el producto en vez de escanear una
+    // unidad puntual), esa resta de más lo deja sin coincidir con nada.
+    // Antes de asumir que es un código de barras, probamos el valor
+    // crudo directo contra el catálogo.
+    if (!productoCatalogo) {
+      const directo = catalogo.find((p) => p.skuGeneral.toUpperCase() === skuEscaneado.toUpperCase());
+      if (directo) {
+        productoCatalogo = directo;
+        skuGeneral = skuEscaneado;
+      }
+    }
+
     if (!productoCatalogo) {
       // No es un SKU interno reconocido: puede ser el código de barras
       // ORIGINAL del producto (ISBN, EAN, etc — el mismo en todas las
@@ -580,11 +595,15 @@ app.get('/producto/:sku', limiteLecturaPublica, async (req, res) => {
       return res.status(404).json({ error: 'SKU no encontrado en el catálogo de productos.' });
     }
 
-    if (esCodigoBarraExterno) {
-      // El código de barras original es igual en todas las copias, no
-      // identifica una unidad física puntual — le asignamos
-      // automáticamente la próxima unidad ya generada y todavía no
-      // vendida de este producto.
+    // No identifica una unidad física puntual (falta el bloque de serie)
+    // cuando: es un código de barras externo (siempre le falta), o
+    // cuando lo que llegó ya ES el SKU general tal cual — por ejemplo
+    // desde "Catálogo completo" en el admin, donde se vende buscando el
+    // producto en vez de escaneando una unidad concreta. En los dos
+    // casos hace falta asignar automáticamente la próxima unidad ya
+    // generada y todavía no vendida.
+    const esSkuGeneralDirecto = !esCodigoBarraExterno && skuEscaneado.toUpperCase() === skuGeneral.toUpperCase();
+    if (esCodigoBarraExterno || esSkuGeneralDirecto) {
       const disponible = await buscarSkuCompletoDisponible(
         sheetsClient, config.SHEET_ID_PRODUCTOS, config.SHEET_ID_VENTAS, skuGeneral,
       );

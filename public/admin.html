@@ -397,11 +397,16 @@
   .fila-catalogo-completo .info{ flex:1; min-width:160px; font-size:15px; }
   .fila-catalogo-completo .info .nombre{ font-weight:600; color:var(--ink); }
   .fila-catalogo-completo .info .meta{ font-family:'IBM Plex Mono', monospace; font-size:15px; color:var(--ink-muted); margin-top:3px; }
-  .fila-catalogo-completo .input-precio-fila{
+  /* #panelCatalogo tiene una regla mas generica (select/input[type] con
+     ancho 100%) que gana por especificidad de ID a estas dos de aca
+     abajo (2 clases) aunque esten declaradas despues — sin el prefijo,
+     terminaba estirando el precio y el proveedor a todo el ancho de la
+     fila. Se repite el mismo prefijo para ganarle. */
+  #panelCatalogo .fila-catalogo-completo .input-precio-fila{
     width:100px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
     background:var(--field-bg); color:var(--field-text);
   }
-  .fila-catalogo-completo .input-proveedor-fila{
+  #panelCatalogo .fila-catalogo-completo .input-proveedor-fila{
     width:140px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
     background:var(--field-bg); color:var(--field-text);
   }
@@ -410,6 +415,7 @@
     padding:8px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
   .fila-catalogo-completo button:disabled{ opacity:.5; cursor:default; }
+  .fila-catalogo-completo .btn-vender-completo{ border-color:var(--stamp-green); color:var(--stamp-green); font-weight:600; }
   .fila-catalogo-completo .btn-generar-stock-completo{ border-color:var(--ink); color:var(--ink); font-weight:600; }
   .fila-catalogo-completo .btn-borrar-producto-completo{ border-color:var(--stamp-red); color:var(--stamp-red); font-weight:600; }
   .fila-catalogo-completo .mensaje-precio-completo{ font-size:12.5px; flex-basis:100%; }
@@ -2903,6 +2909,7 @@
         <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(p.proveedor || '')}">
         <button type="button" class="btn-guardar-proveedor-completo">Guardar</button>
         <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
+        <button type="button" class="btn-vender-completo" ${p.cantidad > 0 ? '' : 'disabled title="Sin stock"'}>💰 Vender</button>
         <button type="button" class="btn-generar-stock-completo" title="Generar unidades nuevas de este producto">+ Stock</button>
         <button type="button" class="btn-borrar-producto-completo" title="Borrar este producto por completo">🗑️ Borrar</button>
         <span class="mensaje-precio-completo"></span>
@@ -2915,9 +2922,19 @@
       const boton = fila.querySelector('.btn-guardar-precio-completo');
       const inputProveedor = fila.querySelector('.input-proveedor-fila');
       const botonProveedor = fila.querySelector('.btn-guardar-proveedor-completo');
+      const botonVender = fila.querySelector('.btn-vender-completo');
       const botonStock = fila.querySelector('.btn-generar-stock-completo');
       const botonBorrar = fila.querySelector('.btn-borrar-producto-completo');
       const mensaje = fila.querySelector('.mensaje-precio-completo');
+
+      // Vender buscando el producto en vez de escaneando una unidad
+      // puntual: el servidor asigna sola la próxima unidad ya generada
+      // y sin vender de este SKU general (mismo mecanismo que un código
+      // de barras externo), así se abre el modal de venta de siempre.
+      botonVender.addEventListener('click', () => {
+        mostrarSeccionAdmin('escanear');
+        showModal(skuGeneral);
+      });
 
       boton.addEventListener('click', async () => {
         const precioNum = Number(input.value);
