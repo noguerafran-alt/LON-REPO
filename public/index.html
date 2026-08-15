@@ -238,8 +238,13 @@
 
   .carrusel-destacados{ position:relative; margin:16px 0 26px; }
   .carrusel-pista{
-    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x proximity;
     padding-bottom:4px; scrollbar-width:none;
+    /* Sin esto, al deslizar hacia la izquierda estando en el principio, el
+       navegador del celular se queda con el gesto y dispara su "volver
+       atrás" (o el rebote elástico) en vez de scrollear el carrusel. */
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
   }
   .carrusel-pista::-webkit-scrollbar{ display:none; }
   .carrusel-pista .item-catalogo-publico{
@@ -802,31 +807,29 @@
     intervaloCarruselDestacados = setInterval(() => {
       const tarjeta = pista.querySelector('.item-catalogo-publico');
       const paso = tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
-      // No hace falta revisar si estamos al final: hay clones invisibles en
-      // las dos puntas (ver cargarDestacados) que absorben el scroll, y el
-      // listener de "scroll" reacomoda solo sin animación al llegar a un
-      // clon — así de vuelta la sensación es de scroll infinito real,
-      // funcione con flechas, auto-avance o deslizando con el dedo.
+      // No hace falta revisar si estamos al final: la pista tiene tres
+      // copias de la lista (ver cargarDestacados) y se recentra sola,
+      // así que siempre hay para dónde seguir — funcione con flechas,
+      // con el auto-avance o deslizando con el dedo.
       pista.scrollBy({ left: paso, behavior: 'smooth' });
     }, 4000);
   }
 
-  /* Reacomoda sin animación (salto invisible) cuando el scroll entra en
-     alguno de los dos clones de las puntas, para que dé la sensación de
-     loop infinito sin importar cómo se haya scrolleado (flecha,
-     auto-avance o dedo). Se llama con un debounce corto después de cada
-     evento "scroll", para no interrumpir un scroll en curso. */
-  function reacomodarSiEsClon(pista){
-    if (pista.children.length < 3) return; // sin clones, nada que hacer
-    const maxScroll = pista.scrollWidth - pista.clientWidth;
-    const pistaRect = pista.getBoundingClientRect();
-    if (pista.scrollLeft <= 2) {
-      const ultimoReal = pista.children[pista.children.length - 2];
-      pista.scrollLeft += (ultimoReal.getBoundingClientRect().left - pistaRect.left);
-    } else if (pista.scrollLeft >= maxScroll - 2) {
-      const primerReal = pista.children[1];
-      pista.scrollLeft += (primerReal.getBoundingClientRect().left - pistaRect.left);
-    }
+  /* Recentra la pista en la copia del medio cuando el scroll se aleja
+     demasiado. Como las tres copias son idénticas, saltar exactamente un
+     "ancho de copia" deja EXACTAMENTE los mismos píxeles en pantalla: el
+     salto es invisible pase donde pase, y el carrusel nunca llega a un
+     borde real, así que el dedo nunca choca contra una pared. */
+  function recentrarCarrusel(pista, anchoCopia){
+    if (!anchoCopia) return;
+    // Se ajusta de a saltos hasta volver a la copia del medio: un solo
+    // salto no siempre alcanza (un deslizón fuerte puede dejar la pista
+    // a más de un ancho de copia del centro).
+    let destino = pista.scrollLeft;
+    let vueltas = 0;
+    while (destino < anchoCopia * 0.5 && vueltas++ < 5) destino += anchoCopia;
+    while (destino > anchoCopia * 1.5 && vueltas++ < 5) destino -= anchoCopia;
+    if (destino !== pista.scrollLeft) pista.scrollLeft = destino;
   }
 
   async function cargarDestacados(){
@@ -853,21 +856,24 @@
 
       productosDestacadosPorSku = new Map(productos.map((p) => [p.skuGeneral, p]));
 
-      // Carrusel realmente infinito (no solo con las flechas): se agrega
-      // un clon de la última tarjeta al principio y uno de la primera al
-      // final. Así el scroll NUNCA "pega contra una pared" — al arrastrar
-      // con el dedo (o con las flechas, o el auto-avance) siempre hay algo
-      // para seguir scrolleando, y reacomodarSiEsClon() salta sin
-      // animación al equivalente real apenas se entra en un clon.
+      // Carrusel infinito: se pintan TRES copias seguidas de la lista y se
+      // arranca posicionado en la del medio. Antes había un solo clon por
+      // punta y en el celular no alcanzaba — una sola tarjeta clonada es
+      // más angosta que la pantalla, así que un deslizón con impulso se
+      // comía el clon y llegaba al borde real de una. Con una copia entera
+      // de colchón a cada lado el dedo nunca toca el borde, y recentrar
+      // (saltar un ancho de copia) es invisible porque las tres copias
+      // muestran exactamente lo mismo.
       const tarjetasHtml = productos.map(tarjetaDestacadoHtml);
-      const conClones = productos.length > 1
-        ? [tarjetasHtml[tarjetasHtml.length - 1], ...tarjetasHtml, tarjetasHtml[0]].join('')
+      const hayLoop = productos.length > 1;
+      const htmlPista = hayLoop
+        ? tarjetasHtml.join('') + tarjetasHtml.join('') + tarjetasHtml.join('')
         : tarjetasHtml.join('');
 
       catalogoDestacados.innerHTML = `
         <div class="carrusel-destacados">
           <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
-          <div class="carrusel-pista">${conClones}</div>
+          <div class="carrusel-pista">${htmlPista}</div>
           <button type="button" class="btn-carrusel derecha" aria-label="Ver siguiente">›</button>
         </div>
       `;
@@ -878,11 +884,19 @@
         return tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
       };
 
-      if (productos.length > 1) {
-        // Arranca mostrando la primera tarjeta REAL (después del clon del
-        // último), sin que se note el salto inicial.
-        const primerReal = pista.children[1];
-        pista.scrollLeft += (primerReal.getBoundingClientRect().left - pista.getBoundingClientRect().left);
+      // Distancia entre una tarjeta y su gemela de la copia siguiente:
+      // ese es el salto exacto que deja la pantalla igual.
+      let anchoCopia = 0;
+      if (hayLoop) {
+        anchoCopia = pista.children[productos.length].offsetLeft - pista.children[0].offsetLeft;
+        // Si una copia entera entra casi completa en pantalla, no queda
+        // colchón suficiente para recentrar sin que se note; en ese caso
+        // se deja como carrusel común (se sigue pudiendo scrollear).
+        if (pista.clientWidth >= anchoCopia * 1.5) {
+          anchoCopia = 0;
+        } else {
+          pista.scrollLeft = anchoCopia;
+        }
       }
 
       catalogoDestacados.querySelector('.btn-carrusel.izquierda').addEventListener('click', () => {
@@ -892,11 +906,29 @@
         pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
       });
 
+      // Recentrar solo cuando el scroll frenó del todo: tocar scrollLeft
+      // mientras el dedo sigue deslizando (o mientras corre la inercia)
+      // corta el movimiento en seco, que es justo lo que se sentía trabado.
       let timeoutScrollPista = null;
+      let dedoApoyado = false;
       pista.addEventListener('scroll', () => {
         clearTimeout(timeoutScrollPista);
-        timeoutScrollPista = setTimeout(() => reacomodarSiEsClon(pista), 120);
+        if (dedoApoyado) return;
+        timeoutScrollPista = setTimeout(() => recentrarCarrusel(pista, anchoCopia), 140);
       });
+
+      // El auto-avance no tiene que pelear contra el dedo: se corta apenas
+      // se toca el carrusel y vuelve recién un rato después de soltarlo.
+      pista.addEventListener('touchstart', () => {
+        dedoApoyado = true;
+        clearInterval(intervaloCarruselDestacados);
+      }, { passive: true });
+      pista.addEventListener('touchend', () => {
+        dedoApoyado = false;
+        clearTimeout(timeoutScrollPista);
+        timeoutScrollPista = setTimeout(() => recentrarCarrusel(pista, anchoCopia), 140);
+        setTimeout(() => iniciarAutoavanceCarrusel(pista), 3000);
+      }, { passive: true });
 
       pista.addEventListener('mouseenter', () => clearInterval(intervaloCarruselDestacados));
       pista.addEventListener('mouseleave', () => iniciarAutoavanceCarrusel(pista));
