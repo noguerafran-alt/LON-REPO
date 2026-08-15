@@ -638,7 +638,10 @@
 
 <div id="vistaCatalogo">
   <div class="barra-superior-catalogo">
-    <a class="volver" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">📷</a>
+    <div style="justify-self:center;">
+      <a class="volver" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">📷</a>
+      <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" style="display:none;">←</button>
+    </div>
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
@@ -660,8 +663,7 @@
     <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
-  <div id="catalogoDetalleView" style="display:none; position:relative;">
-    <button class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" style="position:absolute; left:0; top:54px;">←</button>
+  <div id="catalogoDetalleView" style="display:none;">
     <div id="catalogoDetalleContenido" style="margin-top:0;"></div>
   </div>
 </div>
@@ -694,6 +696,23 @@
   const catalogoPublicoLista = document.getElementById('catalogoPublicoLista');
   const catalogoDetalleContenido = document.getElementById('catalogoDetalleContenido');
   const btnVolverDeDetalle = document.getElementById('btnVolverDeDetalle');
+  const btnIrCliente = document.getElementById('btnIrCliente');
+
+  // La cámara (escanear producto) solo tiene sentido en el catálogo
+  // principal; en el detalle de un producto, ese mismo lugar del header
+  // lo ocupa la flecha de volver.
+  function mostrarVistaListaCatalogo(){
+    catalogoDetalleView.style.display = 'none';
+    catalogoListaView.style.display = 'block';
+    btnIrCliente.style.display = '';
+    btnVolverDeDetalle.style.display = 'none';
+  }
+  function mostrarVistaDetalleCatalogo(){
+    catalogoListaView.style.display = 'none';
+    catalogoDetalleView.style.display = 'block';
+    btnIrCliente.style.display = 'none';
+    btnVolverDeDetalle.style.display = '';
+  }
 
   let catalogoPublicoProductos = [];
   let categoriaCatalogoActiva = null;
@@ -943,8 +962,7 @@
       const encontrado = catalogoPublicoProductos.find((p) => p.skuGeneral === sku);
       if (encontrado) { mostrarDetalleProductoPublico(encontrado, false); return; }
     }
-    catalogoDetalleView.style.display = 'none';
-    catalogoListaView.style.display = 'block';
+    mostrarVistaListaCatalogo();
   });
 
   function renderizarCatalogoPublico(){
@@ -1208,8 +1226,7 @@
       </div>
       <div id="seccionRelacionadosDetalle"></div>
     `;
-    catalogoListaView.style.display = 'none';
-    catalogoDetalleView.style.display = 'block';
+    mostrarVistaDetalleCatalogo();
     window.scrollTo(0, 0);
 
     const btnComprar = document.getElementById('btnComprarProducto');
@@ -1297,8 +1314,7 @@
   }
 
   btnVolverDeDetalle.addEventListener('click', () => {
-    catalogoDetalleView.style.display = 'none';
-    catalogoListaView.style.display = 'block';
+    mostrarVistaListaCatalogo();
     const url = new URL(window.location);
     if (url.searchParams.has('producto')) {
       url.searchParams.delete('producto');
