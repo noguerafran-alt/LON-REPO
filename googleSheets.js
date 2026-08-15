@@ -887,6 +887,71 @@ async function actualizarProveedorProducto(sheetsClient, spreadsheetId, sheetNam
 }
 
 /**
+ * Borra TODAS las filas de una hoja donde la columna dada (por indice)
+ * coincida exactamente (sin importar mayus/minus ni espacios) con el
+ * valor buscado. Devuelve cuantas filas borro. Se usa para eliminar un
+ * producto "de todos lados" (Productos, STOCK, CODIGOS_BARRA) cuando se
+ * cargo mal — NO toca VENTAS/HISTORICO_SKU/PEDIDOS, esos son registros
+ * historicos que tienen que sobrevivir aunque el producto se borre.
+ */
+async function borrarFilasPorValor(sheetsClient, spreadsheetId, sheetName, indiceColumna, valorBuscado) {
+  const ultimaLetra = columnaALetra(indiceColumna);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const valorNormalizado = String(valorBuscado).trim().toLowerCase();
+
+  const filasABorrar = [];
+  for (let i = 1; i < rows.length; i++) {
+    const celda = rows[i][indiceColumna] ? String(rows[i][indiceColumna]).trim().toLowerCase() : '';
+    if (celda === valorNormalizado) filasABorrar.push(i + 1);
+  }
+  if (filasABorrar.length === 0) return 0;
+
+  const metadata = await sheetsClient.spreadsheets.get({ spreadsheetId });
+  const hoja = metadata.data.sheets.find((h) => h.properties.title === sheetName);
+  if (!hoja) return 0;
+
+  // Se borran de abajo hacia arriba (indices mas altos primero) dentro
+  // del mismo batchUpdate: asi cada deleteDimension no corre los indices
+  // de los que todavia faltan procesar en este mismo llamado.
+  const requests = filasABorrar
+    .sort((a, b) => b - a)
+    .map((numeroFila) => ({
+      deleteDimension: {
+        range: { sheetId: hoja.properties.sheetId, dimension: 'ROWS', startIndex: numeroFila - 1, endIndex: numeroFila },
+      },
+    }));
+
+  await sheetsClient.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
+  return filasABorrar.length;
+}
+
+/**
+ * Elimina un producto por completo: su fila en Productos, su(s) fila(s)
+ * de STOCK, y cualquier asociacion de codigo de barras que apunte a el.
+ * Deliberadamente NO toca VENTAS, HISTORICO_SKU ni PEDIDOS (historial
+ * real de ventas/pedidos, tiene que sobrevivir para no perder
+ * trazabilidad aunque el producto se haya borrado despues).
+ */
+async function eliminarProductoCompleto(sheetsClient, {
+  spreadsheetIdProductos, spreadsheetIdVentas, hojaProductos, hojaStock, hojaCodigosBarra,
+}, skuGeneral) {
+  const borradosProductos = await borrarFilasPorValor(
+    sheetsClient, spreadsheetIdProductos, hojaProductos, config.COLUMNAS_PRODUCTOS.skuGeneral, skuGeneral,
+  );
+  const borradosStock = await borrarFilasPorValor(
+    sheetsClient, spreadsheetIdVentas, hojaStock, config.COLUMNAS_STOCK.skuGeneral, skuGeneral,
+  );
+  const borradosCodigos = await borrarFilasPorValor(
+    sheetsClient, spreadsheetIdProductos, hojaCodigosBarra, config.COLUMNAS_CODIGOS_BARRA.skuGeneral, skuGeneral,
+  );
+
+  return { borradosProductos, borradosStock, borradosCodigos };
+}
+
+/**
  * Busca a que SKU interno corresponde un codigo de barras externo (ISBN,
  * EAN, etc), en la hoja CODIGOS_BARRA. Devuelve { numeroFila, asociacion }
  * — asociacion = {codigoBarra, skuGeneral, producto, fecha} — o
@@ -1911,6 +1976,7 @@ module.exports = {
   actualizarDescripcionProducto,
   actualizarPrecioProducto,
   actualizarProveedorProducto,
+  eliminarProductoCompleto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,

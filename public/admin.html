@@ -411,6 +411,7 @@
   }
   .fila-catalogo-completo button:disabled{ opacity:.5; cursor:default; }
   .fila-catalogo-completo .btn-generar-stock-completo{ border-color:var(--ink); color:var(--ink); font-weight:600; }
+  .fila-catalogo-completo .btn-borrar-producto-completo{ border-color:var(--stamp-red); color:var(--stamp-red); font-weight:600; }
   .fila-catalogo-completo .mensaje-precio-completo{ font-size:12.5px; flex-basis:100%; }
 
   .btn-imprimir{
@@ -2793,6 +2794,7 @@
         <button type="button" class="btn-guardar-proveedor-completo">Guardar</button>
         <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
         <button type="button" class="btn-generar-stock-completo" title="Generar unidades nuevas de este producto">+ Stock</button>
+        <button type="button" class="btn-borrar-producto-completo" title="Borrar este producto por completo">🗑️ Borrar</button>
         <span class="mensaje-precio-completo"></span>
       </div>
     `).join('');
@@ -2804,6 +2806,7 @@
       const inputProveedor = fila.querySelector('.input-proveedor-fila');
       const botonProveedor = fila.querySelector('.btn-guardar-proveedor-completo');
       const botonStock = fila.querySelector('.btn-generar-stock-completo');
+      const botonBorrar = fila.querySelector('.btn-borrar-producto-completo');
       const mensaje = fila.querySelector('.mensaje-precio-completo');
 
       boton.addEventListener('click', async () => {
@@ -2897,6 +2900,42 @@
           elegirProducto(productoParaElegir, { enfocar: true });
         } finally {
           botonStock.disabled = false;
+        }
+      });
+
+      // Borrado destructivo e irreversible: borra el producto de
+      // Productos, STOCK y sus asociaciones de código de barras (no
+      // toca VENTAS/HISTORICO_SKU/PEDIDOS). Doble confirmación porque
+      // no hay forma de deshacerlo.
+      botonBorrar.addEventListener('click', async () => {
+        const nombreProducto = fila.querySelector('.nombre').textContent;
+        const confirmar1 = window.confirm(
+          `¿Seguro que querés borrar "${nombreProducto}" (${skuGeneral}) de la base?\n\nSe borra de Productos, Stock y sus códigos de barra asociados. NO se puede deshacer.`
+        );
+        if (!confirmar1) return;
+        const confirmar2 = window.confirm(
+          `Última confirmación: se va a borrar "${nombreProducto}" (${skuGeneral}) para siempre. ¿Confirmás?`
+        );
+        if (!confirmar2) return;
+
+        botonBorrar.disabled = true;
+        botonBorrar.textContent = 'Borrando...';
+        try {
+          const res = await fetch('/admin/borrar-producto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, skuGeneral }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+          catalogoCompletoAdmin = catalogoCompletoAdmin.filter((prod) => prod.skuGeneral !== skuGeneral);
+          fila.remove();
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+          botonBorrar.disabled = false;
+          botonBorrar.textContent = '🗑️ Borrar';
         }
       });
     });

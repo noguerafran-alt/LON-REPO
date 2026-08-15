@@ -35,6 +35,7 @@ const {
   actualizarDescripcionProducto,
   actualizarPrecioProducto,
   actualizarProveedorProducto,
+  eliminarProductoCompleto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
@@ -1347,6 +1348,42 @@ app.post('/admin/producto-proveedor', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error actualizando el proveedor del producto:', err.message);
     res.status(500).json({ error: 'No se pudo actualizar el proveedor.' });
+  }
+});
+
+/* Borra un producto POR COMPLETO: su fila en Productos, su(s) fila(s)
+   de STOCK, y cualquier asociación de código de barras que apunte a él
+   — pensado para arreglar un producto que se cargó mal (duplicado,
+   SKU equivocado, etc), no para "descatalogar" algo que ya se vendió.
+   Deliberadamente NO borra VENTAS/HISTORICO_SKU/PEDIDOS (esos quedan
+   como registro histórico). Requiere admin nivel 2 — es destructivo e
+   irreversible. */
+app.post('/admin/borrar-producto', limiteAdmin, async (req, res) => {
+  try {
+    const { skuGeneral } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const resultado = await eliminarProductoCompleto(sheetsClient, {
+      spreadsheetIdProductos: config.SHEET_ID_PRODUCTOS,
+      spreadsheetIdVentas: config.SHEET_ID_VENTAS,
+      hojaProductos: config.HOJA_PRODUCTOS,
+      hojaStock: config.HOJA_STOCK,
+      hojaCodigosBarra: config.HOJA_CODIGOS_BARRA,
+    }, String(skuGeneral).trim());
+
+    if (resultado.borradosProductos === 0) {
+      return res.status(404).json({ error: 'No se encontró ese producto en el catálogo.' });
+    }
+
+    res.json({ ok: true, ...resultado });
+  } catch (err) {
+    console.error('Error borrando el producto:', err.message);
+    res.status(500).json({ error: 'No se pudo borrar el producto.' });
   }
 });
 
