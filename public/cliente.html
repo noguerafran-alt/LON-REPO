@@ -205,14 +205,21 @@
   let modoSoloVista = false;
 
   function addLogEntry(sku, nombre, estado){
+    // sku es el contenido crudo de lo que se escaneó (QR o código de
+    // barras) — texto arbitrario, no confiable. Si no hay nombre de
+    // producto (SKU no encontrado), NO puede ir por innerHTML: alguien
+    // podría dejar un código impreso con HTML/JS como payload y
+    // ejecutarlo en el navegador de quien lo escanee.
     const item = document.createElement('div');
     item.className = 'log-item';
     item.innerHTML = `
       <button type="button" class="sku-time-btn">
-        <span>${nombre || sku}</span>
+        <span></span>
       </button>
-      <span class="badge consulta">${estado}</span>
+      <span class="badge consulta"></span>
     `;
+    item.querySelector('.sku-time-btn span').textContent = nombre || sku;
+    item.querySelector('.badge').textContent = estado;
     item.querySelector('.sku-time-btn').addEventListener('click', () => {
       lastScanned = null;
       isBusy = true;
