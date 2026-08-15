@@ -141,6 +141,27 @@
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
   }
   .input-venta-lector:focus{ outline:none; border-color:var(--accent); }
+  .contenedor-scroll-categorias-lector{ display:flex; align-items:center; gap:4px; margin-bottom:10px; }
+  .fila-tabs-categorias-lector{
+    display:flex; flex-wrap:nowrap; gap:8px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none;
+    scroll-snap-type:x proximity; padding-bottom:2px;
+    /* Sin esto, deslizar hacia atrás en la punta se lo come el gesto de
+       "volver atrás" del navegador en vez de scrollear (mismo motivo
+       que en el carrusel de destacados del catálogo público). */
+    overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch;
+  }
+  .fila-tabs-categorias-lector::-webkit-scrollbar{ display:none; }
+  .btn-flecha-categorias-lector{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:1px solid var(--line);
+    background:var(--field-bg); color:var(--ink); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; font-size:14px; line-height:1; padding:0;
+  }
+  .tab-categoria-lector{
+    flex:0 0 auto; white-space:nowrap; background:none; border:1px solid var(--line); color:var(--ink-muted);
+    border-radius:var(--radius); padding:8px 14px; font-family:'Archivo', sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .tab-categoria-lector.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
   .btn-reconocer-foto{
     display:block; width:calc(100% - 48px); max-width:480px; margin:10px auto 0; padding:12px;
     border-radius:var(--radius); border:1px solid var(--accent); background:transparent; color:var(--accent);
@@ -571,6 +592,12 @@
     </div>
     <div id="reader"></div>
     <div id="bloqueVentaLector" style="display:none; max-width:480px; margin:16px auto 0; padding:0 24px;">
+      <div class="contenedor-scroll-categorias-lector">
+        <button type="button" class="btn-flecha-categorias-lector" id="btnCategoriasLectorIzquierda" aria-label="Ver categorías anteriores">‹</button>
+        <div class="fila-tabs-categorias-lector" id="filaCategoriasLector"></div>
+        <button type="button" class="btn-flecha-categorias-lector" id="btnCategoriasLectorDerecha" aria-label="Ver más categorías">›</button>
+      </div>
+      <div class="lista-productos" id="listaCategoriaLector" style="max-height:260px; margin-bottom:10px; display:none;"></div>
       <input type="text" id="inputVentaLector" class="input-venta-lector" placeholder="Escaneá con el lector, o escribí nombre/SKU..." autocomplete="off">
       <div class="lista-productos" id="listaVentaLector" style="max-height:260px; margin-top:8px; display:none;"></div>
     </div>
@@ -1452,7 +1479,11 @@
     if (esLector) {
       // Este modo no usa la cámara: si estaba prendida, se apaga sola.
       if (escanerIniciado) apagarEscanerManualmente();
-      if (!catalogoPublicoVentaManualCargado) cargarCatalogoPublicoVentaManual();
+      if (!catalogoPublicoVentaManualCargado) {
+        cargarCatalogoPublicoVentaManual().then(renderizarCategoriasLector);
+      } else {
+        renderizarCategoriasLector();
+      }
       inputVentaLector.value = '';
       listaVentaLector.style.display = 'none';
       inputVentaLector.focus();
@@ -1475,7 +1506,109 @@
    * casos se termina llamando a handleScan() con el SKU correspondiente
    * — el mismo camino que un escaneo con cámara: mismo modal de venta,
    * mismo log de "Últimos escaneados", mismo total acumulado.
+   *
+   * Arriba del buscador hay también un scroll horizontal infinito de
+   * categorías (misma técnica de tres copias que el carrusel de
+   * destacados del catálogo público — ver index.html): tocando una
+   * categoría aparece, en un scroll vertical, la lista de productos de
+   * esa categoría para elegir y vender directo, sin tener que escribir
+   * nada.
    * ------------------------------------------------------------ */
+  const filaCategoriasLector = document.getElementById('filaCategoriasLector');
+  const listaCategoriaLector = document.getElementById('listaCategoriaLector');
+  let categoriaLectorActiva = null;
+  let anchoCopiaCategoriasLector = 0;
+
+  function recentrarCategoriasLector(){
+    if (!anchoCopiaCategoriasLector) return;
+    let destino = filaCategoriasLector.scrollLeft;
+    let vueltas = 0;
+    while (destino < anchoCopiaCategoriasLector * 0.5 && vueltas++ < 5) destino += anchoCopiaCategoriasLector;
+    while (destino > anchoCopiaCategoriasLector * 1.5 && vueltas++ < 5) destino -= anchoCopiaCategoriasLector;
+    if (destino !== filaCategoriasLector.scrollLeft) filaCategoriasLector.scrollLeft = destino;
+  }
+
+  function renderizarCategoriasLector(){
+    const categorias = Array.from(new Set(catalogoPublicoVentaManual.map((p) => p.categoriaVisible || p.categoria).filter(Boolean))).sort();
+    const tabHtml = (c) => `<button type="button" class="tab-categoria-lector${c === categoriaLectorActiva ? ' activo' : ''}" data-categoria="${escaparHtml(c)}">${escaparHtml(c)}</button>`;
+    const tabsHtml = categorias.map(tabHtml).join('');
+    const hayLoop = categorias.length > 1;
+
+    filaCategoriasLector.innerHTML = hayLoop ? tabsHtml + tabsHtml + tabsHtml : tabsHtml;
+    anchoCopiaCategoriasLector = 0;
+    if (hayLoop) {
+      anchoCopiaCategoriasLector = filaCategoriasLector.children[categorias.length].offsetLeft - filaCategoriasLector.children[0].offsetLeft;
+      if (anchoCopiaCategoriasLector <= filaCategoriasLector.clientWidth) {
+        // Entran todas en pantalla: una sola copia, sin loop (si no se
+        // verían las mismas categorías repetidas una al lado de otra).
+        filaCategoriasLector.innerHTML = tabsHtml;
+        anchoCopiaCategoriasLector = 0;
+      } else {
+        filaCategoriasLector.scrollLeft = anchoCopiaCategoriasLector;
+      }
+    }
+
+    filaCategoriasLector.querySelectorAll('.tab-categoria-lector').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        const categoria = boton.getAttribute('data-categoria');
+        categoriaLectorActiva = categoria === categoriaLectorActiva ? null : categoria;
+        filaCategoriasLector.querySelectorAll('.tab-categoria-lector').forEach((b) => {
+          b.classList.toggle('activo', b.getAttribute('data-categoria') === categoriaLectorActiva);
+        });
+        renderizarListaCategoriaLector();
+      });
+    });
+  }
+
+  function renderizarListaCategoriaLector(){
+    if (!categoriaLectorActiva) {
+      listaCategoriaLector.style.display = 'none';
+      listaCategoriaLector.innerHTML = '';
+      return;
+    }
+    const filtrados = catalogoPublicoVentaManual.filter((p) => (p.categoriaVisible || p.categoria) === categoriaLectorActiva);
+    listaCategoriaLector.style.display = 'block';
+    if (filtrados.length === 0) {
+      listaCategoriaLector.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">No hay productos en esta categoría.</div>';
+      return;
+    }
+    listaCategoriaLector.innerHTML = filtrados.map((p) => `
+      <div class="item-producto" data-sku="${escaparHtml(p.skuGeneral)}">
+        ${p.foto ? `<img class="foto-mini" src="${escaparHtml(p.foto)}" alt="">` : '<div class="foto-mini-vacia">—</div>'}
+        <div class="lista-producto-info" data-accion="elegir">
+          <span class="lista-producto-nombre">${escaparHtml(p.nombre || '(sin nombre)')}</span>
+          <span class="lista-producto-meta">${escaparHtml(p.categoriaVisible || p.categoria)}${p.subcategoria ? ' / ' + escaparHtml(p.subcategoria) : ''}${p.precio ? ' · $' + escaparHtml(String(p.precio)) : ''}</span>
+        </div>
+      </div>
+    `).join('');
+    listaCategoriaLector.querySelectorAll('.item-producto').forEach((el) => {
+      el.addEventListener('click', () => {
+        handleScan(el.getAttribute('data-sku'));
+      });
+    });
+  }
+
+  document.getElementById('btnCategoriasLectorIzquierda').addEventListener('click', () => {
+    filaCategoriasLector.scrollBy({ left: -120, behavior: 'smooth' });
+  });
+  document.getElementById('btnCategoriasLectorDerecha').addEventListener('click', () => {
+    filaCategoriasLector.scrollBy({ left: 120, behavior: 'smooth' });
+  });
+
+  let timeoutScrollCategoriasLector = null;
+  let dedoEnCategoriasLector = false;
+  filaCategoriasLector.addEventListener('scroll', () => {
+    clearTimeout(timeoutScrollCategoriasLector);
+    if (dedoEnCategoriasLector) return;
+    timeoutScrollCategoriasLector = setTimeout(recentrarCategoriasLector, 140);
+  });
+  filaCategoriasLector.addEventListener('touchstart', () => { dedoEnCategoriasLector = true; }, { passive: true });
+  filaCategoriasLector.addEventListener('touchend', () => {
+    dedoEnCategoriasLector = false;
+    clearTimeout(timeoutScrollCategoriasLector);
+    timeoutScrollCategoriasLector = setTimeout(recentrarCategoriasLector, 140);
+  }, { passive: true });
+
   const inputVentaLector = document.getElementById('inputVentaLector');
   const listaVentaLector = document.getElementById('listaVentaLector');
 
