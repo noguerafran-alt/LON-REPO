@@ -1302,8 +1302,15 @@
       // si la verificacion falla, seguimos igual (no bloqueamos la venta por un error de red)
     }
 
+    // El input viene precargado con el precio de catálogo (para que se
+    // vea de entrada) — si el admin no lo tocó, NO hay que mandarlo como
+    // "precio manual": la columna F (Precio Manual) quedaría con el
+    // mismo valor que ya completa sola la columna E (Precio Venta, la
+    // llena un proceso aparte de la planilla), duplicando el precio.
+    // Solo se manda si de verdad quedó distinto al de catálogo.
+    const precioManualParaEnviar = (precioIngresado !== null && precioIngresado !== precioCatalogo) ? precioIngresado : null;
     const precioParaTotal = precioIngresado !== null ? precioIngresado : precioCatalogo;
-    guardarEscaneo(sku, nombre, 'Vendido', precioIngresado, precioParaTotal);
+    guardarEscaneo(sku, nombre, 'Vendido', precioManualParaEnviar, precioParaTotal);
   });
   btnNoVendido.addEventListener('click', () => {
     const sku = pendingSku, nombre = pendingNombre;
