@@ -1764,6 +1764,7 @@
     modoCheckoutCarrito = false;
     productoEnCheckout = producto;
     inputCantidadCheckout.value = 1;
+    inputCantidadCheckout.max = Number(producto.cantidad) || 1;
     checkoutBox.classList.remove('modo-carrito');
     tituloCheckout.textContent = 'Finalizar compra';
     btnVolverCheckout.textContent = '← Volver al producto';
@@ -1825,6 +1826,12 @@
   });
 
   inputCantidadCheckout.addEventListener('input', () => {
+    if (!modoCheckoutCarrito && productoEnCheckout) {
+      const stockDisponible = Number(productoEnCheckout.cantidad) || 0;
+      if (Number(inputCantidadCheckout.value) > stockDisponible) {
+        inputCantidadCheckout.value = stockDisponible || 1;
+      }
+    }
     if (metodoPagoSeleccionado() === 'transferencia') actualizarPanelPago();
   });
 
@@ -1833,6 +1840,14 @@
     if (!productoEnCheckout) return;
 
     const cantidad = Number(inputCantidadCheckout.value) || 1;
+    const stockDisponible = Number(productoEnCheckout.cantidad) || 0;
+    if (cantidad > stockDisponible) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = stockDisponible > 0
+        ? `Solo quedan ${stockDisponible} unidad${stockDisponible === 1 ? '' : 'es'} disponibles de este producto.`
+        : 'Este producto ya no tiene stock disponible.';
+      return;
+    }
     const nombre = document.getElementById('inputNombreCheckout').value.trim();
     const email = document.getElementById('inputEmailCheckout').value.trim();
     const telefono = document.getElementById('inputTelefonoCheckout').value.trim();
