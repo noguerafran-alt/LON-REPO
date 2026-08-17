@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /cliente.html
+Disallow: /checkout-error.html
+Disallow: /checkout-exito.html
+Disallow: /checkout-pendiente.html
+
+Sitemap: https://lonphilosophy.onrender.com/sitemap.xml

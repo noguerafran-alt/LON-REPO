@@ -110,3 +110,55 @@ y usar esa URL final desde el celular.
 - El servidor SIEMPRE agrega la fila al final de la pestaña indicada — no hace falta
   que la hoja tenga una estructura especial, solo que el nombre de la pestaña coincida
   con `GOOGLE_SHEET_NAME` en tu `.env`.
+
+## SEO (cómo aparece el sitio en Google)
+
+El catálogo es una sola página que arma los productos con JavaScript y refleja
+el producto abierto en la URL (`/?producto=slug-del-nombre`). Para una persona
+eso funciona bien, pero un buscador pide la URL al servidor y recibiría siempre
+el mismo HTML — mismo título y mismo canonical para todos los productos.
+
+`seo.js` resuelve eso: intercepta la home **antes** de `express.static` y, si la
+URL trae `?producto=`, reemplaza el bloque de meta tags del HTML por uno propio
+de ese producto (título, descripción, imagen para compartir y schema `Product`
+con precio y stock). El frontend no cambia: sigue leyendo `?producto=` igual.
+
+Piezas:
+
+| Archivo | Qué hace |
+|---|---|
+| `seo.js` | Meta tags por producto + `/sitemap.xml` generado desde el catálogo |
+| `public/index.html` | Meta tags de la home, entre las marcas `SEO:INICIO` / `SEO:FIN` |
+| `public/robots.txt` | Permite indexar el catálogo, bloquea admin y checkout |
+
+Cosas a tener en cuenta al tocar esto:
+
+- **`SITIO_URL` no es `PUBLIC_URL`.** `PUBLIC_URL` es la dirección interna del
+  hosting (`*.onrender.com`), la que necesitan Payway y WhatsApp. `SITIO_URL` es
+  el dominio propio y es la única que se usa para SEO. Hoy coinciden (todavía
+  no hay dominio propio), pero si se agrega uno hay que actualizar `SITIO_URL`
+  — si se mezclan, los canonical siguen apuntando a onrender y el dominio nuevo
+  queda afuera de Google.
+- **El slug se calcula en dos lados** y tienen que coincidir: `slugProducto()` en
+  `seo.js` y la función del mismo nombre en `public/index.html`.
+- **Las marcas `SEO:INICIO` / `SEO:FIN`** delimitan qué se reemplaza. Si se mueven
+  o renombran, hay que actualizar `seo.js` (avisa por consola si no las encuentra).
+- El catálogo se cachea 5 minutos para no gastar cuota de la API de Sheets con
+  las visitas de los bots, que son muchas y seguidas.
+
+Después de subir esto a producción, falta hacer una vez, a mano:
+
+1. Dar de alta el sitio en [Google Search Console](https://search.google.com/search-console)
+   y enviar `https://lonphilosophy.onrender.com/sitemap.xml`.
+2. Crear/completar el perfil de **Google Business** si el negocio tiene local físico.
+
+## Catálogo: agregar al carrito desde la tarjeta
+
+Antes, el único botón de cada tarjeta de producto era "Ver más" y lo único que
+hacía era abrir el detalle — agregar al carrito solo se podía desde ahí. Ahora
+el botón agrega directo al carrito (con "Agregado ✓" como feedback, sin navegar
+ni recargar nada), y tocar el resto de la tarjeta (foto, nombre, precio) abre el
+detalle como antes. Aplica a las 4 grillas de producto: destacados (carrusel),
+resultados de búsqueda, catálogo por categoría y "también te puede interesar".
+El botón se deshabilita cuando el producto no tiene precio cargado o está sin
+stock (`puedeComprarProducto()` en `public/index.html`).

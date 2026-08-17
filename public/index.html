@@ -3,9 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LON Philosophy</title>
+<!-- Todo lo que está entre SEO:INICIO y SEO:FIN son los meta tags de la
+     HOME. Cuando la URL trae ?producto=algo, el servidor (seo.js)
+     reemplaza este bloque entero por los meta tags de ese producto
+     (título, descripción, imagen y schema con precio/stock), así cada
+     producto puede rankear por su nombre en Google y el link se ve bien
+     al compartirlo. Si movés o renombrás estas marcas, actualizá seo.js. -->
+<!-- SEO:INICIO -->
+<title>Libros, Velas y Objetos de Diseño | LON Philosophy</title>
+<meta name="description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online en LON Philosophy y coordiná la entrega por WhatsApp.">
+<link rel="canonical" href="https://lonphilosophy.onrender.com/">
+<meta name="robots" content="index, follow">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LON Philosophy">
+<meta property="og:title" content="Libros, Velas y Objetos de Diseño | LON Philosophy">
+<meta property="og:description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online en LON Philosophy y coordiná la entrega por WhatsApp.">
+<meta property="og:url" content="https://lonphilosophy.onrender.com/">
+<meta property="og:image" content="https://lonphilosophy.onrender.com/logo.png">
+<meta property="og:locale" content="es_AR">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Libros, Velas y Objetos de Diseño | LON Philosophy">
+<meta name="twitter:description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online en LON Philosophy y coordiná la entrega por WhatsApp.">
+<meta name="twitter:image" content="https://lonphilosophy.onrender.com/logo.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Store",
+  "name": "LON Philosophy",
+  "url": "https://lonphilosophy.onrender.com/",
+  "image": "https://lonphilosophy.onrender.com/logo.png",
+  "logo": "https://lonphilosophy.onrender.com/logo.png",
+  "description": "Libros, velas y objetos artesanales en fieltro y lata, con pedido online y entrega coordinada por WhatsApp.",
+  "priceRange": "$$",
+  "areaServed": "AR"
+}
+</script>
+<!-- SEO:FIN -->
+
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -322,7 +362,7 @@
   }
   .item-catalogo-publico{
     border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
-    display:flex; flex-direction:column;
+    display:flex; flex-direction:column; cursor:pointer;
     transition:border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
   }
   .item-catalogo-publico:hover{
@@ -363,6 +403,9 @@
   .item-catalogo-publico button{
     background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
     padding:8px 10px; font-size:12.5px; font-family:'Fraunces', serif; cursor:pointer; margin-top:auto;
+  }
+  .item-catalogo-publico button:disabled{
+    border-color:var(--line); color:var(--ink-muted); cursor:not-allowed;
   }
   .detalle-producto .foto-detalle{
     width:100%; max-width:320px; aspect-ratio:1/1; border-radius:var(--radius); overflow:hidden;
@@ -503,6 +546,8 @@
 </head>
 <body>
 
+<h1 style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;">LON Philosophy — Libros, velas y objetos de diseño, hechos a pedido</h1>
+
 <div class="fullscreen hidden" id="pantallaCarrito">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
@@ -573,7 +618,7 @@
     <input type="email" id="inputEmailCheckout" placeholder="tu@email.com" autocomplete="email" required>
 
     <label for="inputTelefonoCheckout">Teléfono</label>
-    <input type="tel" id="inputTelefonoCheckout" placeholder="Tu teléfono" autocomplete="tel">
+    <input type="tel" id="inputTelefonoCheckout" placeholder="Tu teléfono" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" required>
 
     <label>Entrega</label>
     <div class="metodo-envio-opciones">
@@ -763,11 +808,16 @@
     return `<div class="mockup-placeholder"><span class="mockup-icono">${icono}</span></div>`;
   }
 
-  function fotoOPlaceholder(foto, categoria){
+  // El `nombre` va al alt de la imagen: se lee en voz alta con lector de
+  // pantalla, se muestra si la foto no carga, y es lo que indexa Google
+  // Imágenes (un "Foto del producto" repetido en todas las fotos no
+  // sirve para ninguna de las tres cosas).
+  function fotoOPlaceholder(foto, categoria, nombre){
     if (!foto) return mockupPlaceholder(categoria);
     const miniatura = urlMiniaturaPublica(foto);
     const respaldo = encodeURI(foto);
-    return `<img src="${escaparHtmlPublico(miniatura)}" alt="Foto del producto" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${respaldo}';">`;
+    const textoAlt = nombre ? `${nombre} — LON Philosophy` : 'Foto del producto';
+    return `<img src="${escaparHtmlPublico(miniatura)}" alt="${escaparHtmlPublico(textoAlt)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${respaldo}';">`;
   }
 
   async function cargarCatalogoPublico(){
@@ -796,11 +846,11 @@
   function tarjetaDestacadoHtml(p){
     return `
       <div class="item-catalogo-publico">
-        <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria)}</div>
+        <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
         <div class="info-item">
           <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
           ${metaProductoHtml(p)}
-          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}">Ver más</button>
+          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
         </div>
       </div>
     `;
@@ -940,12 +990,10 @@
       iniciarAutoavanceCarrusel(pista);
 
       catalogoDestacados.querySelectorAll('[data-sku-destacado]').forEach((boton) => {
-        boton.addEventListener('click', () => {
-          const skuGeneral = boton.getAttribute('data-sku-destacado');
-          const producto = productosDestacadosPorSku.get(skuGeneral)
-            || catalogoPublicoProductos.find((p) => p.skuGeneral === skuGeneral);
-          if (producto) mostrarDetalleProductoPublico(producto);
-        });
+        const skuGeneral = boton.getAttribute('data-sku-destacado');
+        const producto = productosDestacadosPorSku.get(skuGeneral)
+          || catalogoPublicoProductos.find((p) => p.skuGeneral === skuGeneral);
+        conectarTarjetaProducto(boton, producto);
       });
     } catch (err) {
       // Si falla, simplemente no se muestra la sección — no es crítico
@@ -1020,11 +1068,11 @@
         <div class="grilla-catalogo-publico">
           ${encontrados.map((p) => `
             <div class="item-catalogo-publico">
-              <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria)}</div>
+              <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
               <div class="info-item">
                 <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
                 ${metaProductoHtml(p)}
-                <button type="button" data-indice="${p.indiceGlobal}">Ver más</button>
+                <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
               </div>
             </div>
           `).join('')}
@@ -1034,10 +1082,8 @@
       catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtmlBusqueda}</div>`;
 
       catalogoPublicoLista.querySelectorAll('button[data-indice]').forEach((boton) => {
-        boton.addEventListener('click', () => {
-          const indice = Number(boton.getAttribute('data-indice'));
-          mostrarDetalleProductoPublico(catalogoPublicoProductos[indice]);
-        });
+        const indice = Number(boton.getAttribute('data-indice'));
+        conectarTarjetaProducto(boton, catalogoPublicoProductos[indice]);
       });
       return;
     }
@@ -1107,11 +1153,11 @@
       <div class="grilla-catalogo-publico">
         ${productosDeCategoria.map((p) => `
           <div class="item-catalogo-publico">
-            <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria)}</div>
+            <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
             <div class="info-item">
               <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
               ${metaProductoHtml(p)}
-              <button type="button" data-indice="${p.indiceGlobal}">Ver más</button>
+              <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
             </div>
           </div>
         `).join('')}
@@ -1204,10 +1250,8 @@
     });
 
     catalogoPublicoLista.querySelectorAll('button[data-indice]').forEach((boton) => {
-      boton.addEventListener('click', () => {
-        const indice = Number(boton.getAttribute('data-indice'));
-        mostrarDetalleProductoPublico(catalogoPublicoProductos[indice]);
-      });
+      const indice = Number(boton.getAttribute('data-indice'));
+      conectarTarjetaProducto(boton, catalogoPublicoProductos[indice]);
     });
   }
 
@@ -1251,7 +1295,7 @@
       <div class="miniaturas-detalle">
         ${fotos.map((url, indice) => `
           <button type="button" data-foto-indice="${indice}" class="${indice === 0 ? 'activa' : ''}">
-            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="Miniatura ${indice + 1}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
+            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="${escaparHtmlPublico(producto.nombre)} — foto ${indice + 1}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
           </button>
         `).join('')}
       </div>
@@ -1259,7 +1303,7 @@
 
     catalogoDetalleContenido.innerHTML = `
       <div class="detalle-producto">
-        <div class="foto-detalle" id="fotoPrincipalDetalle">${fotos.length ? `<img src="${escaparHtmlPublico(fotos[0])}" alt="Foto del producto">` : mockupPlaceholder(producto.categoria)}</div>
+        <div class="foto-detalle" id="fotoPrincipalDetalle">${fotos.length ? `<img src="${escaparHtmlPublico(fotos[0])}" alt="${escaparHtmlPublico(producto.nombre)} — LON Philosophy">` : mockupPlaceholder(producto.categoria)}</div>
         ${miniaturasHtml}
         <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
         <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
@@ -1299,7 +1343,7 @@
       catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((boton) => {
         boton.addEventListener('click', () => {
           const indice = Number(boton.getAttribute('data-foto-indice'));
-          fotoPrincipalDetalle.innerHTML = `<img src="${escaparHtmlPublico(fotos[indice])}" alt="Foto del producto">`;
+          fotoPrincipalDetalle.innerHTML = `<img src="${escaparHtmlPublico(fotos[indice])}" alt="${escaparHtmlPublico(producto.nombre)} — foto ${indice + 1}">`;
           catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((b) => b.classList.remove('activa'));
           boton.classList.add('activa');
         });
@@ -1340,11 +1384,11 @@
         <div class="grilla-relacionados">
           ${relacionados.map((p, indice) => `
             <div class="item-catalogo-publico">
-              <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria)}</div>
+              <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
               <div class="info-item">
                 <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
                 ${metaProductoHtml(p)}
-                <button type="button" data-relacionado-indice="${indice}">Ver más</button>
+                <button type="button" data-relacionado-indice="${indice}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
               </div>
             </div>
           `).join('')}
@@ -1353,10 +1397,8 @@
     `;
 
     contenedor.querySelectorAll('button[data-relacionado-indice]').forEach((boton) => {
-      boton.addEventListener('click', () => {
-        const indice = Number(boton.getAttribute('data-relacionado-indice'));
-        mostrarDetalleProductoPublico(relacionados[indice]);
-      });
+      const indice = Number(boton.getAttribute('data-relacionado-indice'));
+      conectarTarjetaProducto(boton, relacionados[indice]);
     });
   }
 
@@ -1649,6 +1691,44 @@
     return true;
   }
 
+  function puedeComprarProducto(p){
+    return Boolean(p.precio) && Boolean(p.disponible);
+  }
+
+  /* Feedback del botón "Agregar al carrito" en las tarjetas de las
+     grillas (destacados, búsqueda, categoría, relacionados): confirma
+     en el propio botón sin abrir el detalle ni recargar nada. */
+  function manejarClickAgregarCarrito(boton, producto){
+    const agregado = agregarAlCarrito(producto);
+    const textoOriginal = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = agregado ? 'Agregado ✓' : 'Sin stock';
+    setTimeout(() => {
+      boton.textContent = textoOriginal;
+      boton.disabled = !puedeComprarProducto(producto);
+    }, 1100);
+  }
+
+  /* Conecta una tarjeta de producto (en cualquiera de las 4 grillas):
+     el botón agrega al carrito sin navegar, y tocar el resto de la
+     tarjeta (foto, nombre, precio) abre el detalle — antes todo el
+     botón decía "Ver más" y llevaba al detalle; ahora "Ver más" pasó a
+     ser la tarjeta entera. */
+  function conectarTarjetaProducto(boton, producto){
+    if (!producto) return;
+    boton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      manejarClickAgregarCarrito(boton, producto);
+    });
+    const tarjeta = boton.closest('.item-catalogo-publico');
+    if (tarjeta) {
+      tarjeta.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        mostrarDetalleProductoPublico(producto);
+      });
+    }
+  }
+
   function cambiarCantidadCarrito(skuGeneral, delta){
     const items = obtenerCarrito();
     const item = items.find((it) => it.skuGeneral === skuGeneral);
@@ -1833,6 +1913,13 @@
     btnPagarCheckout.disabled = false;
   }
 
+  // Telefono: solo digitos, se filtra cualquier otro caracter a medida
+  // que se escribe (ademas del required + pattern del input, por si el
+  // navegador no valida antes de enviar).
+  document.getElementById('inputTelefonoCheckout').addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+  });
+
   function abrirCheckout(producto){
     modoCheckoutCarrito = false;
     productoEnCheckout = producto;
@@ -1947,6 +2034,12 @@
       document.getElementById('inputEmailCheckout').focus();
       return;
     }
+    if (!telefono || !/^[0-9]+$/.test(telefono)) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = 'Ingresá tu teléfono (solo números).';
+      document.getElementById('inputTelefonoCheckout').focus();
+      return;
+    }
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       mensajeCheckout.className = 'checkout-mensaje error';
       mensajeCheckout.textContent = 'Completá al menos dirección y ciudad para el envío.';
@@ -2019,6 +2112,12 @@
       document.getElementById('inputEmailCheckout').focus();
       return;
     }
+    if (!telefono || !/^[0-9]+$/.test(telefono)) {
+      mensajeCheckout.className = 'checkout-mensaje error';
+      mensajeCheckout.textContent = 'Ingresá tu teléfono (solo números).';
+      document.getElementById('inputTelefonoCheckout').focus();
+      return;
+    }
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       mensajeCheckout.className = 'checkout-mensaje error';
       mensajeCheckout.textContent = 'Completá al menos dirección y ciudad para el envío.';
@@ -2060,7 +2159,11 @@
 
 <div class="flotantes-contacto">
   <button class="btn-flotante btn-flotante-chat" id="btnAbrirChat" title="Chatear con el asistente" aria-label="Chatear con el asistente">💭</button>
-  <a class="btn-flotante btn-flotante-whatsapp" id="btnAbrirWhatsapp" href="#" target="_blank" rel="noopener" title="Hablar por WhatsApp" aria-label="Hablar por WhatsApp" style="display:none;">💬</a>
+  <a class="btn-flotante btn-flotante-whatsapp" id="btnAbrirWhatsapp" href="#" target="_blank" rel="noopener" title="Hablar por WhatsApp" aria-label="Hablar por WhatsApp" style="display:none;">
+    <svg viewBox="0 0 32 32" width="26" height="26" fill="currentColor" aria-hidden="true">
+      <path d="M16.004 3C9.106 3 3.5 8.605 3.5 15.5c0 2.294.62 4.44 1.7 6.29L3 29l7.4-2.14a12.44 12.44 0 0 0 5.6 1.34h.004c6.898 0 12.5-5.605 12.5-12.5S22.902 3 16.004 3Zm0 22.77h-.003a10.35 10.35 0 0 1-5.27-1.443l-.378-.224-4.39 1.27 1.293-4.28-.246-.393a10.29 10.29 0 0 1-1.58-5.5c0-5.696 4.634-10.33 10.578-10.33 2.826 0 5.48 1.1 7.478 3.098a10.5 10.5 0 0 1 3.096 7.472c0 5.696-4.634 10.33-10.578 10.33Zm5.796-7.732c-.317-.159-1.877-.927-2.168-1.033-.29-.106-.502-.159-.713.16-.211.317-.818 1.032-1.003 1.244-.185.212-.37.238-.687.08-.317-.16-1.34-.494-2.552-1.575-.943-.841-1.58-1.879-1.765-2.196-.185-.318-.02-.49.139-.648.143-.142.317-.37.476-.556.159-.185.211-.318.317-.53.106-.211.053-.397-.026-.556-.08-.159-.713-1.72-.977-2.354-.257-.617-.518-.534-.713-.544l-.607-.011c-.212 0-.556.08-.847.397-.29.318-1.11 1.085-1.11 2.647s1.136 3.07 1.294 3.283c.159.212 2.235 3.412 5.415 4.785.756.327 1.347.522 1.807.668.759.242 1.45.208 1.996.126.609-.091 1.877-.767 2.14-1.508.264-.741.264-1.376.185-1.508-.08-.132-.29-.212-.607-.37Z"/>
+    </svg>
+  </a>
 </div>
 
 <div class="panel-chat" id="panelChat">
@@ -2089,6 +2192,10 @@
     if (data.whatsappNumero) {
       btnAbrirWhatsapp.href = `https://wa.me/${data.whatsappNumero}?text=${encodeURIComponent('Hola! Tengo una consulta sobre un producto.')}`;
       btnAbrirWhatsapp.style.display = 'flex';
+      // Con WhatsApp configurado, reemplaza al asistente de chat en vez de
+      // convivir los dos botones flotantes.
+      btnAbrirChat.style.display = 'none';
+      panelChat.classList.remove('abierto');
     }
   }).catch(() => {});
 

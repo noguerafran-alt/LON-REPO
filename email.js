@@ -82,6 +82,12 @@ async function enviarEmailTransferencia(datos) {
   ].filter(Boolean);
 
   const cantidadTexto = Number(cantidad) > 1 ? ` x${cantidad}` : '';
+  const lineaWhatsappTexto = config.WHATSAPP_NUMERO_CONTACTO
+    ? `\nCualquier consulta, escribinos por WhatsApp: https://wa.me/${config.WHATSAPP_NUMERO_CONTACTO}\n`
+    : '';
+  const lineaWhatsappHtml = config.WHATSAPP_NUMERO_CONTACTO
+    ? `<p>Cualquier consulta, escribinos por WhatsApp: <a href="https://wa.me/${config.WHATSAPP_NUMERO_CONTACTO}">https://wa.me/${config.WHATSAPP_NUMERO_CONTACTO}</a></p>`
+    : '';
 
   const texto = `Hola ${nombreCliente || ''}!
 
@@ -94,8 +100,8 @@ Guardá este número de pedido como referencia: ${pedidoId}
 Producto: ${producto}${cantidadTexto}
 
 Apenas confirmemos que llegó el pago, coordinamos la entrega.
-
-LON Philosophy`;
+${lineaWhatsappTexto}
+${config.EMAIL_FROM_NAME}`;
 
   const html = `
     <p>Hola ${escapeHtml(nombreCliente || '')}!</p>
@@ -105,7 +111,8 @@ Monto: $${escapeHtml(String(monto))}</p>
     <p>Guardá este número de pedido como referencia: <strong>${escapeHtml(pedidoId)}</strong><br>
     Producto: ${escapeHtml(producto)}${escapeHtml(cantidadTexto)}</p>
     <p>Apenas confirmemos que llegó el pago, coordinamos la entrega.</p>
-    <p>LON Philosophy</p>
+    ${lineaWhatsappHtml}
+    <p>${escapeHtml(config.EMAIL_FROM_NAME)}</p>
   `;
 
   try {
@@ -155,6 +162,12 @@ async function enviarEmailTransferenciaCarrito(datos) {
   ].filter(Boolean);
 
   const lineasItems = items.map((it) => `- ${it.producto}${Number(it.cantidad) > 1 ? ` x${it.cantidad}` : ''}`);
+  const lineaWhatsappTexto = config.WHATSAPP_NUMERO_CONTACTO
+    ? `\nCualquier consulta, escribinos por WhatsApp: https://wa.me/${config.WHATSAPP_NUMERO_CONTACTO}\n`
+    : '';
+  const lineaWhatsappHtml = config.WHATSAPP_NUMERO_CONTACTO
+    ? `<p>Cualquier consulta, escribinos por WhatsApp: <a href="https://wa.me/${config.WHATSAPP_NUMERO_CONTACTO}">https://wa.me/${config.WHATSAPP_NUMERO_CONTACTO}</a></p>`
+    : '';
 
   const texto = `Hola ${nombreCliente || ''}!
 
@@ -168,8 +181,8 @@ Productos:
 ${lineasItems.join('\n')}
 
 Apenas confirmemos que llegó el pago, coordinamos la entrega.
-
-LON Philosophy`;
+${lineaWhatsappTexto}
+${config.EMAIL_FROM_NAME}`;
 
   const html = `
     <p>Hola ${escapeHtml(nombreCliente || '')}!</p>
@@ -179,7 +192,8 @@ Monto: $${escapeHtml(String(monto))}</p>
     <p>Guardá estos números de pedido como referencia: <strong>${escapeHtml(pedidoIds.join(', '))}</strong></p>
     <p>Productos:<br>${lineasItems.map((l) => escapeHtml(l)).join('<br>')}</p>
     <p>Apenas confirmemos que llegó el pago, coordinamos la entrega.</p>
-    <p>LON Philosophy</p>
+    ${lineaWhatsappHtml}
+    <p>${escapeHtml(config.EMAIL_FROM_NAME)}</p>
   `;
 
   try {

@@ -83,6 +83,13 @@ module.exports = {
     // Ojo: el catalogo publico solo lista productos CON stock, asi que
     // el link de un producto sin unidades no va a abrir nada.
     linkCatalogo: 10,
+    // L: si dice "NO" (en cualquier mayus/minus), el producto se
+    // oculta del catalogo publico aunque tenga stock — para productos
+    // que se siguen vendiendo en el local pero no se quieren mostrar
+    // online (ej. de temporada, agotados hace rato, etc). Vacio o
+    // cualquier otro valor = visible (asi los productos que ya existian
+    // antes de agregar esta columna siguen mostrandose sin tocar nada).
+    visiblePublico: 11,
   },
 
   COLUMNAS_CONTADOR_UNIDADES: {
@@ -358,6 +365,16 @@ module.exports = {
   // funcionar (ver README, sección de ngrok).
   PUBLIC_URL: (process.env.PUBLIC_URL || '').replace(/\/+$/, ''),
 
+  // Dominio propio con el que el sitio se muestra al publico (sin barra
+  // al final). Es DISTINTO de PUBLIC_URL a proposito: PUBLIC_URL suele
+  // ser la direccion interna del hosting (*.onrender.com), y usarla para
+  // SEO seria un problema si el dia de mañana se agrega un dominio
+  // propio — el <link rel="canonical"> y el sitemap seguirian apuntando
+  // a onrender.com en vez de al dominio nuevo. Por ahora coinciden
+  // (todavia no hay dominio propio), pero conviene tenerlos separados.
+  // Solo la usa seo.js.
+  SITIO_URL: (process.env.SITIO_URL || 'https://lonphilosophy.onrender.com').replace(/\/+$/, ''),
+
   /* ------------------------------------------------------------
    * 5) PAGOS — dos opciones para el comprador: Payway (link de pago
    *    hospedado — el comprador carga la tarjeta en una pagina de
@@ -406,6 +423,12 @@ module.exports = {
   TRANSFERENCIA_TITULAR: process.env.TRANSFERENCIA_TITULAR || '',
   TRANSFERENCIA_CBU: process.env.TRANSFERENCIA_CBU || '',
   TRANSFERENCIA_BANCO: process.env.TRANSFERENCIA_BANCO || '',
+
+  // Numero de WhatsApp para el boton flotante "Hablar por WhatsApp" del
+  // catalogo publico (distinto del chatbot con WhatsApp Cloud API de mas
+  // abajo). Formato: codigo de pais + numero, sin +, espacios ni guiones
+  // (ej. Argentina: 54 9 11 6823-9163 -> "5491168239163").
+  WHATSAPP_NUMERO_CONTACTO: process.env.WHATSAPP_NUMERO_CONTACTO || '',
 
   /* ------------------------------------------------------------
    * 5.1) EMAIL — mail de confirmacion con los datos de transferencia

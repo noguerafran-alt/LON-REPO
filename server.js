@@ -14,6 +14,7 @@ const { google } = require('googleapis');
 const config = require('./config');
 const {
   appendRow,
+  appendRows,
   getStockPorSkuGeneral,
   extraerSkuGeneral,
   getFilasImprimir,
@@ -35,11 +36,13 @@ const {
   actualizarDescripcionProducto,
   actualizarPrecioProducto,
   actualizarProveedorProducto,
+  actualizarVisibilidadProducto,
   eliminarProductoCompleto,
   actualizarLinksCatalogoProductos,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
+  buscarSkuCompletosDisponibles,
   procesarVentasNuevas,
   ajustarStockCantidad,
   registrarVisitaProducto,
@@ -64,6 +67,7 @@ const whatsapp = require('./whatsapp');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { sanitizarTexto, esEmailValido, sanitizarTelefono, sanitizarCodigoPostal, enteroEnRango } = require('./validacion');
+const { montarRutasSeo } = require('./seo');
 
 const app = express();
 
@@ -104,6 +108,21 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
   maxAge: '365d',
   immutable: true,
 }));
+// SEO: la home y el sitemap se arman en el servidor, asi que tienen que
+// registrarse ANTES de express.static — si no, express contesta "/" con
+// el index.html crudo (mismo <title> y mismo canonical para todos los
+// productos) y nunca llegamos a inyectar los meta tags del producto que
+// pide la URL. Ver seo.js.
+montarRutasSeo(app, {
+  cargarProductos: () => construirCatalogoConStock(
+    google.sheets({ version: 'v4', auth }),
+    { soloConStock: true },
+  ),
+  // Ojo: va SITIO_URL (el dominio propio), no PUBLIC_URL — ver el
+  // comentario de SITIO_URL en config.js.
+  urlBase: config.SITIO_URL,
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ============================================================
@@ -1077,6 +1096,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
   const descripcionPorSkuGeneral = {};
   const proveedorPorSkuGeneral = {};
   const subcategoriaPorSkuGeneral = {};
+  const visiblePorSkuGeneral = {};
   catalogoProductos.forEach((p) => {
     if (p.skuGeneral && p.precio !== '' && p.precio !== undefined) {
       precioPorSkuGeneral[p.skuGeneral] = p.precio;
@@ -1089,6 +1109,7 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
       descripcionPorSkuGeneral[p.skuGeneral] = p.descripcion || '';
       proveedorPorSkuGeneral[p.skuGeneral] = p.proveedor || '';
       subcategoriaPorSkuGeneral[p.skuGeneral] = p.subcategoria || '';
+      visiblePorSkuGeneral[p.skuGeneral] = p.visiblePublico !== false;
     }
   });
 
@@ -1102,11 +1123,14 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
     const nombre = row[cols.nombre] ? String(row[cols.nombre]).trim() : '';
     const categoria = row[cols.categoria] ? String(row[cols.categoria]).trim() : '';
     const cantidadActual = Number(row[cols.cantidadActual]) || 0;
+    const visiblePublico = visiblePorSkuGeneral[skuGeneral] !== false;
 
     // El catálogo público solo debe mostrar productos con stock
-    // disponible — si no hay unidades, ni siquiera lo listamos. El
-    // catálogo del admin (soloConStock=false) los quiere ver igual.
-    if (soloConStock && cantidadActual <= 0) continue;
+    // disponible y que el admin no haya ocultado a mano — si no hay
+    // unidades o está oculto, ni siquiera lo listamos. El catálogo del
+    // admin (soloConStock=false) los quiere ver igual, para poder
+    // reactivarlos.
+    if (soloConStock && (cantidadActual <= 0 || !visiblePublico)) continue;
 
     productos.push({
       skuGeneral,
@@ -1124,6 +1148,10 @@ async function construirCatalogoConStock(sheetsClient, { soloConStock, incluirPr
       // pide explicitamente un llamador admin (incluirProveedor:true),
       // nunca en el catalogo publico.
       ...(incluirProveedor ? { proveedor: proveedorPorSkuGeneral[skuGeneral] || '' } : {}),
+      // Estado de visibilidad manual — siempre se agrega (tambien en el
+      // catalogo publico, aunque ahi si esta en false ya se filtro
+      // arriba) porque el panel admin lo necesita para pintar el toggle.
+      visiblePublico,
     });
   }
 
@@ -1397,6 +1425,35 @@ app.post('/admin/producto-proveedor', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error actualizando el proveedor del producto:', err.message);
     res.status(500).json({ error: 'No se pudo actualizar el proveedor.' });
+  }
+});
+
+/* Muestra u oculta un producto del catálogo público por SKU general,
+   desde "Catálogo completo". No lo borra ni le toca el stock — sigue
+   pudiendo venderse desde el admin, solo desaparece de lo que ve el
+   cliente. Requiere admin nivel 2. */
+app.post('/admin/producto-visibilidad', limiteAdmin, async (req, res) => {
+  try {
+    const { skuGeneral, visible } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!skuGeneral || !String(skuGeneral).trim()) {
+      return res.status(400).json({ error: 'Falta el SKU general del producto.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const encontrado = await actualizarVisibilidadProducto(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS,
+      String(skuGeneral).trim(), Boolean(visible),
+    );
+    if (!encontrado) {
+      return res.status(404).json({ error: 'No se encontró ese producto en el catálogo.' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error actualizando la visibilidad del producto:', err.message);
+    res.status(500).json({ error: 'No se pudo actualizar la visibilidad.' });
   }
 });
 
@@ -1988,6 +2045,9 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     if (!email || !esEmailValido(email)) {
       return res.status(400).json({ error: 'Ingresá un email válido (lo necesitamos para mandarte la confirmación del pedido).' });
     }
+    if (!telefono || !/^\d+$/.test(String(telefono).trim())) {
+      return res.status(400).json({ error: 'Ingresá un teléfono válido, solo números.' });
+    }
     // Tope razonable: evita pedidos absurdos por error de tipeo o por un
     // script automatizado, sin restringir compras normales de verdad.
     let cantidadNum = 1;
@@ -2135,6 +2195,9 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
     }
     if (!email || !esEmailValido(email)) {
       return res.status(400).json({ error: 'Ingresá un email válido (lo necesitamos para mandarte la confirmación del pedido).' });
+    }
+    if (!telefono || !/^\d+$/.test(String(telefono).trim())) {
+      return res.status(400).json({ error: 'Ingresá un teléfono válido, solo números.' });
     }
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
@@ -2407,9 +2470,21 @@ app.post('/admin/pedidos/registrar-unidad', limiteAdmin, async (req, res) => {
       return res.status(404).json({ error: 'No se encontró ese pedido.' });
     }
 
+    const skuGeneralPedido = String(pedido.skuGeneral || '').trim().toUpperCase();
+
+    // 0) Caso comun: cargaron el SKU general del producto (correcto, pero
+    // incompleto) en vez del codigo completo del ejemplar fisico (SKU
+    // general + numero de serie, el que esta impreso/en el QR de la
+    // etiqueta pegada a la unidad). Se avisa distinto de "otro
+    // producto" porque acá el producto SÍ es el correcto.
+    if (skuLimpio.toUpperCase() === skuGeneralPedido) {
+      return res.status(400).json({
+        error: `"${skuLimpio}" es el SKU general del producto (correcto), pero falta el número de serie del ejemplar físico. Escaneá el código completo de la etiqueta pegada a la unidad (algo como ${skuLimpio}-000001), no el SKU general solo.`,
+      });
+    }
+
     // 1) El ejemplar escaneado tiene que ser del producto comprado.
     const skuGeneralEscaneado = extraerSkuGeneral(skuLimpio).toUpperCase();
-    const skuGeneralPedido = String(pedido.skuGeneral || '').trim().toUpperCase();
     if (skuGeneralEscaneado !== skuGeneralPedido) {
       return res.status(400).json({
         error: `Ese ejemplar es de otro producto: escaneaste ${skuGeneralEscaneado} y el pedido es de ${skuGeneralPedido} (${pedido.producto || ''}).`,
@@ -2466,6 +2541,101 @@ app.post('/admin/pedidos/registrar-unidad', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error registrando la unidad del pedido:', err.message);
     res.status(500).json({ error: 'No se pudo registrar la unidad.' });
+  }
+});
+
+/* Version en bloque de "registrar-unidad": para pedidos grandes (ej. 100
+   unidades de lo mismo) donde escanear ejemplar por ejemplar no tiene
+   sentido — el admin pide "cargá N" y el servidor elige solas las
+   siguientes N unidades sin vender de ese SKU general (mismo mecanismo
+   que "Vender" en Escanear/Venta manual, extendido a varias a la vez).
+   No hace falta escanear nada: útil justamente para bultos grandes donde
+   no importa cuál unidad puntual sale, solo que salgan N. */
+app.post('/admin/pedidos/registrar-unidades', limiteAdmin, async (req, res) => {
+  try {
+    const { pedidoId, cantidad } = req.body;
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
+    if (!pedidoId || !String(pedidoId).trim()) {
+      return res.status(400).json({ error: 'Falta el número de pedido.' });
+    }
+    const cantidadNum = enteroEnRango(cantidad, 1, 500);
+    if (cantidadNum === null) {
+      return res.status(400).json({ error: 'La cantidad tiene que ser un número entero entre 1 y 500.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim());
+    if (!pedido) {
+      return res.status(404).json({ error: 'No se encontró ese pedido.' });
+    }
+
+    const unidadesPrevias = String(pedido.skuUnidad || '').trim();
+    const yaRegistradas = unidadesPrevias ? unidadesPrevias.split('|').map((s) => s.trim()).filter(Boolean).length : 0;
+    const cantidadPedida = Number(pedido.cantidad) || 1;
+    const faltan = Math.max(0, cantidadPedida - yaRegistradas);
+    if (cantidadNum > faltan) {
+      return res.status(400).json({ error: `Ese pedido solo tiene ${faltan} unidad(es) pendiente(s) de registrar, no ${cantidadNum}.` });
+    }
+
+    // Primero se reutilizan unidades que ya tengan numero de serie
+    // generado (y sin vender). Si no alcanzan, se generan las que falten
+    // — pero SIN sumarlas a "Cantidad Manual" en STOCK, porque ese stock
+    // ya se descontó al reservar el pedido: son solo numeros de serie
+    // para poder identificar cada ejemplar despachado, no unidades
+    // nuevas entrando al local (si se sumaran, el stock quedaría
+    // duplicado).
+    const disponibles = await buscarSkuCompletosDisponibles(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.SHEET_ID_VENTAS, pedido.skuGeneral, cantidadNum,
+    );
+    if (disponibles.length < cantidadNum) {
+      const catalogo = await getCatalogoProductos(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_PRODUCTOS);
+      const productoCatalogo = catalogo.find((p) => p.skuGeneral.toLowerCase() === String(pedido.skuGeneral).trim().toLowerCase());
+      if (!productoCatalogo) {
+        return res.status(404).json({ error: `No se encontró "${pedido.skuGeneral}" en el catálogo de productos, no se pudieron generar más números de serie.` });
+      }
+      const faltantesPorGenerar = cantidadNum - disponibles.length;
+      const { fecha: fechaGeneracion } = fechaYHoraActual();
+      const nuevosGenerados = await generarUnidades(sheetsClient, {
+        spreadsheetId: config.SHEET_ID_PRODUCTOS,
+        skuGeneral: pedido.skuGeneral,
+        producto: productoCatalogo.producto,
+        categoria: productoCatalogo.categoria,
+        subcategoria: productoCatalogo.subcategoria,
+        precio: productoCatalogo.precio,
+        cantidad: faltantesPorGenerar,
+        generadoPor: sesion.email,
+        fecha: fechaGeneracion,
+        sumarStock: false,
+      });
+      disponibles.push(...nuevosGenerados);
+    }
+
+    const camposActualizar = {};
+    let aviso = null;
+    if (!tieneStockReservado(pedido)) {
+      await ajustarStockCantidad(
+        sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_STOCK,
+        pedido.skuGeneral, -(Number(pedido.cantidad) || 1), pedido.producto || '',
+      );
+      camposActualizar.stockReservado = 'SI';
+      aviso = 'Este pedido no tenía el stock reservado (nunca se marcó como pagado), así que se descontó ahora.';
+    }
+
+    const { fecha, hora } = fechaYHoraActual();
+    await appendRows(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, disponibles.map((skuCompleto) => [
+      skuCompleto, fecha, hora, '', '', '', String(pedidoId).trim(), sesion.email,
+    ]));
+
+    const todasLasUnidades = unidadesPrevias ? [unidadesPrevias, ...disponibles] : disponibles;
+    camposActualizar.skuUnidad = todasLasUnidades.join(' | ');
+
+    await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, String(pedidoId).trim(), camposActualizar);
+
+    res.json({ ok: true, skuUnidad: camposActualizar.skuUnidad, cargadas: disponibles.length, aviso });
+  } catch (err) {
+    console.error('Error registrando unidades en bloque del pedido:', err.message);
+    res.status(500).json({ error: 'No se pudieron registrar las unidades.' });
   }
 });
 

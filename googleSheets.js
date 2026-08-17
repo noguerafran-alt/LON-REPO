@@ -267,7 +267,7 @@ function parsearFotos(valorCrudo) {
  */
 async function getCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
   const cols = config.COLUMNAS_PRODUCTOS;
-  const maxIndice = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.ultimaModificacionPrecio, cols.descripcion, cols.proveedor);
+  const maxIndice = Math.max(cols.producto, cols.categoria, cols.subcategoria, cols.skuGeneral, cols.precio, cols.foto, cols.ultimaModificacionPrecio, cols.descripcion, cols.proveedor, cols.visiblePublico);
   const ultimaLetra = columnaALetra(maxIndice);
   const range = `${sheetName}!A:${ultimaLetra}`;
 
@@ -298,6 +298,7 @@ async function getCatalogoProductos(sheetsClient, spreadsheetId, sheetName) {
       descripcion: row[cols.descripcion] ? String(row[cols.descripcion]).trim() : '',
       ultimaModificacionPrecio: row[cols.ultimaModificacionPrecio] ? String(row[cols.ultimaModificacionPrecio]).trim() : '',
       proveedor: row[cols.proveedor] ? String(row[cols.proveedor]).trim() : '',
+      visiblePublico: String(row[cols.visiblePublico] || '').trim().toUpperCase() !== 'NO',
     });
   }
 
@@ -359,8 +360,18 @@ async function actualizarContadorUnidades(sheetsClient, spreadsheetId, sheetName
  * Genera `cantidad` SKUs completos correlativos para un SKU general,
  * actualiza CONTADOR_UNIDADES y agrega las filas correspondientes a
  * HISTORICO_SKU. Devuelve el array de SKUs completos generados.
+ *
+ * Por defecto tambien suma `cantidad` a "Cantidad Manual" en STOCK,
+ * porque el caso normal (boton "+ Stock") es literalmente avisar que
+ * entro mercaderia nueva al local. Pasar `sumarStock:false` para los
+ * casos donde el numero de serie se genera solo por trazabilidad
+ * (ej. despachar un pedido que ya tenia el stock descontado al
+ * reservarse) y NO representa unidades nuevas — si no, el stock queda
+ * duplicado.
  */
-async function generarUnidades(sheetsClient, { spreadsheetId, skuGeneral, producto, categoria, subcategoria, precio, cantidad, generadoPor, fecha }) {
+async function generarUnidades(sheetsClient, {
+  spreadsheetId, skuGeneral, producto, categoria, subcategoria, precio, cantidad, generadoPor, fecha, sumarStock = true,
+}) {
   const largo = config.LARGO_NUMERO_SERIE;
 
   const { ultimoNumeroSerie, numeroFila } = await getUltimoNumeroSerie(
@@ -410,10 +421,11 @@ async function generarUnidades(sheetsClient, { spreadsheetId, skuGeneral, produc
     appendFilasImprimirApp(sheetsClient, spreadsheetId, config.HOJA_IMPRIMIR_APP, filasImprimirApp),
     // Sumamos la cantidad recien generada a "Cantidad Manual" en STOCK
     // (planilla de VENTAS), con fecha y nombre/categoria, para que el
-    // stock fisico quede al dia.
-    sumarCantidadManualStock(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_STOCK, {
+    // stock fisico quede al dia — salvo que sumarStock:false (ver
+    // comentario del JSDoc de la funcion).
+    ...(sumarStock ? [sumarCantidadManualStock(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_STOCK, {
       skuGeneral, cantidad, nombre: producto, categoria, fecha,
-    }),
+    })] : []),
   ]);
 
   return skusGenerados;
@@ -937,6 +949,31 @@ async function actualizarProveedorProducto(sheetsClient, spreadsheetId, sheetNam
 }
 
 /**
+ * Muestra u oculta un producto del catalogo publico (columna L de
+ * Productos), buscandolo por SKU general. Ocultarlo NO le saca el
+ * stock ni impide venderlo desde el admin — solo lo saca del listado
+ * que ve el cliente. Devuelve true si lo encontro y actualizo, false
+ * si el SKU general no existe en la hoja.
+ */
+async function actualizarVisibilidadProducto(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral, visible) {
+  const cols = config.COLUMNAS_PRODUCTOS;
+  const { numeroFila } = await buscarFilaProductoPorSkuGeneral(sheetsClient, spreadsheetId, sheetNameProductos, skuGeneral);
+  if (!numeroFila) return false;
+
+  await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetNameProductos, numeroFila);
+  const letraVisible = columnaALetra(cols.visiblePublico);
+
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetNameProductos}!${letraVisible}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[visible ? '' : 'NO']] },
+  });
+
+  return true;
+}
+
+/**
  * Borra TODAS las filas de una hoja donde la columna dada (por indice)
  * coincida exactamente (sin importar mayus/minus ni espacios) con el
  * valor buscado. Devuelve cuantas filas borro. Se usa para eliminar un
@@ -1120,6 +1157,42 @@ async function buscarSkuCompletoDisponible(sheetsClient, spreadsheetIdProductos,
   }
 
   return null;
+}
+
+/**
+ * Igual que buscarSkuCompletoDisponible pero devuelve hasta `cantidad`
+ * ejemplares sin vender de un SKU general, en vez de uno solo — para
+ * despachar pedidos grandes de una vez sin tener que escanear cada
+ * unidad individual. Devuelve un array (puede tener menos elementos que
+ * `cantidad` si no hay tantos generados/disponibles).
+ */
+async function buscarSkuCompletosDisponibles(sheetsClient, spreadsheetIdProductos, spreadsheetIdVentas, skuGeneral, cantidad) {
+  const historico = await getHistoricoSku(sheetsClient, spreadsheetIdProductos, config.HOJA_HISTORICO_SKU);
+  const skuNormalizado = String(skuGeneral).trim().toLowerCase();
+  const generados = historico
+    .filter((h) => String(h.skuGeneral).trim().toLowerCase() === skuNormalizado)
+    .map((h) => h.skuCompleto);
+
+  if (generados.length === 0) return [];
+
+  const responseVentas = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId: spreadsheetIdVentas,
+    range: `${config.HOJA_VENTAS}!A:A`,
+  });
+  const rows = responseVentas.data.values || [];
+  const yaEnVentas = new Set(
+    rows.slice(1).map((r) => (r[0] ? String(r[0]).trim().toLowerCase() : '')).filter(Boolean),
+  );
+
+  const disponibles = [];
+  for (const skuCompleto of generados) {
+    if (disponibles.length >= cantidad) break;
+    if (!yaEnVentas.has(String(skuCompleto).trim().toLowerCase())) {
+      disponibles.push(skuCompleto);
+    }
+  }
+
+  return disponibles;
 }
 
 /**
@@ -2053,10 +2126,12 @@ module.exports = {
   actualizarDescripcionProducto,
   actualizarPrecioProducto,
   actualizarProveedorProducto,
+  actualizarVisibilidadProducto,
   eliminarProductoCompleto,
   buscarAsociacionCodigoBarra,
   asociarCodigoBarra,
   buscarSkuCompletoDisponible,
+  buscarSkuCompletosDisponibles,
   appendFilasImprimirApp,
   sumarCantidadManualStock,
   asegurarFilaStock,

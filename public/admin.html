@@ -3601,6 +3601,14 @@
     });
   });
 
+  // Link de WhatsApp a partir del telefono cargado por el cliente en el
+  // checkout: se guarda tal cual lo tipeo (puede tener espacios, guiones,
+  // parentesis), wa.me solo acepta digitos.
+  function telefonoAWhatsappHref(telefono){
+    const soloDigitos = String(telefono || '').replace(/\D/g, '');
+    return soloDigitos ? `https://wa.me/${soloDigitos}` : '';
+  }
+
   function renderizarPedidos(){
     const filtrados = filtroPedidoActivo === 'todos'
       ? pedidosCargados
@@ -3630,7 +3638,7 @@
         </div>
         <div class="cliente">${escaparHtml(p.nombreCliente || '(sin nombre)')}${p.metodoPago ? ` <span style="font-weight:400; color:var(--ink-muted); font-size:12px;">· ${escaparHtml(p.metodoPago)}</span>` : ''}</div>
         <div class="linea">${escaparHtml(p.producto || '')} · x${escaparHtml(String(p.cantidad || 1))} · $${escaparHtml(String(p.total || ''))}</div>
-        <div class="linea-muted">${escaparHtml(p.emailCliente || '')}${p.emailCliente && p.telefonoCliente ? ' · ' : ''}${escaparHtml(p.telefonoCliente || '')}</div>
+        <div class="linea-muted">${escaparHtml(p.emailCliente || '')}${p.emailCliente && p.telefonoCliente ? ' · ' : ''}${p.telefonoCliente ? `<a href="${telefonoAWhatsappHref(p.telefonoCliente)}" target="_blank" rel="noopener" style="color:var(--stamp-green); text-decoration:none;" title="Abrir chat de WhatsApp">💬 ${escaparHtml(p.telefonoCliente)}</a>` : ''}</div>
         <div class="linea-muted">${escaparHtml(p.metodoEnvio || '')}${direccionCompleta ? ' — ' + escaparHtml(direccionCompleta) : ''}</div>
         ${p.notas ? `<div class="linea-muted">Notas: ${escaparHtml(p.notas)}</div>` : ''}
 
