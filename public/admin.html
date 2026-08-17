@@ -454,7 +454,10 @@
   .fila-catalogo-completo button:disabled{ opacity:.5; cursor:default; }
   .fila-catalogo-completo .btn-vender-completo{ border-color:var(--stamp-green); color:var(--stamp-green); font-weight:600; }
   .fila-catalogo-completo .btn-generar-stock-completo{ border-color:var(--ink); color:var(--ink); font-weight:600; }
+  .fila-catalogo-completo .btn-toggle-visible-completo.visible{ border-color:var(--stamp-green); color:var(--stamp-green); }
+  .fila-catalogo-completo .btn-toggle-visible-completo.oculto{ border-color:var(--ink-muted); color:var(--ink-muted); background:var(--bg-alt); }
   .fila-catalogo-completo .btn-borrar-producto-completo{ border-color:var(--stamp-red); color:var(--stamp-red); font-weight:600; }
+  .fila-catalogo-completo .btn-borrar-producto-completo.confirmando{ background:var(--stamp-red); color:#fff; }
   .fila-catalogo-completo .mensaje-precio-completo{ font-size:12.5px; flex-basis:100%; }
 
   .btn-imprimir{
@@ -510,13 +513,17 @@
     font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
     color:var(--ink-muted); font-family:'IBM Plex Mono', monospace; margin-bottom:6px;
   }
-  .pedido-card .fila-unidad{ display:flex; gap:6px; }
-  .pedido-card .fila-unidad input{ flex:1; margin:0; }
+  .pedido-card .fila-unidad{ display:flex; gap:6px; max-width:420px; }
+  .pedido-card .fila-unidad input{ flex:1; margin:0; min-width:0; }
   .pedido-card .fila-unidad button{
     padding:8px 12px; font-size:13px; border-radius:var(--radius);
-    border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; white-space:nowrap;
+    border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; white-space:nowrap; flex:0 0 auto;
   }
-  .pedido-card .fila-unidad button.btn-camara-unidad{ background:#fff; color:var(--ink); border-color:var(--line); }
+  .pedido-card .fila-unidad button.btn-camara-unidad,
+  .pedido-card .fila-unidad button.btn-buscar-unidad{ background:#fff; color:var(--ink); border-color:var(--line); }
+  .pedido-card .fila-unidades-bloque{ align-items:center; margin-top:8px; max-width:none; flex-wrap:wrap; }
+  .pedido-card .fila-unidades-bloque input{ flex:0 0 auto; }
+  .pedido-card .fila-unidades-bloque button.registrar-unidades-bloque{ border-color:var(--stamp-green); background:var(--stamp-green); }
   .pedido-card .unidades-despachadas{
     font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink);
     margin-bottom:6px; word-break:break-all;
@@ -1777,6 +1784,21 @@
 
   let catalogoPublicoVentaManual = [];
   let catalogoPublicoVentaManualCargado = false;
+  // Si no es null, el modal de venta manual se abrió desde "Pedidos" (buscar
+  // el ejemplar de un pedido) en vez de desde "Escanear" (vender): en ese
+  // caso, elegir un producto llena el input del pedido en lugar de iniciar
+  // una venta nueva.
+  let inputUnidadPedidoDestino = null;
+
+  function abrirVentaManualParaPedido(inputUnidad){
+    inputUnidadPedidoDestino = inputUnidad;
+    overlayVentaManual.classList.add('show');
+    if (!catalogoPublicoVentaManualCargado) {
+      cargarCatalogoPublicoVentaManual();
+    } else {
+      renderizarListaVentaManual();
+    }
+  }
 
   async function cargarCatalogoPublicoVentaManual(){
     listaVentaManual.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Cargando catálogo...</div>';
@@ -1849,7 +1871,18 @@
     listaVentaManual.querySelectorAll('.item-producto').forEach((el) => {
       el.addEventListener('click', () => {
         const skuGeneral = el.getAttribute('data-sku');
+        const destinoPedido = inputUnidadPedidoDestino;
         cerrarModalVentaManual();
+        if (destinoPedido) {
+          // OJO: esto es el SKU general (el producto), NO el codigo
+          // completo del ejemplar. Se deja el guion final a proposito
+          // para que quede claro que falta completar el numero de serie
+          // de la etiqueta pegada a la unidad fisica antes de escanear o
+          // tocar "Registrar".
+          destinoPedido.value = `${skuGeneral}-`;
+          destinoPedido.focus();
+          return;
+        }
         showModal(skuGeneral);
       });
     });
@@ -1857,9 +1890,11 @@
 
   function cerrarModalVentaManual(){
     overlayVentaManual.classList.remove('show');
+    inputUnidadPedidoDestino = null;
   }
 
   btnVentaManual.addEventListener('click', () => {
+    inputUnidadPedidoDestino = null;
     overlayVentaManual.classList.add('show');
     if (!catalogoPublicoVentaManualCargado) {
       cargarCatalogoPublicoVentaManual();
@@ -1885,15 +1920,27 @@
     if (!escaneado) return;
 
     let producto = catalogoPublicoVentaManual.find((p) => (p.skuGeneral || '').toUpperCase() === escaneado);
+    let eraCodigoCompleto = false;
     if (!producto) {
       // Por si lo que se escaneó fue el SKU completo de una unidad
       // puntual (con serial) y no el SKU general del producto.
       const skuGeneralDelEscaneo = extraerSkuGeneralCliente(escaneado).toUpperCase();
       producto = catalogoPublicoVentaManual.find((p) => (p.skuGeneral || '').toUpperCase() === skuGeneralDelEscaneo);
+      eraCodigoCompleto = Boolean(producto);
     }
     if (!producto) return; // no matchea nada todavia, se deja como busqueda de texto normal
 
+    const destinoPedido = inputUnidadPedidoDestino;
     cerrarModalVentaManual();
+    if (destinoPedido) {
+      // Si ya era el codigo completo del ejemplar (con serial), se deja
+      // tal cual — ya se puede registrar. Si era solo el SKU general del
+      // producto, se agrega el guion final para que quede claro que
+      // todavia falta el numero de serie de la etiqueta.
+      destinoPedido.value = eraCodigoCompleto ? escaneado : `${producto.skuGeneral}-`;
+      destinoPedido.focus();
+      return;
+    }
     showModal(producto.skuGeneral);
   });
 
@@ -3328,6 +3375,7 @@
         <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
         <button type="button" class="btn-vender-completo" ${p.cantidad > 0 ? '' : 'disabled title="Sin stock"'}>💰 Vender</button>
         <button type="button" class="btn-generar-stock-completo" title="Generar unidades nuevas de este producto">+ Stock</button>
+        <button type="button" class="btn-toggle-visible-completo ${p.visiblePublico ? 'visible' : 'oculto'}" title="Mostrar u ocultar del catálogo público">${p.visiblePublico ? '👁️ Visible en catálogo' : '🙈 Oculto del catálogo'}</button>
         <button type="button" class="btn-borrar-producto-completo" title="Borrar este producto por completo">🗑️ Borrar</button>
         <span class="mensaje-precio-completo"></span>
       </div>
@@ -3341,8 +3389,41 @@
       const botonProveedor = fila.querySelector('.btn-guardar-proveedor-completo');
       const botonVender = fila.querySelector('.btn-vender-completo');
       const botonStock = fila.querySelector('.btn-generar-stock-completo');
+      const botonVisible = fila.querySelector('.btn-toggle-visible-completo');
       const botonBorrar = fila.querySelector('.btn-borrar-producto-completo');
       const mensaje = fila.querySelector('.mensaje-precio-completo');
+
+      // Mostrar/ocultar del catálogo público: no toca stock ni permite
+      // seguir vendiendo desde el admin, solo lo saca de lo que ve el
+      // cliente (útil para productos de temporada, en pausa, etc).
+      botonVisible.addEventListener('click', async () => {
+        const nuevoValor = !botonVisible.classList.contains('visible');
+        botonVisible.disabled = true;
+        const textoOriginal = botonVisible.textContent;
+        botonVisible.textContent = 'Guardando...';
+        try {
+          const res = await fetch('/admin/producto-visibilidad', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, skuGeneral, visible: nuevoValor }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+          const productoEnMemoria = catalogoCompletoAdmin.find((prod) => prod.skuGeneral === skuGeneral);
+          if (productoEnMemoria) productoEnMemoria.visiblePublico = nuevoValor;
+
+          botonVisible.classList.toggle('visible', nuevoValor);
+          botonVisible.classList.toggle('oculto', !nuevoValor);
+          botonVisible.textContent = nuevoValor ? '👁️ Visible en catálogo' : '🙈 Oculto del catálogo';
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+          botonVisible.textContent = textoOriginal;
+        } finally {
+          botonVisible.disabled = false;
+        }
+      });
 
       // Vender buscando el producto en vez de escaneando una unidad
       // puntual: el servidor asigna sola la próxima unidad ya generada
@@ -3449,19 +3530,25 @@
 
       // Borrado destructivo e irreversible: borra el producto de
       // Productos, STOCK y sus asociaciones de código de barras (no
-      // toca VENTAS/HISTORICO_SKU/PEDIDOS). Doble confirmación porque
-      // no hay forma de deshacerlo.
+      // toca VENTAS/HISTORICO_SKU/PEDIDOS). Confirmación en dos toques
+      // dentro de la misma página (NO usa window.confirm: en Safari/iOS
+      // y en varios navegadores embebidos de apps ese diálogo nativo
+      // queda bloqueado en silencio — el botón "no hacía nada" porque
+      // confirm() devolvía false sin mostrar ningún cartel).
+      let timeoutConfirmarBorrado = null;
       botonBorrar.addEventListener('click', async () => {
-        const nombreProducto = fila.querySelector('.nombre').textContent;
-        const confirmar1 = window.confirm(
-          `¿Seguro que querés borrar "${nombreProducto}" (${skuGeneral}) de la base?\n\nSe borra de Productos, Stock y sus códigos de barra asociados. NO se puede deshacer.`
-        );
-        if (!confirmar1) return;
-        const confirmar2 = window.confirm(
-          `Última confirmación: se va a borrar "${nombreProducto}" (${skuGeneral}) para siempre. ¿Confirmás?`
-        );
-        if (!confirmar2) return;
+        if (!botonBorrar.classList.contains('confirmando')) {
+          botonBorrar.classList.add('confirmando');
+          botonBorrar.textContent = '¿Seguro? Tocá de nuevo';
+          timeoutConfirmarBorrado = setTimeout(() => {
+            botonBorrar.classList.remove('confirmando');
+            botonBorrar.textContent = '🗑️ Borrar';
+          }, 4000);
+          return;
+        }
 
+        clearTimeout(timeoutConfirmarBorrado);
+        botonBorrar.classList.remove('confirmando');
         botonBorrar.disabled = true;
         botonBorrar.textContent = 'Borrando...';
         try {
@@ -3668,9 +3755,19 @@
           <div class="fila-unidad">
             <input type="text" class="input-unidad" placeholder="SKU del ejemplar (o escaneá)" autocomplete="off">
             <button type="button" class="btn-camara-unidad" title="Escanear con la cámara">📷</button>
+            <button type="button" class="btn-buscar-unidad" title="Buscar producto">🔎</button>
             <button type="button" class="registrar-unidad">Registrar</button>
           </div>
           <p style="font-size:12px; color:var(--ink-muted); margin:6px 0 0;">Falta${faltanUnidades > 1 ? 'n' : ''} ${faltanUnidades} de ${cantidadPedida}. No vuelve a descontar stock: ya se descontó al reservar.</p>
+          <p style="font-size:11px; color:var(--ink-muted); margin:2px 0 0;">Va el código completo de la etiqueta del ejemplar (SKU general + número de serie, ej: ${escaparHtml(p.skuGeneral || 'SKU')}-000001), no solo el SKU general del producto.</p>
+          ${faltanUnidades > 1 ? `
+          <div class="fila-unidad fila-unidades-bloque">
+            <span style="font-size:12.5px; color:var(--ink-muted); white-space:nowrap;">o cargar</span>
+            <input type="number" class="input-cantidad-unidades" min="1" max="${faltanUnidades}" step="1" value="${faltanUnidades}" style="max-width:80px;">
+            <span style="font-size:12.5px; color:var(--ink-muted); white-space:nowrap;">de una — sin escanear cada una</span>
+            <button type="button" class="registrar-unidades-bloque">Cargar automático</button>
+          </div>
+          ` : ''}
           ` : `<p style="font-size:12px; color:var(--ink-muted); margin:0;">Pedido completo: ${cantidadPedida} de ${cantidadPedida} ejemplares registrados.</p>`}
           <div class="mensaje-unidad"></div>
         </div>
@@ -3690,6 +3787,13 @@
           if (evento.key === 'Enter') { evento.preventDefault(); registrarUnidadPedido(card, pedidoId, inputUnidad.value); }
         });
         card.querySelector('.btn-camara-unidad').addEventListener('click', () => abrirEscanerUnidad(card, pedidoId));
+        card.querySelector('.btn-buscar-unidad').addEventListener('click', () => abrirVentaManualParaPedido(inputUnidad));
+      }
+
+      const botonRegistrarBloque = card.querySelector('.registrar-unidades-bloque');
+      if (botonRegistrarBloque) {
+        const inputCantidadUnidades = card.querySelector('.input-cantidad-unidades');
+        botonRegistrarBloque.addEventListener('click', () => registrarUnidadesBloquePedido(card, pedidoId, inputCantidadUnidades.value));
       }
 
       card.querySelector('.guardar-pedido').addEventListener('click', async () => {
@@ -3783,6 +3887,49 @@
       mensaje.style.color = 'var(--stamp-red)';
       mensaje.textContent = err.message;
       if (boton) { boton.disabled = false; boton.textContent = 'Registrar'; }
+    }
+  }
+
+  /* ------------------------------------------------------------
+   * Version en bloque: para pedidos con muchas unidades del mismo
+   * producto (ej. 100 budines), en vez de escanear ejemplar por
+   * ejemplar el admin pide "cargá N" y el servidor elige solas las
+   * siguientes N unidades sin vender de ese SKU general.
+   * ------------------------------------------------------------ */
+  async function registrarUnidadesBloquePedido(card, pedidoId, cantidadCruda){
+    const mensaje = card.querySelector('.mensaje-unidad');
+    const boton = card.querySelector('.registrar-unidades-bloque');
+    const cantidad = Number(cantidadCruda);
+
+    if (!cantidad || cantidad < 1 || !Number.isInteger(cantidad)) {
+      mensaje.style.color = 'var(--stamp-red)';
+      mensaje.textContent = 'Ingresá una cantidad válida (número entero mayor a 0).';
+      return;
+    }
+
+    if (boton) { boton.disabled = true; boton.textContent = 'Cargando...'; }
+    mensaje.style.color = 'var(--ink-muted)';
+    mensaje.textContent = `Buscando ${cantidad} unidad(es) disponibles...`;
+
+    try {
+      const res = await fetch('/admin/pedidos/registrar-unidades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken, pedidoId, cantidad }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      const pedido = pedidosCargados.find((p) => p.pedidoId === pedidoId);
+      if (pedido) {
+        pedido.skuUnidad = data.skuUnidad || pedido.skuUnidad;
+        pedido.stockReservado = 'SI';
+      }
+      renderizarPedidos();
+    } catch (err) {
+      mensaje.style.color = 'var(--stamp-red)';
+      mensaje.textContent = err.message;
+      if (boton) { boton.disabled = false; boton.textContent = 'Cargar automático'; }
     }
   }
 
