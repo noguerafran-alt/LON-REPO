@@ -447,6 +447,10 @@
     width:140px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
     background:var(--field-bg); color:var(--field-text);
   }
+  #panelCatalogo .fila-catalogo-completo .input-recargo-mp-fila{
+    width:110px; padding:8px 10px; font-size:15px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--field-bg); color:var(--field-text);
+  }
   .fila-catalogo-completo button{
     background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
     padding:8px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
@@ -3340,13 +3344,26 @@
   const selectSubcategoriaCatalogoCompleto = document.getElementById('selectSubcategoriaCatalogoCompleto');
   let catalogoCompletoAdmin = [];
 
+  // Recargo de Mercado Pago por categoría (mismo dato que se edita en
+  // "Nombres de categorías") — acá se cachea aparte porque esta lista es
+  // por PRODUCTO, así que muchas filas comparten un mismo valor de
+  // categoría, y se puede editar desde cualquiera de ellas.
+  let recargosMercadoPagoCache = {};
+
   async function cargarCatalogoCompletoAdmin(){
     listaCatalogoCompleto.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Cargando catálogo...</div>';
     try {
-      const res = await fetch(`/admin/catalogo-completo?token=${encodeURIComponent(adminToken)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al cargar el catálogo');
+      const [resCatalogo, resRecargos] = await Promise.all([
+        fetch(`/admin/catalogo-completo?token=${encodeURIComponent(adminToken)}`),
+        fetch('/recargos-mercadopago'),
+      ]);
+      const data = await resCatalogo.json();
+      if (!resCatalogo.ok) throw new Error(data.error || 'Error al cargar el catálogo');
       catalogoCompletoAdmin = data.productos || [];
+
+      const dataRecargos = await resRecargos.json().catch(() => ({}));
+      recargosMercadoPagoCache = dataRecargos.recargos || {};
+
       llenarSelectCategoriasCatalogoCompleto();
       llenarSelectSubcategoriasCatalogoCompleto();
       renderizarListaCatalogoCompleto();
@@ -3403,8 +3420,11 @@
       return;
     }
 
-    listaCatalogoCompleto.innerHTML = filtrados.map((p) => `
-      <div class="fila-catalogo-completo" data-sku="${escaparHtml(p.skuGeneral)}">
+    listaCatalogoCompleto.innerHTML = filtrados.map((p) => {
+      const claveCategoria = String(p.categoria || '').toUpperCase();
+      const recargoMP = recargosMercadoPagoCache[claveCategoria] || 0;
+      return `
+      <div class="fila-catalogo-completo" data-sku="${escaparHtml(p.skuGeneral)}" data-categoria="${escaparHtml(p.categoria || '')}">
         ${p.foto ? `<img class="foto-mini" src="${escaparHtml(p.foto)}" alt="">` : '<div class="foto-mini-vacia">—</div>'}
         <div class="info">
           <div class="nombre">${escaparHtml(p.nombre || '(sin nombre)')}</div>
@@ -3414,6 +3434,8 @@
         <button type="button" class="btn-guardar-precio-completo">Guardar</button>
         <input type="text" class="input-proveedor-fila" placeholder="Proveedor" maxlength="120" value="${escaparHtml(p.proveedor || '')}">
         <button type="button" class="btn-guardar-proveedor-completo">Guardar</button>
+        <input type="number" class="input-recargo-mp-fila" min="0" max="100" step="1" placeholder="Recargo MP %" title="Recargo de Mercado Pago para toda la categoría ${escaparHtml(p.categoria || '')}, no solo este producto" value="${recargoMP ? escaparHtml(String(recargoMP)) : ''}">
+        <button type="button" class="btn-guardar-recargo-mp-completo" title="Se aplica a toda la categoría ${escaparHtml(p.categoria || '')}">Guardar</button>
         <span class="badge-stock ${p.disponible ? 'disponible' : 'agotado'}">${p.cantidad} en stock</span>
         <button type="button" class="btn-vender-completo" ${p.cantidad > 0 ? '' : 'disabled title="Sin stock"'}>💰 Vender</button>
         <button type="button" class="btn-generar-stock-completo" title="Generar unidades nuevas de este producto">+ Stock</button>
@@ -3421,7 +3443,8 @@
         <button type="button" class="btn-borrar-producto-completo" title="Borrar este producto por completo">🗑️ Borrar</button>
         <span class="mensaje-precio-completo"></span>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     listaCatalogoCompleto.querySelectorAll('.fila-catalogo-completo').forEach((fila) => {
       const skuGeneral = fila.getAttribute('data-sku');
@@ -3429,6 +3452,9 @@
       const boton = fila.querySelector('.btn-guardar-precio-completo');
       const inputProveedor = fila.querySelector('.input-proveedor-fila');
       const botonProveedor = fila.querySelector('.btn-guardar-proveedor-completo');
+      const categoria = fila.getAttribute('data-categoria');
+      const inputRecargoMP = fila.querySelector('.input-recargo-mp-fila');
+      const botonRecargoMP = fila.querySelector('.btn-guardar-recargo-mp-completo');
       const botonVender = fila.querySelector('.btn-vender-completo');
       const botonStock = fila.querySelector('.btn-generar-stock-completo');
       const botonVisible = fila.querySelector('.btn-toggle-visible-completo');
@@ -3534,6 +3560,45 @@
         } finally {
           botonProveedor.disabled = false;
           botonProveedor.textContent = 'Guardar';
+        }
+      });
+
+      // Ojo: esto NO es por producto, es por CATEGORÍA — se guarda igual
+      // desde cualquier fila que comparta esa categoría, y afecta a
+      // todas ellas (por eso se refresca la lista entera al terminar).
+      botonRecargoMP.addEventListener('click', async () => {
+        mensaje.textContent = '';
+        mensaje.style.color = '';
+        const porcentaje = inputRecargoMP.value.trim() === '' ? 0 : Number(inputRecargoMP.value);
+        if (!Number.isInteger(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+          mensaje.textContent = 'El recargo MP tiene que ser un número entero entre 0 y 100.';
+          mensaje.style.color = 'var(--stamp-red)';
+          return;
+        }
+        botonRecargoMP.disabled = true;
+        botonRecargoMP.textContent = 'Guardando...';
+        try {
+          const res = await fetch('/admin/categoria-recargo-mp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken, categoria, recargoMercadoPago: porcentaje }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+          recargosMercadoPagoCache[String(categoria).toUpperCase()] = porcentaje;
+          mensaje.textContent = `Guardado ✓ (aplica a toda "${categoria}")`;
+          mensaje.style.color = 'var(--stamp-green)';
+          // Otras filas de la misma categoría también tienen que
+          // reflejar el nuevo valor — se vuelve a pintar todo, pero con
+          // un respiro para que el admin llegue a ver el "Guardado ✓"
+          // antes de que el re-render lo borre.
+          setTimeout(renderizarListaCatalogoCompleto, 900);
+        } catch (err) {
+          mensaje.textContent = `Error: ${err.message}`;
+          mensaje.style.color = 'var(--stamp-red)';
+          botonRecargoMP.disabled = false;
+          botonRecargoMP.textContent = 'Guardar';
         }
       });
 
