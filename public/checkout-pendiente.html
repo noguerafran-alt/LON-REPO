@@ -41,6 +41,7 @@
     if (pedido) {
       document.getElementById('pedidoId').textContent = 'Número de pedido: ' + pedido;
       fetch('/verificar-pago-payway/' + encodeURIComponent(pedido)).catch(() => {});
+      fetch('/verificar-pago-mercadopago/' + encodeURIComponent(pedido)).catch(() => {});
     } else {
       document.getElementById('pedidoId').style.display = 'none';
     }

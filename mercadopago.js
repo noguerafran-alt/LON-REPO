@@ -81,7 +81,15 @@ async function crearPreferencia(datos) {
     throw new Error(`Mercado Pago rechazó la preferencia: ${detalle}`);
   }
 
-  return data;
+  // Con un access token de prueba ("TEST-...") hay que mandar al
+  // comprador a sandbox_init_point (el checkout de prueba, con tarjetas
+  // de test) en vez de init_point (el real) — si no, Mercado Pago
+  // rechaza el pago de prueba. Con un token de producción ("APP_USR-...")
+  // sandbox_init_point ni siquiera viene en la respuesta.
+  const esTest = String(config.MP_ACCESS_TOKEN || '').startsWith('TEST-');
+  const initPoint = (esTest && data.sandbox_init_point) ? data.sandbox_init_point : data.init_point;
+
+  return { id: data.id, initPoint, raw: data };
 }
 
 /**
@@ -106,7 +114,53 @@ async function obtenerPago(paymentId) {
   return data;
 }
 
+/**
+ * Busca el pago mas reciente asociado a un pedido nuestro (por
+ * external_reference = pedidoId). Se usa como respaldo en la pagina de
+ * éxito/pendiente, para reconciliar el estado del pedido por si el
+ * webhook todavía no llegó — a diferencia del webhook (que ya trae el
+ * ID del pago), acá partimos solo del pedidoId. Devuelve null si
+ * todavía no hay ningún pago para ese pedido.
+ */
+async function buscarPagoPorReferenciaExterna(pedidoId) {
+  verificarConfigurado();
+
+  const res = await fetch(`${BASE_URL}/v1/payments/search?external_reference=${encodeURIComponent(pedidoId)}`, {
+    headers: { Authorization: `Bearer ${config.MP_ACCESS_TOKEN}` },
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    const detalle = data && (data.message || data.error) ? (data.message || data.error) : JSON.stringify(data);
+    throw new Error(`No se pudo buscar el pago del pedido ${pedidoId}: ${detalle}`);
+  }
+
+  const resultados = data.results || [];
+  if (resultados.length === 0) return null;
+
+  // Si hubo mas de un intento de pago para el mismo pedido (ej. la
+  // tarjeta rechazo y probo de nuevo), nos quedamos con el mas reciente.
+  resultados.sort((a, b) => new Date(b.date_created) - new Date(a.date_created));
+  return resultados[0];
+}
+
+/**
+ * Traduce el status que devuelve Mercado Pago a uno de nuestros estados
+ * de pedido. Los valores posibles de MP son: approved, pending,
+ * authorized, in_process, in_mediation, rejected, cancelled, refunded,
+ * charged_back.
+ */
+function estadoPedidoSegunStatusMP(statusMP) {
+  const s = String(statusMP || '').toLowerCase();
+  if (s === 'approved') return 'Pagado - Coordinar envío';
+  if (s === 'rejected') return 'Pago rechazado';
+  if (s === 'cancelled' || s === 'refunded' || s === 'charged_back') return 'Cancelado';
+  return null; // pendiente / en proceso / desconocido -> no tocamos el estado
+}
+
 module.exports = {
   crearPreferencia,
   obtenerPago,
+  buscarPagoPorReferenciaExterna,
+  estadoPedidoSegunStatusMP,
 };

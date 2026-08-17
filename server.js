@@ -24,6 +24,8 @@ const {
   crearCategoriaConfig,
   getNombresVisiblesCategorias,
   actualizarNombreVisibleCategoria,
+  getRecargosMercadoPago,
+  actualizarRecargoMercadoPago,
   getTarifasEnvio,
   actualizarTarifaEnvio,
   buscarClientePorEmail,
@@ -61,6 +63,7 @@ const {
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
 const QRCode = require('qrcode');
 const payway = require('./payway');
+const mercadopago = require('./mercadopago');
 const emailService = require('./email');
 const imagenes = require('./imagenes');
 const whatsapp = require('./whatsapp');
@@ -199,6 +202,9 @@ if (!config.PUBLIC_URL) {
 }
 if (!config.PAYWAY_PRIVATE_API_KEY || !config.PAYWAY_PUBLIC_API_KEY || !config.PAYWAY_SITE_ID) {
   console.warn('⚠️  No configuraste PAYWAY_PRIVATE_API_KEY / PAYWAY_PUBLIC_API_KEY / PAYWAY_SITE_ID — la opción "Pagar con tarjeta (Payway)" no va a funcionar hasta que los agregues. La opción "Transferencia bancaria" funciona igual, no depende de esto.');
+}
+if (!config.MP_ACCESS_TOKEN) {
+  console.warn('⚠️  No configuraste MP_ACCESS_TOKEN — la opción "Mercado Pago" del checkout no va a funcionar hasta que lo agregues.');
 }
 if (!config.EMAIL_USER || !config.EMAIL_APP_PASSWORD) {
   console.warn('⚠️  No configuraste EMAIL_USER / EMAIL_APP_PASSWORD — no se va a poder mandar el mail de confirmación con los datos de transferencia (el pedido se crea igual, solo no se manda el mail).');
@@ -1274,9 +1280,10 @@ app.get('/admin/categorias-nombres', limiteAdmin, async (req, res) => {
     if (!sesion) return;
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
-    const [productos, nombresVisibles] = await Promise.all([
+    const [productos, nombresVisibles, recargosMP] = await Promise.all([
       construirCatalogoConStock(sheetsClient, { soloConStock: false }),
       getNombresVisiblesCategorias(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG),
+      getRecargosMercadoPago(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG),
     ]);
 
     const categoriasUnicas = new Map();
@@ -1287,6 +1294,7 @@ app.get('/admin/categorias-nombres', limiteAdmin, async (req, res) => {
         categoriasUnicas.set(clave, {
           categoria: p.categoria,
           nombreVisible: nombresVisibles[clave] || '',
+          recargoMercadoPago: recargosMP[clave] || 0,
         });
       }
     });
@@ -1321,6 +1329,52 @@ app.post('/admin/categoria-nombre-visible', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error actualizando nombre visible de categoría:', err.message);
     res.status(500).json({ error: 'No se pudo actualizar el nombre.' });
+  }
+});
+
+/* Actualiza el % de recargo por Mercado Pago de una categoría (columna J
+   de Config). El checkout público lo usa para avisar y recalcular el
+   total cuando el cliente elige pagar con Mercado Pago. Requiere
+   admin nivel 2. */
+app.post('/admin/categoria-recargo-mp', limiteAdmin, async (req, res) => {
+  try {
+    const { categoria, recargoMercadoPago } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!categoria || !String(categoria).trim()) {
+      return res.status(400).json({ error: 'Falta la categoría.' });
+    }
+    const porcentaje = enteroEnRango(recargoMercadoPago, 0, 100);
+    if (porcentaje === null) {
+      return res.status(400).json({ error: 'El recargo tiene que ser un número entero entre 0 y 100.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    await actualizarRecargoMercadoPago(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG,
+      String(categoria).trim(), porcentaje,
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error actualizando recargo de Mercado Pago:', err.message);
+    res.status(500).json({ error: 'No se pudo actualizar el recargo.' });
+  }
+});
+
+/* Recargos por categoría para pago con Mercado Pago — público (sin
+   login), lo usa el checkout para mostrar el aviso de "el precio sube
+   X%" y recalcular el total mostrado. El servidor vuelve a calcular
+   este mismo recargo de forma independiente al crear el pago real
+   (/crear-pago), así que esto es solo para la vista previa. */
+app.get('/recargos-mercadopago', limiteLecturaPublica, async (req, res) => {
+  try {
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const recargos = await getRecargosMercadoPago(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG);
+    res.json({ recargos });
+  } catch (err) {
+    console.error('Error leyendo recargos de Mercado Pago:', err.message);
+    res.status(500).json({ error: 'No se pudieron cargar los recargos de Mercado Pago.' });
   }
 });
 
@@ -2060,8 +2114,8 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
     }
-    if (metodoPago !== 'payway' && metodoPago !== 'transferencia') {
-      return res.status(400).json({ error: 'Elegi un metodo de pago valido (Payway o transferencia).' });
+    if (metodoPago !== 'payway' && metodoPago !== 'transferencia' && metodoPago !== 'mercadopago') {
+      return res.status(400).json({ error: 'Elegi un metodo de pago valido (Payway, Mercado Pago o transferencia).' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
@@ -2071,8 +2125,8 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     if (!producto) {
       return res.status(404).json({ error: 'No se encontro el producto.' });
     }
-    const precioNum = Number(producto.precio);
-    if (!precioNum || precioNum <= 0) {
+    const precioCatalogo = Number(producto.precio);
+    if (!precioCatalogo || precioCatalogo <= 0) {
       return res.status(400).json({ error: 'Este producto todavia no tiene precio cargado, no se puede comprar online.' });
     }
     // El stock recien se descuenta cuando se confirma el pago (mas abajo
@@ -2085,6 +2139,18 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
           ? `Solo quedan ${producto.cantidad} unidad${producto.cantidad === 1 ? '' : 'es'} disponibles de este producto.`
           : 'Este producto ya no tiene stock disponible.',
       });
+    }
+
+    // Si paga con Mercado Pago, el precio sube el % configurado para la
+    // categoría del producto (Admin > Catálogo). Se calcula ACA, del
+    // lado del servidor, y no se confía en nada que mande el navegador
+    // — es lo mismo que ya se hace con el precio base.
+    let precioNum = precioCatalogo;
+    let recargoPct = 0;
+    if (metodoPago === 'mercadopago') {
+      const recargos = await getRecargosMercadoPago(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG);
+      recargoPct = recargos[String(producto.categoria || '').trim().toUpperCase()] || 0;
+      if (recargoPct > 0) precioNum = Math.round(precioCatalogo * (1 + recargoPct / 100));
     }
 
     const pedidoId = generarPedidoId();
@@ -2112,12 +2178,13 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       numeroSeguimiento: '',
       pagoExternoId: '',
       notas: sanitizarTexto(notas, 500),
-      metodoPago: metodoPago === 'payway' ? 'Payway' : 'Transferencia',
+      metodoPago: metodoPago === 'payway' ? 'Payway' : (metodoPago === 'mercadopago' ? 'Mercado Pago' : 'Transferencia'),
       // El stock se reserva recien cuando el pago se confirma, no al
       // iniciar el checkout (si no, un carrito abandonado congelaria
       // unidades para siempre).
       stockReservado: '',
       skuUnidad: '',
+      recargoMercadoPago: recargoPct > 0 ? recargoPct : '',
     });
 
     if (metodoPago === 'payway') {
@@ -2134,6 +2201,26 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoId, { pagoExternoId: link.id });
 
       return res.json({ ok: true, pedidoId, redirectUrl: link.url });
+    }
+
+    if (metodoPago === 'mercadopago') {
+      const preferencia = await mercadopago.crearPreferencia({
+        pedidoId,
+        titulo: producto.nombre,
+        precioUnitario: precioNum,
+        cantidad: cantidadNum,
+        nombreComprador: nombre,
+        emailComprador: email,
+      });
+
+      // Guardamos el id de la preferencia ANTES de mandar al comprador a
+      // pagar — no es el id del pago en sí (ese todavía no existe), pero
+      // sirve para relacionar el pedido con el intento de pago. El
+      // webhook y la verificación de respaldo encuentran el pedido por
+      // external_reference (el pedidoId), no por este id.
+      await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoId, { pagoExternoId: preferencia.id });
+
+      return res.json({ ok: true, pedidoId, redirectUrl: preferencia.initPoint });
     }
 
     // metodoPago === 'transferencia': no hay redirect, el front muestra
@@ -2366,6 +2453,89 @@ app.get('/verificar-pago-payway/:pedidoId', async (req, res) => {
     res.json({ ok: true, actualizado: !!resultado, estado: resultado ? resultado.estado : pedido.estado });
   } catch (err) {
     console.error('Error verificando pago de Payway:', err.message);
+    res.status(500).json({ error: err.message || 'No se pudo verificar el pago.' });
+  }
+});
+
+/* Reconcilia un pedido contra el estado real de un pago en Mercado
+   Pago, buscandolo por el ID DEL PAGO (no de la preferencia — a
+   diferencia de Payway, en Mercado Pago el pago recien existe cuando el
+   comprador termina de pagar). Encuentra el pedido por external_reference
+   (el pedidoId, que se manda al crear la preferencia), no por
+   pagoExternoId — ese campo en el pedido todavía tiene guardado el id de
+   la preferencia, no el del pago. */
+async function reconciliarPagoMercadoPago(pagoId) {
+  const pago = await mercadopago.obtenerPago(pagoId);
+  if (!pago) return null;
+
+  const nuevoEstado = mercadopago.estadoPedidoSegunStatusMP(pago.status);
+  if (!nuevoEstado) return null; // pendiente/en proceso/desconocido -> no tocamos nada
+
+  const pedidoIdReferenciado = pago.external_reference;
+  if (!pedidoIdReferenciado) return null;
+
+  const sheetsClient = google.sheets({ version: 'v4', auth });
+  const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoIdReferenciado);
+  if (!pedido) return null;
+
+  const { campos } = await sincronizarStockPedido(sheetsClient, pedido, nuevoEstado);
+
+  await actualizarPedido(
+    sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedido.pedidoId,
+    // Actualizamos pagoExternoId al id REAL del pago (hasta ahora tenía
+    // el id de la preferencia) — queda como referencia de auditoría.
+    { estado: nuevoEstado, pagoExternoId: String(pagoId), ...campos },
+  );
+  return { pedidoId: pedido.pedidoId, estado: nuevoEstado };
+}
+
+/* Notificacion asincronica de Mercado Pago. Siempre respondemos 200
+   para que MP no reintente indefinidamente, incluso si algo interno
+   falla. MP manda el id del pago en el body (webhooks nuevos:
+   {type:'payment', data:{id}}) o en la query string (IPN clasica:
+   ?topic=payment&id=... o ?type=payment&data.id=...) — probamos todas
+   las formas. Si la notificacion es de otro tipo (ej. merchant_order),
+   el id no corresponde a un pago y obtenerPago() simplemente no
+   encuentra nada; no rompe nada, solo no hace efecto. */
+app.post('/webhook/mercadopago', async (req, res) => {
+  res.sendStatus(200);
+
+  try {
+    const body = req.body || {};
+    const pagoId = (body.data && body.data.id) || body.id
+      || req.query.id || req.query['data.id'];
+
+    if (!pagoId) return;
+
+    await reconciliarPagoMercadoPago(String(pagoId));
+  } catch (err) {
+    console.error('Error procesando webhook de Mercado Pago:', err.message);
+  }
+});
+
+/* Endpoint de respaldo: las paginas de exito/pendiente lo llaman al
+   cargar para reconciliar el estado del pedido al toque, sin depender
+   unicamente del webhook. A diferencia de Payway, acá partimos solo del
+   pedidoId (no tenemos guardado el id del pago todavía), así que primero
+   hay que buscarlo por external_reference. */
+app.get('/verificar-pago-mercadopago/:pedidoId', async (req, res) => {
+  try {
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, req.params.pedidoId);
+
+    if (!pedido) {
+      return res.json({ ok: true, actualizado: false, estado: null });
+    }
+
+    const pago = await mercadopago.buscarPagoPorReferenciaExterna(req.params.pedidoId);
+    if (!pago) {
+      return res.json({ ok: true, actualizado: false, estado: pedido.estado });
+    }
+
+    const resultado = await reconciliarPagoMercadoPago(pago.id);
+    res.json({ ok: true, actualizado: !!resultado, estado: resultado ? resultado.estado : pedido.estado });
+  } catch (err) {
+    console.error('Error verificando pago de Mercado Pago:', err.message);
     res.status(500).json({ error: err.message || 'No se pudo verificar el pago.' });
   }
 });

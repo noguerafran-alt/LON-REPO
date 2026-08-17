@@ -410,7 +410,7 @@
   .fila-categoria-visible .categoria-interna{
     flex:0 0 140px; font-family:'IBM Plex Mono', monospace; font-size:15px; color:var(--ink-muted);
   }
-  .fila-categoria-visible input[type="text"]{
+  .fila-categoria-visible input[type="text"], .fila-categoria-visible input[type="number"]{
     flex:1; min-width:140px; padding:8px 10px; font-size:15px; border-radius:var(--radius);
     border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
   }
@@ -3194,6 +3194,13 @@
         <button type="button" class="btn-guardar-nombre-visible">Guardar</button>
         <span class="mensaje-nombre-visible" style="font-size:12.5px;"></span>
       </div>
+      <div class="fila-categoria-visible" data-categoria="${escaparHtml(c.categoria)}" style="margin-top:6px;">
+        <span class="categoria-interna">Recargo Mercado Pago</span>
+        <input type="number" class="input-recargo-mp" min="0" max="100" step="1" placeholder="% (ej. 8)" value="${c.recargoMercadoPago ? escaparHtml(String(c.recargoMercadoPago)) : ''}" style="max-width:100px;">
+        <button type="button" class="btn-guardar-recargo-mp">Guardar</button>
+        <span class="mensaje-recargo-mp" style="font-size:12.5px;"></span>
+      </div>
+      <p style="font-size:12px; color:var(--ink-muted); margin:6px 0 0;">Cuánto más caro sale, en %, comprar esta categoría pagando con Mercado Pago (0 o vacío = sin recargo). El cliente ve el aviso antes de confirmar.</p>
     `;
 
     const input = filaCategoriaVisibleActiva.querySelector('.input-nombre-visible');
@@ -3222,6 +3229,41 @@
       } finally {
         boton.disabled = false;
         boton.textContent = 'Guardar';
+      }
+    });
+
+    const inputRecargo = filaCategoriaVisibleActiva.querySelector('.input-recargo-mp');
+    const botonRecargo = filaCategoriaVisibleActiva.querySelector('.btn-guardar-recargo-mp');
+    const mensajeRecargo = filaCategoriaVisibleActiva.querySelector('.mensaje-recargo-mp');
+
+    botonRecargo.addEventListener('click', async () => {
+      const porcentaje = inputRecargo.value.trim() === '' ? 0 : Number(inputRecargo.value);
+      mensajeRecargo.textContent = '';
+      mensajeRecargo.style.color = '';
+      if (!Number.isInteger(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+        mensajeRecargo.textContent = 'Tiene que ser un número entero entre 0 y 100.';
+        mensajeRecargo.style.color = 'var(--stamp-red)';
+        return;
+      }
+      botonRecargo.disabled = true;
+      botonRecargo.textContent = 'Guardando...';
+      try {
+        const res = await fetch('/admin/categoria-recargo-mp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: adminToken, categoria, recargoMercadoPago: porcentaje }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error desconocido');
+        c.recargoMercadoPago = porcentaje;
+        mensajeRecargo.textContent = 'Guardado ✓';
+        mensajeRecargo.style.color = 'var(--stamp-green)';
+      } catch (err) {
+        mensajeRecargo.textContent = `Error: ${err.message}`;
+        mensajeRecargo.style.color = 'var(--stamp-red)';
+      } finally {
+        botonRecargo.disabled = false;
+        botonRecargo.textContent = 'Guardar';
       }
     });
   });

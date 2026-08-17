@@ -636,6 +636,71 @@ async function actualizarNombreVisibleCategoria(sheetsClient, spreadsheetId, she
 }
 
 /**
+ * Lee el % de recargo por Mercado Pago configurado por categoria
+ * (columna J de la hoja Config) y devuelve un mapa { CATEGORIA: pct }.
+ * Igual que getNombresVisiblesCategorias: si una categoria no tiene
+ * recargo cargado, no aparece en el mapa — el llamador la trata como 0.
+ */
+async function getRecargosMercadoPago(sheetsClient, spreadsheetId, sheetName) {
+  const cols = config.COLUMNAS_CONFIG;
+  const ultimaLetra = columnaALetra(cols.recargoMercadoPago);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const mapa = {};
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const categoria = row[cols.categoria] ? String(row[cols.categoria]).trim() : '';
+    if (!categoria) continue;
+    const clave = categoria.toUpperCase();
+    const pct = parseNumeroFormatoArgentino(row[cols.recargoMercadoPago]);
+    if (pct > 0 && !mapa[clave]) mapa[clave] = pct;
+  }
+
+  return mapa;
+}
+
+/**
+ * Actualiza el % de recargo por Mercado Pago de una categoria (columna J
+ * de Config). Mismo mecanismo que actualizarNombreVisibleCategoria: si
+ * ya hay filas con esa categoria las actualiza todas, si no agrega una
+ * fila nueva solo con la categoria y el recargo.
+ */
+async function actualizarRecargoMercadoPago(sheetsClient, spreadsheetId, sheetName, categoria, porcentaje) {
+  const cols = config.COLUMNAS_CONFIG;
+  const ultimaLetra = columnaALetra(cols.recargoMercadoPago);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const categoriaNormalizada = String(categoria).trim().toUpperCase();
+  const letraRecargo = columnaALetra(cols.recargoMercadoPago);
+
+  const filasAActualizar = [];
+  for (let i = 1; i < rows.length; i++) {
+    const categoriaFila = rows[i][cols.categoria] ? String(rows[i][cols.categoria]).trim().toUpperCase() : '';
+    if (categoriaFila === categoriaNormalizada) filasAActualizar.push(i + 1);
+  }
+
+  if (filasAActualizar.length === 0) {
+    const fila = new Array(cols.recargoMercadoPago + 1).fill('');
+    fila[cols.categoria] = String(categoria).trim();
+    fila[cols.recargoMercadoPago] = porcentaje;
+    await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
+    return;
+  }
+
+  await Promise.all(filasAActualizar.map((numeroFila) => sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!${letraRecargo}${numeroFila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[porcentaje]] },
+  })));
+}
+
+/**
  * Convierte a numero un valor de celda que puede venir en formato
  * argentino (punto de miles, coma decimal — ej "4.000,00", asi es como
  * Google Sheets lo devuelve si alguien tipeo el numero directo en la
@@ -2110,6 +2175,8 @@ module.exports = {
   crearCategoriaConfig,
   getNombresVisiblesCategorias,
   actualizarNombreVisibleCategoria,
+  getRecargosMercadoPago,
+  actualizarRecargoMercadoPago,
   getTarifasEnvio,
   actualizarTarifaEnvio,
   getClientes,

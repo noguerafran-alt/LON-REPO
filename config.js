@@ -146,6 +146,11 @@ module.exports = {
     // todavia no esta en esta lista, se agrega tambien aca.
     listaCategoriaDesplegable: 7,  // H
     listaCodigoDesplegable: 8,     // I
+    // % que se le suma al precio de catálogo cuando el cliente elige
+    // pagar con Mercado Pago, solo para productos de esta categoría
+    // (ej. "8" = +8%). Vacío o "0" = sin recargo. Se configura desde
+    // Admin > Catálogo, junto con el nombre visible de la categoría.
+    recargoMercadoPago: 9,          // J
   },
 
   // Columnas de la hoja CODIGOS_BARRA (planilla de PRODUCTOS). Asocia un
@@ -251,6 +256,12 @@ module.exports = {
     // pedido, cargados al escanear el ejemplar antes de que salga del
     // local. Si el pedido es de mas de una unidad, van separados por " | ".
     skuUnidad: 22,           // W
+    // % de recargo por Mercado Pago que se le aplicó al precio de este
+    // pedido (vacío si se pagó por Payway o transferencia, o si la
+    // categoría no tenía recargo configurado). Es solo un registro para
+    // auditoría — el precio/total de arriba YA viene con el recargo
+    // incluido, este campo no hay que sumarlo de nuevo.
+    recargoMercadoPago: 23,  // X
   },
 
   // Todos los estados válidos de un pedido. El servidor valida contra
@@ -417,6 +428,14 @@ module.exports = {
   PAYWAY_WEB_CHECKOUT_URL_PROD: process.env.PAYWAY_WEB_CHECKOUT_URL_PROD || 'https://live.decidir.com/web/checkout',
   PAYWAY_API_BASE_URL_SANDBOX: process.env.PAYWAY_API_BASE_URL_SANDBOX || 'https://developers.decidir.com/api/v2',
   PAYWAY_API_BASE_URL_PROD: process.env.PAYWAY_API_BASE_URL_PROD || 'https://live.decidir.com/api/v2',
+
+  // -- Mercado Pago (Checkout Pro) --
+  // Access Token: Mercado Pago > "Tu negocio" > Credenciales de la
+  // aplicación. Usá el que empieza con "TEST-" mientras probás (te deja
+  // pagar con tarjetas de prueba) y el que empieza con "APP_USR-" para
+  // producción. Nunca se manda al navegador.
+  MP_ACCESS_TOKEN: process.env.MP_ACCESS_TOKEN || '',
+  MP_CURRENCY_ID: process.env.MP_CURRENCY_ID || 'ARS',
 
   // -- Transferencia bancaria directa al alias/CBU del local --
   TRANSFERENCIA_ALIAS: process.env.TRANSFERENCIA_ALIAS || 'RANCHO.FINTA.TRIO',

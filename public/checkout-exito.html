@@ -40,9 +40,13 @@
     const pedido = params.get('pedido');
     if (pedido) {
       document.getElementById('pedidoId').textContent = 'Número de pedido: ' + pedido;
-      // Respaldo por si el webhook de Payway todavía no llegó: consulta el
-      // estado real del pago y actualiza el pedido si hace falta.
+      // Respaldo por si el webhook de Payway o Mercado Pago todavía no
+      // llegó: consulta el estado real del pago y actualiza el pedido si
+      // hace falta. Esta página se usa para los dos medios de pago, así
+      // que se prueban ambos — el que no corresponda simplemente no
+      // encuentra nada y no hace efecto.
       fetch('/verificar-pago-payway/' + encodeURIComponent(pedido)).catch(() => {});
+      fetch('/verificar-pago-mercadopago/' + encodeURIComponent(pedido)).catch(() => {});
     } else {
       document.getElementById('pedidoId').style.display = 'none';
     }

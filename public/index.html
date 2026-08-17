@@ -490,6 +490,10 @@
     margin-top:8px; padding-top:8px; border-top:1px solid var(--line);
   }
   #checkoutBox.modo-carrito #campoCantidadCheckout{ display:none; }
+  /* El carrito (varios productos, quizás de categorías distintas) todavía
+     no calcula el recargo por Mercado Pago — por ahora esa opción queda
+     solo para comprar un producto a la vez. */
+  #checkoutBox.modo-carrito #opcionMercadoPago{ display:none; }
   .metodo-envio-opciones{ display:flex; gap:10px; margin-bottom:6px; }
   .metodo-envio-opciones label{
     flex:1; display:flex; align-items:center; gap:6px; text-transform:none; letter-spacing:0;
@@ -511,6 +515,12 @@
   }
   .metodo-pago-opciones input{ width:auto; margin:0; }
   #panelTransferencia.oculto{ display:none; }
+  .aviso-recargo-mp{
+    margin:-2px 0 10px; padding:8px 10px; font-size:12.5px; line-height:1.4;
+    font-family:'Fraunces', serif; color:var(--stamp-red); background:var(--stamp-red-soft);
+    border:1px solid var(--stamp-red); border-radius:var(--radius);
+  }
+  .aviso-recargo-mp.oculto{ display:none; }
   .panel-transferencia{
     margin-top:10px; padding:12px 14px; border:1px solid var(--accent); border-radius:var(--radius);
     background:var(--accent-soft);
@@ -650,8 +660,11 @@
     <label>Método de pago</label>
     <div class="metodo-pago-opciones">
       <label id="opcionPayway"><input type="radio" name="metodoPago" value="payway"> Tarjeta (Payway)</label>
+      <label id="opcionMercadoPago"><input type="radio" name="metodoPago" value="mercadopago"> Mercado Pago</label>
       <label><input type="radio" name="metodoPago" value="transferencia" checked> Transferencia bancaria</label>
     </div>
+
+    <div id="avisoRecargoMP" class="aviso-recargo-mp oculto"></div>
 
     <div id="panelTransferencia" class="panel-transferencia oculto">
       <p>Transferí el total de la compra a:</p>
@@ -1804,7 +1817,7 @@
   });
 
   /* ------------------------------------------------------------
-   * CHECKOUT (Payway + Transferencia bancaria)
+   * CHECKOUT (Payway + Mercado Pago + Transferencia bancaria)
    * ------------------------------------------------------------ */
   const pantallaCheckout = document.getElementById('pantallaCheckout');
   const checkoutResumen = document.getElementById('checkoutResumen');
@@ -1812,6 +1825,7 @@
   const camposDomicilio = document.getElementById('camposDomicilio');
   const panelTransferencia = document.getElementById('panelTransferencia');
   const transferenciaDatosDiv = document.getElementById('transferenciaDatos');
+  const avisoRecargoMP = document.getElementById('avisoRecargoMP');
   const btnPagarCheckout = document.getElementById('btnPagarCheckout');
   const btnVolverCheckout = document.getElementById('btnVolverCheckout');
   const mensajeCheckout = document.getElementById('mensajeCheckout');
@@ -1835,6 +1849,25 @@
     }
   }
 
+  // El % de recargo por categoría solo es una VISTA PREVIA para avisarle
+  // al cliente antes de pagar — el servidor lo vuelve a calcular solo al
+  // crear el pago real, nunca confía en lo que se muestra acá.
+  let recargosMercadoPagoCache = null;
+  async function getRecargosMercadoPago(){
+    if (recargosMercadoPagoCache) return recargosMercadoPagoCache;
+    try {
+      const res = await fetch('/recargos-mercadopago');
+      const data = await res.json();
+      recargosMercadoPagoCache = data.recargos || {};
+      return recargosMercadoPagoCache;
+    } catch (err) {
+      return {};
+    }
+  }
+  function aplicarRecargoMP(monto, porcentaje){
+    return porcentaje > 0 ? Math.round(monto * (1 + porcentaje / 100)) : monto;
+  }
+
   // Payway todavía no está habilitado (falta confirmar el endpoint de hosted
   // checkout con soporte). Cuando esté listo, cambiar esto a true: el radio
   // de Payway vuelve a mostrarse solo, sin tocar nada más de este bloque.
@@ -1846,14 +1879,19 @@
   }
 
   function metodoPagoSeleccionado(){
-    if (!PAYWAY_HABILITADO) return 'transferencia';
     const el = document.querySelector('input[name="metodoPago"]:checked');
-    return el ? el.value : 'transferencia';
+    const valor = el ? el.value : 'transferencia';
+    // Red de seguridad: si por lo que sea quedara elegido Payway
+    // mientras está deshabilitado, se trata como transferencia.
+    if (valor === 'payway' && !PAYWAY_HABILITADO) return 'transferencia';
+    return valor;
   }
 
   function calcularTotalCheckout(){
     // El envío NO se suma acá: es solo un estimado informativo, el costo
-    // final del envío se coordina aparte (por WhatsApp).
+    // final del envío se coordina aparte (por WhatsApp). Tampoco suma el
+    // recargo de Mercado Pago — eso lo hace aplicarRecargoMP() aparte,
+    // porque esta función también la usa la transferencia (sin recargo).
     if (modoCheckoutCarrito) {
       return obtenerCarrito().reduce((acc, it) => acc + it.precio * it.cantidad, 0);
     }
@@ -1864,9 +1902,28 @@
   }
 
   async function actualizarPanelPago(){
-    const esTransferencia = metodoPagoSeleccionado() === 'transferencia';
+    const metodo = metodoPagoSeleccionado();
+    const esTransferencia = metodo === 'transferencia';
+    const esMercadoPago = metodo === 'mercadopago';
     panelTransferencia.classList.toggle('oculto', !esTransferencia);
-    btnPagarCheckout.textContent = esTransferencia ? 'Confirmar pedido (transferencia)' : 'Pagar con Payway';
+
+    if (esMercadoPago && !modoCheckoutCarrito && productoEnCheckout) {
+      const recargos = await getRecargosMercadoPago();
+      const categoria = String(productoEnCheckout.categoria || '').trim().toUpperCase();
+      const porcentaje = recargos[categoria] || 0;
+      const totalBase = calcularTotalCheckout();
+      const totalConRecargo = aplicarRecargoMP(totalBase, porcentaje);
+      avisoRecargoMP.classList.toggle('oculto', porcentaje <= 0);
+      if (porcentaje > 0) {
+        avisoRecargoMP.textContent = `El precio sube ${porcentaje}% si pagás con Mercado Pago: $${totalConRecargo} en vez de $${totalBase}.`;
+      }
+    } else {
+      avisoRecargoMP.classList.add('oculto');
+    }
+
+    btnPagarCheckout.textContent = esTransferencia
+      ? 'Confirmar pedido (transferencia)'
+      : (esMercadoPago ? 'Pagar con Mercado Pago' : 'Pagar con Payway');
 
     if (!esTransferencia) return;
 
@@ -1972,13 +2029,13 @@
       const esDomicilio = document.querySelector('input[name="metodoEnvio"]:checked').value === 'Envio a domicilio';
       camposDomicilio.classList.toggle('oculto', !esDomicilio);
       actualizarEnvioEstimado();
-      if (metodoPagoSeleccionado() === 'transferencia') actualizarPanelPago();
+      if (metodoPagoSeleccionado() !== 'payway') actualizarPanelPago();
     });
   });
 
   selectProvinciaCheckout.addEventListener('change', () => {
     actualizarEnvioEstimado();
-    if (metodoPagoSeleccionado() === 'transferencia') actualizarPanelPago();
+    if (metodoPagoSeleccionado() !== 'payway') actualizarPanelPago();
   });
 
   document.querySelectorAll('input[name="metodoPago"]').forEach((radio) => {
@@ -1992,7 +2049,7 @@
         inputCantidadCheckout.value = stockDisponible || 1;
       }
     }
-    if (metodoPagoSeleccionado() === 'transferencia') actualizarPanelPago();
+    if (metodoPagoSeleccionado() !== 'payway') actualizarPanelPago();
   });
 
   btnPagarCheckout.addEventListener('click', async () => {
@@ -2048,7 +2105,9 @@
     }
 
     btnPagarCheckout.disabled = true;
-    btnPagarCheckout.textContent = metodoPago === 'payway' ? 'Redirigiendo a Payway...' : 'Confirmando pedido...';
+    btnPagarCheckout.textContent = metodoPago === 'payway'
+      ? 'Redirigiendo a Payway...'
+      : (metodoPago === 'mercadopago' ? 'Redirigiendo a Mercado Pago...' : 'Confirmando pedido...');
 
     try {
       const res = await fetch('/crear-pago', {
@@ -2064,7 +2123,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
-      if (metodoPago === 'payway') {
+      if (metodoPago === 'payway' || metodoPago === 'mercadopago') {
         window.location.href = data.redirectUrl;
         return;
       }
@@ -2079,7 +2138,9 @@
       mensajeCheckout.className = 'checkout-mensaje error';
       mensajeCheckout.textContent = `No se pudo iniciar el pago: ${err.message}`;
       btnPagarCheckout.disabled = false;
-      btnPagarCheckout.textContent = metodoPago === 'payway' ? 'Pagar con Payway' : 'Confirmar pedido (transferencia)';
+      btnPagarCheckout.textContent = metodoPago === 'payway'
+        ? 'Pagar con Payway'
+        : (metodoPago === 'mercadopago' ? 'Pagar con Mercado Pago' : 'Confirmar pedido (transferencia)');
     }
   });
 
