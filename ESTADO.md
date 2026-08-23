@@ -36,10 +36,12 @@
   - **Cierre de caja** (nivel 2 exclusivo): foto del ticket del POS del
     local → OCR en el navegador (Tesseract.js) busca el **total
     vendido** → se compara contra el total que la app tiene escaneado
-    ese día (VENTAS) → se guarda en hoja `CIERRE_CAJA`. **Ojo:
-    comparación solo por el total, sin desglose por categoría** —
-    pedido explícito del usuario el 2026-08-23 después de haberse
-    implementado primero con desglose (se sacó).
+    ese día (VENTAS) → se guarda en hoja `CIERRE_CAJA`. La
+    **comparación** sigue siendo solo por el total. Además se **muestra
+    en pantalla** el desglose por categoría del ticket (CAFE, BAKERY,
+    GENERICO...) — informativo, no se compara ni se guarda. Ver
+    “Cierre de caja: categorías del ticket” más abajo para la historia
+    de esta decisión, que fue y volvió.
   - **Usuarios** (nivel 2 exclusivo): alta/baja/nivel de cuentas admin.
 - **Bots/integraciones**: chatbot de WhatsApp (Cloud API), mail de
   confirmación de transferencia (Gmail SMTP), SEO dinámico por producto
@@ -66,12 +68,17 @@ Escáner, Diferencia, Vendedor — A a F)**.
 - **Mercado Pago / Payway en el carrito**: no implementado, solo
   transferencia. Si se pide, hay que resolver el recargo MP cuando el
   carrito tiene productos de categorías distintas (cada una con su %).
-- **Cierre de caja**: el OCR (`buscarTotalEnTicket` en `admin.html`)
-  busca la línea con la palabra "total" de mayor monto. No probado
-  contra fotos reales de tickets arrugados en un dispositivo real — el
-  usuario tiene que probarlo y avisar si el reconocimiento falla
-  seguido (en ese caso, conviene bajar a "siempre pedir que se escriba
-  a mano" en vez de confiar en el OCR).
+- **Cierre de caja / OCR**: probándolo en el celular el 2026-08-23 **no
+  reconoció el total** ("No se encontró el total en la foto"). Se
+  reforzó en tres frentes (ver sección propia más abajo), pero **sigue
+  sin haber una prueba exitosa contra un ticket real**: el usuario tiene
+  que volver a probarlo. Si aún así falla seguido, el camino no es
+  seguir ajustando el OCR sino apoyarse en la lista de montos
+  candidatos (que ya no requiere tipear) o pedir el total a mano
+  directamente. **Falta que el usuario diga qué número exacto vio en
+  pantalla** el 2026-08-23 (reportó “$1000 menos”): si fue 445.800 ya
+  queda cubierto por la corrección con la suma de categorías; si fue
+  otro, hay algo más que mirar.
 - **`README.md` desactualizado**: todavía describe la v1 (solo escáner
   QR → Sheets). No se tocó esta sesión — si se necesita para onboarding
   de alguien nuevo, reescribir.
@@ -80,6 +87,111 @@ Escáner, Diferencia, Vendedor — A a F)**.
   vuelve a haber, revisar antes de asumir que es indispensable
   actualizar (algunas majors de `googleapis` no tocan la API de Sheets
   que usa esta app).
+
+## Cierre de caja: por qué el OCR fallaba (2026-08-23)
+
+La primera versión pasaba la foto cruda a Tesseract y buscaba con un
+solo regex la línea que dijera exactamente "total". Contra un ticket
+térmico real eso casi no funciona. Se cambió a:
+
+1. **Preprocesado en canvas antes del OCR** (`prepararFotoTicket`): la
+   foto se escala a ~1600px de ancho (Tesseract necesita letra grande;
+   la foto de celular trae el ticket chico en el medio), se pasa a
+   grises y se le estira el contraste al rango real de la imagen. Se
+   hacen **dos pasadas**: primero solo grises, y si no aparece el total,
+   una segunda binarizada en blanco y negro con umbral sacado del
+   promedio — es la que salva los tickets impresos flojos. Sigue siendo
+   todo local, la foto nunca sale del navegador.
+2. **Búsqueda del total tolerante a errores de OCR**
+   (`buscarTotalEnTicket`): "TOTAL" se reconoce también cuando sale
+   T0TAL / TQTAL / IOTAL / T07AL (`REGEX_PALABRA_TOTAL`); si la etiqueta
+   quedó sola porque el OCR cortó la línea, se busca el importe en la
+   **línea siguiente**; se prefieren las etiquetas fuertes ("total
+   vendido", "total general", "venta total") por sobre el simple mayor,
+   así un SUBTOTAL grande no gana; y se descartan las líneas de
+   "cantidad total de items", IVA, descuentos y anulados.
+3. **Salida siempre útil aunque el OCR falle**: debajo del botón se
+   listan los **montos candidatos** encontrados en el ticket (>= $1000,
+   de mayor a menor, con la línea de origen en el `title`) para tocar el
+   correcto sin tipear, y un `<details>` **"Ver el texto que se leyó de
+   la foto"**. Ese último es el que permite distinguir "la foto salió
+   ilegible" de "se leyó bien pero no se encontró la palabra total" —
+   sin eso no hay forma de saber por qué falló.
+
+**Bug de plata que salió de paso**: el parser viejo borraba todos los
+puntos y cambiaba la coma por punto. Con `446.800,00` andaba, pero
+cuando el OCR lee la coma decimal como punto (`446.800.00`, pasa
+seguido) devolvía **44.680.000** — 100 veces el total, y se guardaba así
+en `CIERRE_CAJA`. El `parseMontoOcr` nuevo decide cuál separador es el
+decimal por la cantidad de dígitos que le siguen (3 → miles, 1 o 2 →
+decimal), así que `446.800,00`, `446.800.00`, `446,800` y `446.800`
+dan todos 446800. Hay 12 casos de prueba de esta lógica corridos a
+mano con Node (no quedaron en el repo: no hay runner de tests todavía).
+
+## Cierre de caja: categorías del ticket (2026-08-23, segunda vuelta)
+
+El desglose por categoría se había implementado, se **sacó** ese mismo
+día por pedido del usuario, y se volvió a pedir unas horas después. No
+es una contradicción: lo que se sacó fue **comparar** las categorías del
+ticket contra las de LON (no coinciden, no tiene sentido); lo que se
+pidió ahora es solo **verlas en pantalla** al escanear, además del
+total. La comparación y lo que se guarda en `CIERRE_CAJA` no cambiaron
+— siguen siendo las 6 columnas A-F, solo el total.
+
+**Cómo se detecta cuál línea es una categoría.** En el papel la
+categoría está en negrita y más grande (`32 CAFE  $ 187.300,00`) y sus
+productos van indentados debajo. El OCR no ve negrita ni tamaño, y la
+sangría se pierde seguido, así que no se puede usar el aspecto. Lo que
+**siempre** se cumple es que los productos de una categoría suman el
+monto de la categoría: 32 CAFE = 187.300 = 24.800 + 52.200 + 60.000 +
+14.400 + 23.000 + 6.400 + 6.500. `extraerCategoriasDelTicket` recorre
+los renglones y toma como categoría la que cierra con los siguientes
+(`cuantosProductosCierran`); si un renglón no cierra por un error de
+lectura, cae a la heurística de “nombre todo en MAYÚSCULAS y sin
+sangría”. Esto además resuelve el caso molesto de los productos que
+también están en mayúsculas (`1 NUEZ C/ CHOCOLATE`, `1 VELA HARROW`):
+no se cuentan como categoría porque ya fueron consumidos como producto
+de la de arriba.
+
+Detalles que importan: se lee solo la sección “DETALLE DE PRODUCTOS
+DESPACHADOS” y se corta en “OTROS MOVIMIENTOS”, para no sumar los
+**retiros de caja** (`Total Retiros: $ -140.000,00`) como si fueran
+ventas. `DESCUENTOS` viene en negativo y se respeta el signo — es lo que
+hace que la suma cierre. El símbolo `$` es opcional en el regex del
+renglón porque el OCR lo lee como `S` o `5`; lo que ancla el renglón son
+los dos decimales del final.
+
+**Fila de control “Suma de categorías”**: se muestra la suma y se avisa
+en rojo si no coincide con el total vendido. No es decoración — es la
+forma de darse cuenta de que el OCR leyó mal un renglón, que es
+precisamente el tipo de error que si no se ve termina guardado en la
+hoja. Probado contra la transcripción del ticket real del 2026-08-23:
+detecta las 12 categorías, ninguna de más, y la suma da 446.800 = total
+vendido.
+
+**Corrección del total con la suma (el caso “me restó $1000”).** El
+2026-08-23 el usuario reportó que la app mostró en pantalla un total
+distinto (menor) al del ticket. No es un bug del código: el camino
+input → `POST /admin/cierre-caja` → hoja manda el número tal cual, sin
+transformarlo. Es Tesseract leyendo mal **un dígito** (`446.800` →
+`445.800`), y eso no se arregla con regex.
+
+Lo que sí se puede hacer es detectarlo, porque el ticket trae la
+información dos veces. El monto de una categoría que **cerró con sus
+productos** está validado por dos lecturas independientes del papel; el
+total vendido se leyó una sola vez. Así que cuando todas las categorías
+con monto positivo cerraron (`sumaConfiable`), la suma es más confiable
+que el total leído y aparece un botón **“Usar $X (suma de
+categorías)”**. Es un botón y no una corrección automática a propósito:
+el número termina en una planilla de plata y el admin tiene que poder
+mirar el papel antes. Si el total no se encontró en la foto pero las
+categorías cuadran, la suma se carga sola en el input (avisando).
+
+Ojo con la asimetría: si el dígito mal leído cae en una **categoría** y
+no en el total, esa categoría no cierra con sus productos,
+`sumaConfiable` da falso y solo se avisa — no se ofrece corregir nada,
+que es lo correcto. Verificado con Node simulando el total en 445.800:
+avisa y ofrece corregir a 446.800.
 
 ## Bugs corregidos recientemente que vale la pena recordar
 
@@ -104,8 +216,10 @@ Escáner, Diferencia, Vendedor — A a F)**.
 
 - El local vende también por un **POS de café/gastronomía separado**
   (tickets con categorías tipo CAFE, BAKERY, GENERICO — no son las
-  categorías de LON). El Cierre de Caja compara el TOTAL general de ese
-  ticket contra el total de VENTAS, nunca por categoría.
+  categorías de LON). El Cierre de Caja **compara** el TOTAL general de
+  ese ticket contra el total de VENTAS, nunca por categoría. El desglose
+  por categoría sí se **muestra** en pantalla, pero es una lectura del
+  papel: no se cruza con nada nuestro ni se guarda.
 - Todas las columnas nuevas de Sheets se agregan **al final** de la
   hoja correspondiente (nunca insertando en el medio), para no correr
   las columnas de datos ya cargados. Los encabezados de fila 1 los
