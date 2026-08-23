@@ -2815,13 +2815,13 @@ app.post('/admin/pedidos/registrar-unidades', limiteAdmin, async (req, res) => {
 /* ============================================================
  *  SECCION ADMIN: CIERRE DE CAJA (solo nivel 2)
  * ============================================================
- * Compara el total del ticket diario del POS del local (el admin le saca
- * una foto, la reconoce con OCR del lado del navegador, revisa/corrige a
- * mano y confirma) contra el total que la app tiene registrado como
- * vendido ese mismo dia (VENTAS marcadas "Vendido"). Las categorias del
- * detalle son las del ticket del POS del local — no tienen por que
- * coincidir con las categorias internas de LON (Libros, Velas, etc), son
- * dos sistemas distintos. Exclusivo de nivel 2.
+ * Compara DOS NUMEROS: el total vendido segun el ticket diario del POS
+ * del local (el admin le saca una foto, se reconoce con OCR del lado del
+ * navegador, y lo revisa/corrige antes de confirmar) contra el total que
+ * la app tiene registrado como vendido ese mismo dia (VENTAS marcadas
+ * "Vendido"). Nada se compara por categoria: las categorias del ticket
+ * son las del POS del local y no tienen por que coincidir con las
+ * categorias internas de LON. Exclusivo de nivel 2.
  * ============================================================ */
 
 /* Total que la app tiene escaneado HOY, para cruzar contra el ticket. */
@@ -2849,26 +2849,13 @@ app.get('/admin/total-ventas-hoy', limiteAdmin, async (req, res) => {
    recalcular del lado del servidor. */
 app.post('/admin/cierre-caja', limiteAdmin, async (req, res) => {
   try {
-    const { totalTicket, categorias } = req.body;
+    const { totalTicket } = req.body;
     const sesion = requiereNivel2(req, res);
     if (!sesion) return;
 
     const totalTicketNum = Number(totalTicket);
     if (!Number.isFinite(totalTicketNum) || totalTicketNum < 0) {
       return res.status(400).json({ error: 'El total del ticket tiene que ser un número.' });
-    }
-    if (!Array.isArray(categorias)) {
-      return res.status(400).json({ error: 'Falta el detalle de categorías del ticket.' });
-    }
-
-    const detalleCategorias = [];
-    for (const c of categorias) {
-      const categoria = sanitizarTexto(c && c.categoria, 80);
-      const monto = Number(c && c.monto);
-      if (!categoria || !Number.isFinite(monto)) {
-        return res.status(400).json({ error: 'Cada categoría del ticket necesita un nombre y un monto válido.' });
-      }
-      detalleCategorias.push({ categoria, monto });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
@@ -2881,7 +2868,6 @@ app.post('/admin/cierre-caja', limiteAdmin, async (req, res) => {
       totalTicket: totalTicketNum,
       totalEscaner,
       diferencia,
-      detalleCategorias,
       vendedor: sesion.email,
     });
 

@@ -2191,9 +2191,9 @@ async function getTotalVentasHoy(sheetsClient, spreadsheetId, sheetName, fecha) 
 
 /**
  * Guarda un cierre de caja (hoja CIERRE_CAJA) y devuelve la fila
- * guardada. detalleCategorias es un array [{categoria, monto}] (las
- * categorias del ticket del POS del local, no las de LON) — se guarda
- * como JSON en una sola celda.
+ * guardada: la comparacion es solo entre dos numeros, el total del
+ * ticket del POS del local y el total que la app tiene escaneado ese
+ * mismo dia.
  */
 async function registrarCierreCaja(sheetsClient, spreadsheetId, sheetName, datos) {
   const cols = config.COLUMNAS_CIERRE_CAJA;
@@ -2203,7 +2203,6 @@ async function registrarCierreCaja(sheetsClient, spreadsheetId, sheetName, datos
   fila[cols.totalTicket] = datos.totalTicket;
   fila[cols.totalEscaner] = datos.totalEscaner;
   fila[cols.diferencia] = datos.diferencia;
-  fila[cols.detalleCategorias] = JSON.stringify(datos.detalleCategorias || []);
   fila[cols.vendedor] = datos.vendedor || '';
 
   await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
@@ -2227,15 +2226,12 @@ async function getHistorialCierreCaja(sheetsClient, spreadsheetId, sheetName, li
     const fila = rows[i];
     const fecha = fila[cols.fecha] ? String(fila[cols.fecha]).trim() : '';
     if (!fecha) continue;
-    let detalleCategorias = [];
-    try { detalleCategorias = JSON.parse(fila[cols.detalleCategorias] || '[]'); } catch (e) { detalleCategorias = []; }
     cierres.push({
       fecha,
       hora: fila[cols.hora] || '',
       totalTicket: parseNumeroFormatoArgentino(fila[cols.totalTicket]),
       totalEscaner: parseNumeroFormatoArgentino(fila[cols.totalEscaner]),
       diferencia: parseNumeroFormatoArgentino(fila[cols.diferencia]),
-      detalleCategorias,
       vendedor: fila[cols.vendedor] || '',
     });
   }

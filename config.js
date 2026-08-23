@@ -210,15 +210,10 @@ module.exports = {
   COLUMNAS_CIERRE_CAJA: {
     fecha: 0,               // A
     hora: 1,                // B
-    totalTicket: 2,          // C: suma de las categorias leidas del ticket (foto)
+    totalTicket: 2,          // C: total vendido segun el ticket del POS del local (leido por foto)
     totalEscaner: 3,          // D: total de VENTAS marcadas "Vendido" ese mismo dia
     diferencia: 4,            // E: totalTicket - totalEscaner
-    // JSON con el detalle por categoria del ticket, ej:
-    // [{"categoria":"CAFE","monto":187300},{"categoria":"BAKERY","monto":7200}]
-    // Son las categorias del POS del local, no las categorias internas
-    // de LON — se guardan tal cual las reconocio/edito el admin.
-    detalleCategorias: 5,     // F
-    vendedor: 6,              // G: email de la cuenta admin que guardo el cierre
+    vendedor: 5,              // F: email de la cuenta admin que guardo el cierre
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca

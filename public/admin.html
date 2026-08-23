@@ -807,30 +807,29 @@
   <div id="panelCierreCaja" style="display:none; padding:16px 24px 40px;">
     <div class="campo">
       <label>Cierre de caja diario</label>
-      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 10px;">Sacá una foto del ticket de cierre del POS del local (el que suma todo lo vendido en el día por categoría). El reconocimiento de texto arma la lista solo — revisala y corregí lo que haga falta antes de guardar, nunca se guarda sin que la mires.</p>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 10px;">Sacá una foto del ticket de cierre del POS del local. Se busca el <strong>total vendido</strong> del ticket y se compara contra el total que la app tiene escaneado hoy. Revisá el número antes de guardar (o escribilo a mano si la foto salió borrosa).</p>
       <button type="button" class="btn-generar" id="btnFotoTicketCierre">📷 Sacar foto del ticket</button>
       <input type="file" id="inputFotoTicketCierre" accept="image/*" capture="environment" style="display:none;">
       <p id="mensajeOcrCierre" style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0; min-height:1em;"></p>
     </div>
 
-    <div class="campo" id="boxCategoriasCierre" style="display:none;">
-      <label>Categorías del ticket (las del POS del local, no las de LON)</label>
-      <div id="listaCategoriasCierre"></div>
-      <button type="button" class="acceso-admin-link" id="btnAgregarCategoriaCierre" style="text-align:left; margin-top:8px;">+ Agregar categoría a mano</button>
+    <div class="campo">
+      <label for="inputTotalTicketCierre">Total vendido según el ticket</label>
+      <input type="number" id="inputTotalTicketCierre" min="0" step="1" placeholder="Ej: 446800">
     </div>
 
-    <div class="campo" id="boxResumenCierre" style="display:none;">
+    <div class="campo">
       <div class="fila-resumen-cierre">
         <span>Total del ticket</span>
         <strong id="totalTicketCierre">$0</strong>
       </div>
       <div class="fila-resumen-cierre">
         <span>Total escaneado hoy (app)</span>
-        <strong id="totalEscanerCierre">$0</strong>
+        <strong id="totalEscanerCierre">Cargando...</strong>
       </div>
       <div class="fila-resumen-cierre" id="filaDiferenciaCierre">
         <span>Diferencia</span>
-        <strong id="diferenciaCierre">$0</strong>
+        <strong id="diferenciaCierre">—</strong>
       </div>
       <button type="button" class="btn-generar" id="btnGuardarCierre" style="margin-top:10px;">Guardar cierre de caja</button>
       <p id="mensajeGuardarCierre" style="font-size:12.5px; margin:8px 0 0; min-height:1em;"></p>
@@ -4191,18 +4190,19 @@
    *  PANEL: CIERRE DE CAJA (solo nivel 2)
    * ============================================================
    * Foto del ticket -> reconocimiento de texto EN EL NAVEGADOR
-   * (Tesseract.js, la foto nunca se sube a ningún servidor) -> lista
-   * editable de categoría+monto -> se cruza contra el total que la app
-   * tiene escaneado hoy -> se guarda. Las categorías son las del ticket
-   * del POS del local, no las categorías internas de LON.
+   * (Tesseract.js, la foto nunca se sube a ningún servidor) -> se busca
+   * el TOTAL VENDIDO del ticket -> se compara contra el total que la app
+   * tiene escaneado hoy -> se guarda.
+   *
+   * La comparación es solo entre esos dos números. Las categorías del
+   * ticket (CAFE, BAKERY, GENERICO...) son del POS del local y no tienen
+   * por qué coincidir con las categorías internas de LON, así que no se
+   * cruzan ni se guardan.
    * ============================================================ */
   const btnFotoTicketCierre = document.getElementById('btnFotoTicketCierre');
   const inputFotoTicketCierre = document.getElementById('inputFotoTicketCierre');
   const mensajeOcrCierre = document.getElementById('mensajeOcrCierre');
-  const boxCategoriasCierre = document.getElementById('boxCategoriasCierre');
-  const listaCategoriasCierre = document.getElementById('listaCategoriasCierre');
-  const btnAgregarCategoriaCierre = document.getElementById('btnAgregarCategoriaCierre');
-  const boxResumenCierre = document.getElementById('boxResumenCierre');
+  const inputTotalTicketCierre = document.getElementById('inputTotalTicketCierre');
   const totalTicketCierreEl = document.getElementById('totalTicketCierre');
   const totalEscanerCierreEl = document.getElementById('totalEscanerCierre');
   const diferenciaCierreEl = document.getElementById('diferenciaCierre');
@@ -4211,7 +4211,6 @@
   const mensajeGuardarCierre = document.getElementById('mensajeGuardarCierre');
   const listaHistorialCierre = document.getElementById('listaHistorialCierre');
 
-  let categoriasCierre = []; // [{categoria, monto}]
   let totalEscanerHoyCache = null;
 
   btnFotoTicketCierre.addEventListener('click', () => {
@@ -4226,24 +4225,20 @@
     btnFotoTicketCierre.disabled = true;
     mensajeOcrCierre.style.color = 'var(--ink-muted)';
     mensajeOcrCierre.textContent = 'Leyendo el ticket... puede tardar unos segundos.';
-    boxCategoriasCierre.style.display = 'none';
-    boxResumenCierre.style.display = 'none';
 
     try {
       const resultado = await Tesseract.recognize(archivo, 'spa');
-      categoriasCierre = parsearCategoriasTicket(resultado.data.text);
+      const total = buscarTotalEnTicket(resultado.data.text);
 
-      if (categoriasCierre.length === 0) {
+      if (total === null) {
         mensajeOcrCierre.style.color = 'var(--stamp-red)';
-        mensajeOcrCierre.textContent = 'No se reconoció ninguna categoría del ticket. Agregalas a mano con el botón de abajo.';
+        mensajeOcrCierre.textContent = 'No se encontró el total en la foto. Escribilo a mano abajo.';
       } else {
+        inputTotalTicketCierre.value = total;
         mensajeOcrCierre.style.color = 'var(--stamp-green)';
-        mensajeOcrCierre.textContent = `Se reconocieron ${categoriasCierre.length} categoría(s) — revisalas y corregí lo que haga falta antes de guardar.`;
+        mensajeOcrCierre.textContent = `Total leído: $${total.toLocaleString('es-AR')} — revisalo contra el ticket antes de guardar.`;
       }
-
-      boxCategoriasCierre.style.display = 'block';
-      await cargarTotalEscanerHoy();
-      renderizarCategoriasCierre();
+      actualizarResumenCierre();
     } catch (err) {
       mensajeOcrCierre.style.color = 'var(--stamp-red)';
       mensajeOcrCierre.textContent = `No se pudo leer la foto: ${err.message}`;
@@ -4252,74 +4247,37 @@
     }
   });
 
-  /* Junta líneas del tipo "32 CAFE $187.300,00" o "2 GENERICO 113.900,00"
-     (cantidad, nombre de categoría en mayúsculas, monto en formato
-     argentino) — son las líneas "resumen" del ticket, no los sub-ítems
-     indentados debajo de cada una.
-     Los sub-ítems se descartan solos porque van en minúscula ("9 Cafe
-     Mediano"), PERO los que están todos en mayúscula igual pasan el
-     filtro y aparecen como una categoría de más (ej. "1 VELA HARROW"
-     debajo de "LOUIS & LEWIS", que duplicaría ese monto). No se puede
-     distinguir por indentación: el OCR no la conserva de forma
-     confiable. Por eso la lista SIEMPRE queda editable — el admin borra
-     con la × lo que sobre antes de guardar. */
-  function parsearCategoriasTicket(texto){
+  /* Busca la línea del total en el texto reconocido: "Total vendido:
+     $ 446.800,00" y variantes ("Total:", "TOTAL VENDIDO"). Si aparece
+     más de una (el ticket tiene un "Total:" arriba y el "Total vendido:"
+     del detalle), se queda con el MAYOR: el total vendido del día nunca
+     puede ser menor que un subtotal parcial. Devuelve null si no
+     encuentra ninguna — ahí el admin lo escribe a mano. */
+  function buscarTotalEnTicket(texto){
     const lineas = String(texto || '').split('\n');
-    const regexLinea = /^\s*\d+\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ &]+?)\s+\$?\s*([\d.,]+)\s*$/;
-    const categorias = [];
+    const regexTotal = /total[^\d$]*\$?\s*([\d.,]+)/i;
+    let mayor = null;
 
     for (const linea of lineas) {
-      const m = linea.match(regexLinea);
+      if (!/total/i.test(linea)) continue;
+      const m = linea.match(regexTotal);
       if (!m) continue;
-      const categoria = m[1].trim();
-      const monto = parseNumeroFormatoArgentinoCliente(m[2]);
-      if (!categoria || !monto) continue;
-      categorias.push({ categoria, monto });
+      const monto = parseNumeroFormatoArgentinoCliente(m[1]);
+      if (!monto || monto <= 0) continue;
+      if (mayor === null || monto > mayor) mayor = monto;
     }
-    return categorias;
+    return mayor;
   }
 
   // Mismo criterio que parseNumeroFormatoArgentino() del servidor: punto
-  // de miles, coma decimal ("187.300,00" -> 187300).
+  // de miles, coma decimal ("446.800,00" -> 446800).
   function parseNumeroFormatoArgentinoCliente(valor){
     const normalizado = String(valor).trim().replace(/\./g, '').replace(',', '.');
     const numero = Number(normalizado);
     return Number.isFinite(numero) ? numero : 0;
   }
 
-  function renderizarCategoriasCierre(){
-    listaCategoriasCierre.innerHTML = categoriasCierre.map((c, i) => `
-      <div class="fila-categoria-cierre" data-indice="${i}">
-        <input type="text" class="input-categoria-nombre" value="${escaparHtml(c.categoria)}">
-        <input type="number" class="input-categoria-monto" min="0" step="1" value="${c.monto}">
-        <button type="button" class="quitar" title="Quitar">×</button>
-      </div>
-    `).join('');
-
-    listaCategoriasCierre.querySelectorAll('.fila-categoria-cierre').forEach((fila) => {
-      const indice = Number(fila.getAttribute('data-indice'));
-      fila.querySelector('.input-categoria-nombre').addEventListener('input', (e) => {
-        categoriasCierre[indice].categoria = e.target.value;
-      });
-      fila.querySelector('.input-categoria-monto').addEventListener('input', (e) => {
-        categoriasCierre[indice].monto = Number(e.target.value) || 0;
-        actualizarResumenCierre();
-      });
-      fila.querySelector('.quitar').addEventListener('click', () => {
-        categoriasCierre.splice(indice, 1);
-        renderizarCategoriasCierre();
-      });
-    });
-
-    actualizarResumenCierre();
-  }
-
-  btnAgregarCategoriaCierre.addEventListener('click', () => {
-    categoriasCierre.push({ categoria: '', monto: 0 });
-    boxCategoriasCierre.style.display = 'block';
-    boxResumenCierre.style.display = 'block';
-    renderizarCategoriasCierre();
-  });
+  inputTotalTicketCierre.addEventListener('input', actualizarResumenCierre);
 
   async function cargarTotalEscanerHoy(){
     try {
@@ -4330,15 +4288,15 @@
     } catch (err) {
       totalEscanerHoyCache = null;
     }
+    actualizarResumenCierre();
   }
 
   function actualizarResumenCierre(){
-    const totalTicket = categoriasCierre.reduce((acc, c) => acc + (Number(c.monto) || 0), 0);
-    boxResumenCierre.style.display = 'block';
+    const totalTicket = Number(inputTotalTicketCierre.value) || 0;
     totalTicketCierreEl.textContent = `$${totalTicket.toLocaleString('es-AR')}`;
 
     if (totalEscanerHoyCache === null) {
-      totalEscanerCierreEl.textContent = 'Cargando...';
+      totalEscanerCierreEl.textContent = 'No disponible';
       diferenciaCierreEl.textContent = '—';
       filaDiferenciaCierre.className = 'fila-resumen-cierre';
       return;
@@ -4351,13 +4309,12 @@
   }
 
   btnGuardarCierre.addEventListener('click', async () => {
-    const categoriasValidas = categoriasCierre.filter((c) => c.categoria.trim() && Number(c.monto) >= 0);
-    if (categoriasValidas.length === 0) {
+    const totalTicket = Number(inputTotalTicketCierre.value);
+    if (!Number.isFinite(totalTicket) || totalTicket <= 0) {
       mensajeGuardarCierre.style.color = 'var(--stamp-red)';
-      mensajeGuardarCierre.textContent = 'Agregá al menos una categoría con nombre y monto antes de guardar.';
+      mensajeGuardarCierre.textContent = 'Cargá el total del ticket antes de guardar.';
       return;
     }
-    const totalTicket = categoriasValidas.reduce((acc, c) => acc + Number(c.monto), 0);
 
     btnGuardarCierre.disabled = true;
     btnGuardarCierre.textContent = 'Guardando...';
@@ -4366,21 +4323,16 @@
       const res = await fetch('/admin/cierre-caja', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: adminToken,
-          totalTicket,
-          categorias: categoriasValidas.map((c) => ({ categoria: c.categoria.trim(), monto: Number(c.monto) })),
-        }),
+        body: JSON.stringify({ token: adminToken, totalTicket }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
       mensajeGuardarCierre.style.color = 'var(--stamp-green)';
       mensajeGuardarCierre.textContent = 'Cierre de caja guardado ✓';
-      categoriasCierre = [];
-      boxCategoriasCierre.style.display = 'none';
-      boxResumenCierre.style.display = 'none';
+      inputTotalTicketCierre.value = '';
       mensajeOcrCierre.textContent = '';
+      actualizarResumenCierre();
       cargarHistorialCierreCaja();
     } catch (err) {
       mensajeGuardarCierre.style.color = 'var(--stamp-red)';
@@ -4392,6 +4344,7 @@
   });
 
   async function cargarHistorialCierreCaja(){
+    cargarTotalEscanerHoy();
     listaHistorialCierre.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Cargando...</div>';
     try {
       const res = await fetch(`/admin/cierre-caja/historial?token=${encodeURIComponent(adminToken)}`);
@@ -4406,9 +4359,6 @@
 
       listaHistorialCierre.innerHTML = cierres.map((c) => {
         const diferenciaOk = Math.abs(Number(c.diferencia) || 0) < 1;
-        const detalle = (c.detalleCategorias || [])
-          .map((d) => `${escaparHtml(d.categoria)}: $${(Number(d.monto) || 0).toLocaleString('es-AR')}`)
-          .join(' · ');
         return `
           <div class="item-producto" style="cursor:default; align-items:flex-start;">
             <div class="lista-producto-info">
@@ -4417,7 +4367,6 @@
                 Ticket $${(Number(c.totalTicket) || 0).toLocaleString('es-AR')} · Escáner $${(Number(c.totalEscaner) || 0).toLocaleString('es-AR')} ·
                 <span style="color:${diferenciaOk ? 'var(--stamp-green)' : 'var(--stamp-red)'};">Dif. $${(Number(c.diferencia) || 0).toLocaleString('es-AR')}</span>
               </span>
-              <span class="lista-producto-meta" style="display:block; margin-top:2px;">${detalle}</span>
             </div>
           </div>
         `;
