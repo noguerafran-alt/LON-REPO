@@ -2159,6 +2159,90 @@ async function getConsultasPorSkuGeneral(sheetsClient, spreadsheetId, sheetName)
   return mapa;
 }
 
+/**
+ * Suma el precio de venta (columna E de VENTAS) de todas las filas
+ * marcadas "Vendido" cuya fecha (columna B) sea la que se pasa (mismo
+ * formato "dd/mm/aaaa" que usa fechaYHoraActual() en server.js). Se usa
+ * para el cierre de caja: es el total que la app tiene registrado como
+ * vendido ese dia, a cruzar contra el total del ticket del POS del local.
+ */
+async function getTotalVentasHoy(sheetsClient, spreadsheetId, sheetName, fecha) {
+  const cols = config.COLUMNAS_VENTAS;
+  const ultimaLetra = columnaALetra(cols.precioVenta);
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+
+  let total = 0;
+  let cantidad = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const fila = rows[i];
+    const fechaFila = fila[cols.fecha] ? String(fila[cols.fecha]).trim() : '';
+    if (fechaFila !== fecha) continue;
+    const marca = fila[cols.marca] ? String(fila[cols.marca]).trim() : '';
+    if (marca.indexOf('Vendido') !== 0) continue; // ignora "Duplicado, no contado" y sin marcar todavia
+    total += parseNumeroFormatoArgentino(fila[cols.precioVenta]);
+    cantidad++;
+  }
+
+  return { total, cantidad };
+}
+
+/**
+ * Guarda un cierre de caja (hoja CIERRE_CAJA) y devuelve la fila
+ * guardada. detalleCategorias es un array [{categoria, monto}] (las
+ * categorias del ticket del POS del local, no las de LON) — se guarda
+ * como JSON en una sola celda.
+ */
+async function registrarCierreCaja(sheetsClient, spreadsheetId, sheetName, datos) {
+  const cols = config.COLUMNAS_CIERRE_CAJA;
+  const fila = new Array(Math.max(...Object.values(cols)) + 1).fill('');
+  fila[cols.fecha] = datos.fecha;
+  fila[cols.hora] = datos.hora;
+  fila[cols.totalTicket] = datos.totalTicket;
+  fila[cols.totalEscaner] = datos.totalEscaner;
+  fila[cols.diferencia] = datos.diferencia;
+  fila[cols.detalleCategorias] = JSON.stringify(datos.detalleCategorias || []);
+  fila[cols.vendedor] = datos.vendedor || '';
+
+  await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
+  return datos;
+}
+
+/**
+ * Lee los ultimos cierres de caja guardados (mas recientes primero),
+ * hasta `limite` filas. Se usa para el historial en el panel admin.
+ */
+async function getHistorialCierreCaja(sheetsClient, spreadsheetId, sheetName, limite = 20) {
+  const cols = config.COLUMNAS_CIERRE_CAJA;
+  const ultimaLetra = columnaALetra(Math.max(...Object.values(cols)));
+  const range = `${sheetName}!A:${ultimaLetra}`;
+
+  const response = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range });
+  const rows = response.data.values || [];
+  const cierres = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const fila = rows[i];
+    const fecha = fila[cols.fecha] ? String(fila[cols.fecha]).trim() : '';
+    if (!fecha) continue;
+    let detalleCategorias = [];
+    try { detalleCategorias = JSON.parse(fila[cols.detalleCategorias] || '[]'); } catch (e) { detalleCategorias = []; }
+    cierres.push({
+      fecha,
+      hora: fila[cols.hora] || '',
+      totalTicket: parseNumeroFormatoArgentino(fila[cols.totalTicket]),
+      totalEscaner: parseNumeroFormatoArgentino(fila[cols.totalEscaner]),
+      diferencia: parseNumeroFormatoArgentino(fila[cols.diferencia]),
+      detalleCategorias,
+      vendedor: fila[cols.vendedor] || '',
+    });
+  }
+
+  return cierres.reverse().slice(0, limite);
+}
+
 module.exports = {
   appendRow,
   appendRows,
@@ -2207,6 +2291,9 @@ module.exports = {
   registrarVisitaProducto,
   getVisitasPorSkuGeneral,
   getConsultasPorSkuGeneral,
+  getTotalVentasHoy,
+  registrarCierreCaja,
+  getHistorialCierreCaja,
 
   getAdminUsers,
   buscarAdminUserPorEmail,

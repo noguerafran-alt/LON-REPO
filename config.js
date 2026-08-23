@@ -51,6 +51,12 @@ module.exports = {
   HOJA_ADMIN_USERS: process.env.GOOGLE_ADMIN_USERS_SHEET_NAME || 'AdminUsers',    // usuarios autorizados a entrar al panel admin (login con Google), con su nivel de acceso
   HOJA_ENVIOS: process.env.GOOGLE_ENVIOS_SHEET_NAME || 'Envios', // A=Provincia, B=Costo estimado de envio a domicilio — tabla fija mientras no esta la cotizacion real por API
   HOJA_CLIENTES: process.env.GOOGLE_CLIENTES_SHEET_NAME || 'Clientes', // cuentas de clientes (login con Google) — A=email, B=nombre, C=fecha de alta
+  // Un registro por cada cierre de caja diario (panel admin nivel 2):
+  // total del ticket del POS del local (leido por foto), total que la
+  // app tiene escaneado ese dia, la diferencia entre los dos, y el
+  // detalle por categoria del ticket (las categorias del POS del local,
+  // NO las categorias internas de LON — son taxonomias distintas).
+  HOJA_CIERRE_CAJA: process.env.GOOGLE_CIERRE_CAJA_SHEET_NAME || 'CIERRE_CAJA',
 
   /* ------------------------------------------------------------
    * 3) COLUMNAS — en que columna (0 = A, 1 = B, ...) esta cada dato.
@@ -197,6 +203,22 @@ module.exports = {
     fechaAlta: 2,         // C
     codigoFidelidad: 3,   // D
     cafesContador: 4,     // E
+  },
+
+  // Columnas de la hoja CIERRE_CAJA (planilla de VENTAS). Una fila por
+  // cada cierre de caja diario que se guarda desde el panel admin.
+  COLUMNAS_CIERRE_CAJA: {
+    fecha: 0,               // A
+    hora: 1,                // B
+    totalTicket: 2,          // C: suma de las categorias leidas del ticket (foto)
+    totalEscaner: 3,          // D: total de VENTAS marcadas "Vendido" ese mismo dia
+    diferencia: 4,            // E: totalTicket - totalEscaner
+    // JSON con el detalle por categoria del ticket, ej:
+    // [{"categoria":"CAFE","monto":187300},{"categoria":"BAKERY","monto":7200}]
+    // Son las categorias del POS del local, no las categorias internas
+    // de LON — se guardan tal cual las reconocio/edito el admin.
+    detalleCategorias: 5,     // F
+    vendedor: 6,              // G: email de la cuenta admin que guardo el cierre
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca

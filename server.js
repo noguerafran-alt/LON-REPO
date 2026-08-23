@@ -50,6 +50,9 @@ const {
   registrarVisitaProducto,
   getVisitasPorSkuGeneral,
   getConsultasPorSkuGeneral,
+  getTotalVentasHoy,
+  registrarCierreCaja,
+  getHistorialCierreCaja,
   getAdminUsers,
   buscarAdminUserPorEmail,
   crearOActualizarAdminUser,
@@ -2806,6 +2809,101 @@ app.post('/admin/pedidos/registrar-unidades', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error registrando unidades en bloque del pedido:', err.message);
     res.status(500).json({ error: 'No se pudieron registrar las unidades.' });
+  }
+});
+
+/* ============================================================
+ *  SECCION ADMIN: CIERRE DE CAJA (solo nivel 2)
+ * ============================================================
+ * Compara el total del ticket diario del POS del local (el admin le saca
+ * una foto, la reconoce con OCR del lado del navegador, revisa/corrige a
+ * mano y confirma) contra el total que la app tiene registrado como
+ * vendido ese mismo dia (VENTAS marcadas "Vendido"). Las categorias del
+ * detalle son las del ticket del POS del local — no tienen por que
+ * coincidir con las categorias internas de LON (Libros, Velas, etc), son
+ * dos sistemas distintos. Exclusivo de nivel 2.
+ * ============================================================ */
+
+/* Total que la app tiene escaneado HOY, para cruzar contra el ticket. */
+app.get('/admin/total-ventas-hoy', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { fecha } = fechaYHoraActual();
+    const { total, cantidad } = await getTotalVentasHoy(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, fecha);
+
+    res.json({ fecha, total, cantidad });
+  } catch (err) {
+    console.error('Error calculando el total de ventas de hoy:', err.message);
+    res.status(500).json({ error: 'No se pudo calcular el total de ventas de hoy.' });
+  }
+});
+
+/* Guarda un cierre de caja. El total del escáner se vuelve a calcular
+   ACA (no se confía en lo que mande el navegador) para que quede como
+   registro fiel de lo que la app tenía en ese momento — el total del
+   ticket sí viene del navegador porque es un dato que ya pasó por
+   revisión humana (OCR + corrección manual), no algo que haga falta
+   recalcular del lado del servidor. */
+app.post('/admin/cierre-caja', limiteAdmin, async (req, res) => {
+  try {
+    const { totalTicket, categorias } = req.body;
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const totalTicketNum = Number(totalTicket);
+    if (!Number.isFinite(totalTicketNum) || totalTicketNum < 0) {
+      return res.status(400).json({ error: 'El total del ticket tiene que ser un número.' });
+    }
+    if (!Array.isArray(categorias)) {
+      return res.status(400).json({ error: 'Falta el detalle de categorías del ticket.' });
+    }
+
+    const detalleCategorias = [];
+    for (const c of categorias) {
+      const categoria = sanitizarTexto(c && c.categoria, 80);
+      const monto = Number(c && c.monto);
+      if (!categoria || !Number.isFinite(monto)) {
+        return res.status(400).json({ error: 'Cada categoría del ticket necesita un nombre y un monto válido.' });
+      }
+      detalleCategorias.push({ categoria, monto });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const { fecha, hora } = fechaYHoraActual();
+    const { total: totalEscaner } = await getTotalVentasHoy(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_VENTAS, fecha);
+    const diferencia = Math.round((totalTicketNum - totalEscaner) * 100) / 100;
+
+    const cierre = await registrarCierreCaja(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_CIERRE_CAJA, {
+      fecha, hora,
+      totalTicket: totalTicketNum,
+      totalEscaner,
+      diferencia,
+      detalleCategorias,
+      vendedor: sesion.email,
+    });
+
+    res.json({ ok: true, cierre });
+  } catch (err) {
+    console.error('Error guardando el cierre de caja:', err.message);
+    res.status(500).json({ error: 'No se pudo guardar el cierre de caja.' });
+  }
+});
+
+app.get('/admin/cierre-caja/historial', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const cierres = await getHistorialCierreCaja(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_CIERRE_CAJA, 20);
+
+    res.json({ cierres });
+  } catch (err) {
+    console.error('Error leyendo el historial de cierres de caja:', err.message);
+    res.status(500).json({ error: 'No se pudo leer el historial de cierres de caja.' });
   }
 });
 

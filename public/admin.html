@@ -11,6 +11,9 @@
 <link rel="preconnect" href="https://accounts.google.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- Reconocimiento de texto (OCR) para el ticket del cierre de caja — corre
+     entero en el navegador, la foto nunca se sube a ningun servidor. -->
+<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
@@ -420,6 +423,30 @@
   }
   .fila-categoria-visible button:disabled{ opacity:.5; cursor:default; }
 
+  .fila-categoria-cierre{
+    margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--bg-alt); display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .fila-categoria-cierre input[type="text"]{
+    flex:1; min-width:120px; padding:8px 10px; font-size:15px; border-radius:var(--radius);
+    border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
+  }
+  .fila-categoria-cierre input[type="number"]{
+    width:110px; padding:8px 10px; font-size:15px; border-radius:var(--radius);
+    border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
+  }
+  .fila-categoria-cierre button.quitar{
+    background:none; border:none; color:var(--stamp-red); font-size:18px; line-height:1; cursor:pointer; padding:4px 8px;
+  }
+  .fila-resumen-cierre{
+    display:flex; justify-content:space-between; align-items:center; padding:8px 0;
+    border-bottom:1px solid var(--line); font-size:15px;
+  }
+  .fila-resumen-cierre:last-of-type{ border-bottom:none; }
+  .fila-resumen-cierre strong{ font-family:'IBM Plex Mono', monospace; }
+  #filaDiferenciaCierre.ok strong{ color:var(--stamp-green); }
+  #filaDiferenciaCierre.error strong{ color:var(--stamp-red); }
+
   .badge-stock{
     font-family:'IBM Plex Mono', monospace; font-size:13px; padding:2px 8px; border-radius:20px;
     flex-shrink:0; white-space:nowrap;
@@ -583,6 +610,7 @@
     <button id="tabGenerarUnidades" type="button">Productos</button>
     <button id="tabCatalogo" type="button">Catálogo</button>
     <button id="tabPedidos" type="button">Pedidos</button>
+    <button id="tabCierreCaja" type="button">Cierre de caja</button>
     <button id="tabUsuarios" type="button">Usuarios</button>
   </div>
 
@@ -776,6 +804,46 @@
     <div id="listaPedidos">Cargando pedidos...</div>
   </div>
 
+  <div id="panelCierreCaja" style="display:none; padding:16px 24px 40px;">
+    <div class="campo">
+      <label>Cierre de caja diario</label>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 10px;">Sacá una foto del ticket de cierre del POS del local (el que suma todo lo vendido en el día por categoría). El reconocimiento de texto arma la lista solo — revisala y corregí lo que haga falta antes de guardar, nunca se guarda sin que la mires.</p>
+      <button type="button" class="btn-generar" id="btnFotoTicketCierre">📷 Sacar foto del ticket</button>
+      <input type="file" id="inputFotoTicketCierre" accept="image/*" capture="environment" style="display:none;">
+      <p id="mensajeOcrCierre" style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0; min-height:1em;"></p>
+    </div>
+
+    <div class="campo" id="boxCategoriasCierre" style="display:none;">
+      <label>Categorías del ticket (las del POS del local, no las de LON)</label>
+      <div id="listaCategoriasCierre"></div>
+      <button type="button" class="acceso-admin-link" id="btnAgregarCategoriaCierre" style="text-align:left; margin-top:8px;">+ Agregar categoría a mano</button>
+    </div>
+
+    <div class="campo" id="boxResumenCierre" style="display:none;">
+      <div class="fila-resumen-cierre">
+        <span>Total del ticket</span>
+        <strong id="totalTicketCierre">$0</strong>
+      </div>
+      <div class="fila-resumen-cierre">
+        <span>Total escaneado hoy (app)</span>
+        <strong id="totalEscanerCierre">$0</strong>
+      </div>
+      <div class="fila-resumen-cierre" id="filaDiferenciaCierre">
+        <span>Diferencia</span>
+        <strong id="diferenciaCierre">$0</strong>
+      </div>
+      <button type="button" class="btn-generar" id="btnGuardarCierre" style="margin-top:10px;">Guardar cierre de caja</button>
+      <p id="mensajeGuardarCierre" style="font-size:12.5px; margin:8px 0 0; min-height:1em;"></p>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Historial de cierres</label>
+      <div id="listaHistorialCierre" class="lista-productos" style="max-height:320px;">Cargando...</div>
+    </div>
+  </div>
+
   <div id="panelUsuarios" style="display:none; padding:16px 24px 40px;">
     <div class="campo">
       <label>Agregar / editar usuario</label>
@@ -936,11 +1004,13 @@
   const tabGenerarUnidades = document.getElementById('tabGenerarUnidades');
   const tabCatalogo = document.getElementById('tabCatalogo');
   const tabPedidos = document.getElementById('tabPedidos');
+  const tabCierreCaja = document.getElementById('tabCierreCaja');
   const tabUsuarios = document.getElementById('tabUsuarios');
   const seccionEscanear = document.getElementById('seccionEscanear');
   const panelGenerarUnidades = document.getElementById('panelGenerarUnidades');
   const panelCatalogo = document.getElementById('panelCatalogo');
   const panelPedidos = document.getElementById('panelPedidos');
+  const panelCierreCaja = document.getElementById('panelCierreCaja');
   const panelUsuarios = document.getElementById('panelUsuarios');
   const etiquetaUsuarioLogueado = document.getElementById('etiquetaUsuarioLogueado');
 
@@ -1075,6 +1145,7 @@
     // llamarlas directo, esto es solo la interfaz).
     tabGenerarUnidades.style.display = esNivel2() ? '' : 'none';
     tabCatalogo.style.display = esNivel2() ? '' : 'none';
+    tabCierreCaja.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
     // "Generar más unidades" del modal de escaneo manda a la pestaña de
@@ -1089,7 +1160,7 @@
     let seccionGuardada = 'escanear';
     try {
       const guardada = localStorage.getItem('admin_seccion_activa');
-      if (['escanear', 'generar', 'catalogo', 'pedidos', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
+      if (['escanear', 'generar', 'catalogo', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
     } catch (e) {}
     mostrarSeccionAdmin(seccionGuardada);
   }
@@ -1097,23 +1168,26 @@
   function mostrarSeccionAdmin(seccion){
     // Nivel 1 no puede quedar parado en una seccion que no le corresponde
     // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
-    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'usuarios')) seccion = 'escanear';
+    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
     try { localStorage.setItem('admin_seccion_activa', seccion); } catch (e) {}
 
     const esEscanear = seccion === 'escanear';
     const esPedidos = seccion === 'pedidos';
     const esGenerar = seccion === 'generar';
     const esCatalogo = seccion === 'catalogo';
+    const esCierreCaja = seccion === 'cierrecaja';
     const esUsuarios = seccion === 'usuarios';
     tabEscanear.classList.toggle('activo', esEscanear);
     tabGenerarUnidades.classList.toggle('activo', esGenerar);
     tabCatalogo.classList.toggle('activo', esCatalogo);
     tabPedidos.classList.toggle('activo', esPedidos);
+    tabCierreCaja.classList.toggle('activo', esCierreCaja);
     tabUsuarios.classList.toggle('activo', esUsuarios);
     seccionEscanear.style.display = esEscanear ? 'block' : 'none';
     panelGenerarUnidades.style.display = esGenerar ? 'block' : 'none';
     panelCatalogo.style.display = esCatalogo ? 'block' : 'none';
     panelPedidos.style.display = esPedidos ? 'block' : 'none';
+    panelCierreCaja.style.display = esCierreCaja ? 'block' : 'none';
     panelUsuarios.style.display = esUsuarios ? 'block' : 'none';
 
     if (esGenerar) {
@@ -1129,6 +1203,9 @@
     if (esPedidos) {
       cargarPedidos();
     }
+    if (esCierreCaja) {
+      cargarHistorialCierreCaja();
+    }
     if (esUsuarios) {
       cargarUsuarios();
     }
@@ -1137,6 +1214,7 @@
   tabGenerarUnidades.addEventListener('click', () => mostrarSeccionAdmin('generar'));
   tabCatalogo.addEventListener('click', () => mostrarSeccionAdmin('catalogo'));
   tabPedidos.addEventListener('click', () => mostrarSeccionAdmin('pedidos'));
+  tabCierreCaja.addEventListener('click', () => mostrarSeccionAdmin('cierrecaja'));
   tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
 
   document.getElementById('btnActivarCamara').addEventListener('click', () => {
@@ -4108,6 +4186,246 @@
   }
 
   document.getElementById('btnCerrarUnidadPedido').addEventListener('click', () => { cerrarEscanerUnidad(); });
+
+  /* ============================================================
+   *  PANEL: CIERRE DE CAJA (solo nivel 2)
+   * ============================================================
+   * Foto del ticket -> reconocimiento de texto EN EL NAVEGADOR
+   * (Tesseract.js, la foto nunca se sube a ningún servidor) -> lista
+   * editable de categoría+monto -> se cruza contra el total que la app
+   * tiene escaneado hoy -> se guarda. Las categorías son las del ticket
+   * del POS del local, no las categorías internas de LON.
+   * ============================================================ */
+  const btnFotoTicketCierre = document.getElementById('btnFotoTicketCierre');
+  const inputFotoTicketCierre = document.getElementById('inputFotoTicketCierre');
+  const mensajeOcrCierre = document.getElementById('mensajeOcrCierre');
+  const boxCategoriasCierre = document.getElementById('boxCategoriasCierre');
+  const listaCategoriasCierre = document.getElementById('listaCategoriasCierre');
+  const btnAgregarCategoriaCierre = document.getElementById('btnAgregarCategoriaCierre');
+  const boxResumenCierre = document.getElementById('boxResumenCierre');
+  const totalTicketCierreEl = document.getElementById('totalTicketCierre');
+  const totalEscanerCierreEl = document.getElementById('totalEscanerCierre');
+  const diferenciaCierreEl = document.getElementById('diferenciaCierre');
+  const filaDiferenciaCierre = document.getElementById('filaDiferenciaCierre');
+  const btnGuardarCierre = document.getElementById('btnGuardarCierre');
+  const mensajeGuardarCierre = document.getElementById('mensajeGuardarCierre');
+  const listaHistorialCierre = document.getElementById('listaHistorialCierre');
+
+  let categoriasCierre = []; // [{categoria, monto}]
+  let totalEscanerHoyCache = null;
+
+  btnFotoTicketCierre.addEventListener('click', () => {
+    inputFotoTicketCierre.value = '';
+    inputFotoTicketCierre.click();
+  });
+
+  inputFotoTicketCierre.addEventListener('change', async () => {
+    const archivo = inputFotoTicketCierre.files && inputFotoTicketCierre.files[0];
+    if (!archivo) return;
+
+    btnFotoTicketCierre.disabled = true;
+    mensajeOcrCierre.style.color = 'var(--ink-muted)';
+    mensajeOcrCierre.textContent = 'Leyendo el ticket... puede tardar unos segundos.';
+    boxCategoriasCierre.style.display = 'none';
+    boxResumenCierre.style.display = 'none';
+
+    try {
+      const resultado = await Tesseract.recognize(archivo, 'spa');
+      categoriasCierre = parsearCategoriasTicket(resultado.data.text);
+
+      if (categoriasCierre.length === 0) {
+        mensajeOcrCierre.style.color = 'var(--stamp-red)';
+        mensajeOcrCierre.textContent = 'No se reconoció ninguna categoría del ticket. Agregalas a mano con el botón de abajo.';
+      } else {
+        mensajeOcrCierre.style.color = 'var(--stamp-green)';
+        mensajeOcrCierre.textContent = `Se reconocieron ${categoriasCierre.length} categoría(s) — revisalas y corregí lo que haga falta antes de guardar.`;
+      }
+
+      boxCategoriasCierre.style.display = 'block';
+      await cargarTotalEscanerHoy();
+      renderizarCategoriasCierre();
+    } catch (err) {
+      mensajeOcrCierre.style.color = 'var(--stamp-red)';
+      mensajeOcrCierre.textContent = `No se pudo leer la foto: ${err.message}`;
+    } finally {
+      btnFotoTicketCierre.disabled = false;
+    }
+  });
+
+  /* Junta líneas del tipo "32 CAFE $187.300,00" o "2 GENERICO 113.900,00"
+     (cantidad, nombre de categoría en mayúsculas, monto en formato
+     argentino) — son las líneas "resumen" del ticket, no los sub-ítems
+     indentados debajo de cada una.
+     Los sub-ítems se descartan solos porque van en minúscula ("9 Cafe
+     Mediano"), PERO los que están todos en mayúscula igual pasan el
+     filtro y aparecen como una categoría de más (ej. "1 VELA HARROW"
+     debajo de "LOUIS & LEWIS", que duplicaría ese monto). No se puede
+     distinguir por indentación: el OCR no la conserva de forma
+     confiable. Por eso la lista SIEMPRE queda editable — el admin borra
+     con la × lo que sobre antes de guardar. */
+  function parsearCategoriasTicket(texto){
+    const lineas = String(texto || '').split('\n');
+    const regexLinea = /^\s*\d+\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ &]+?)\s+\$?\s*([\d.,]+)\s*$/;
+    const categorias = [];
+
+    for (const linea of lineas) {
+      const m = linea.match(regexLinea);
+      if (!m) continue;
+      const categoria = m[1].trim();
+      const monto = parseNumeroFormatoArgentinoCliente(m[2]);
+      if (!categoria || !monto) continue;
+      categorias.push({ categoria, monto });
+    }
+    return categorias;
+  }
+
+  // Mismo criterio que parseNumeroFormatoArgentino() del servidor: punto
+  // de miles, coma decimal ("187.300,00" -> 187300).
+  function parseNumeroFormatoArgentinoCliente(valor){
+    const normalizado = String(valor).trim().replace(/\./g, '').replace(',', '.');
+    const numero = Number(normalizado);
+    return Number.isFinite(numero) ? numero : 0;
+  }
+
+  function renderizarCategoriasCierre(){
+    listaCategoriasCierre.innerHTML = categoriasCierre.map((c, i) => `
+      <div class="fila-categoria-cierre" data-indice="${i}">
+        <input type="text" class="input-categoria-nombre" value="${escaparHtml(c.categoria)}">
+        <input type="number" class="input-categoria-monto" min="0" step="1" value="${c.monto}">
+        <button type="button" class="quitar" title="Quitar">×</button>
+      </div>
+    `).join('');
+
+    listaCategoriasCierre.querySelectorAll('.fila-categoria-cierre').forEach((fila) => {
+      const indice = Number(fila.getAttribute('data-indice'));
+      fila.querySelector('.input-categoria-nombre').addEventListener('input', (e) => {
+        categoriasCierre[indice].categoria = e.target.value;
+      });
+      fila.querySelector('.input-categoria-monto').addEventListener('input', (e) => {
+        categoriasCierre[indice].monto = Number(e.target.value) || 0;
+        actualizarResumenCierre();
+      });
+      fila.querySelector('.quitar').addEventListener('click', () => {
+        categoriasCierre.splice(indice, 1);
+        renderizarCategoriasCierre();
+      });
+    });
+
+    actualizarResumenCierre();
+  }
+
+  btnAgregarCategoriaCierre.addEventListener('click', () => {
+    categoriasCierre.push({ categoria: '', monto: 0 });
+    boxCategoriasCierre.style.display = 'block';
+    boxResumenCierre.style.display = 'block';
+    renderizarCategoriasCierre();
+  });
+
+  async function cargarTotalEscanerHoy(){
+    try {
+      const res = await fetch(`/admin/total-ventas-hoy?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      totalEscanerHoyCache = data.total;
+    } catch (err) {
+      totalEscanerHoyCache = null;
+    }
+  }
+
+  function actualizarResumenCierre(){
+    const totalTicket = categoriasCierre.reduce((acc, c) => acc + (Number(c.monto) || 0), 0);
+    boxResumenCierre.style.display = 'block';
+    totalTicketCierreEl.textContent = `$${totalTicket.toLocaleString('es-AR')}`;
+
+    if (totalEscanerHoyCache === null) {
+      totalEscanerCierreEl.textContent = 'Cargando...';
+      diferenciaCierreEl.textContent = '—';
+      filaDiferenciaCierre.className = 'fila-resumen-cierre';
+      return;
+    }
+
+    const diferencia = Math.round((totalTicket - totalEscanerHoyCache) * 100) / 100;
+    totalEscanerCierreEl.textContent = `$${totalEscanerHoyCache.toLocaleString('es-AR')}`;
+    diferenciaCierreEl.textContent = `${diferencia > 0 ? '+' : ''}$${diferencia.toLocaleString('es-AR')}`;
+    filaDiferenciaCierre.className = 'fila-resumen-cierre ' + (diferencia === 0 ? 'ok' : 'error');
+  }
+
+  btnGuardarCierre.addEventListener('click', async () => {
+    const categoriasValidas = categoriasCierre.filter((c) => c.categoria.trim() && Number(c.monto) >= 0);
+    if (categoriasValidas.length === 0) {
+      mensajeGuardarCierre.style.color = 'var(--stamp-red)';
+      mensajeGuardarCierre.textContent = 'Agregá al menos una categoría con nombre y monto antes de guardar.';
+      return;
+    }
+    const totalTicket = categoriasValidas.reduce((acc, c) => acc + Number(c.monto), 0);
+
+    btnGuardarCierre.disabled = true;
+    btnGuardarCierre.textContent = 'Guardando...';
+    mensajeGuardarCierre.textContent = '';
+    try {
+      const res = await fetch('/admin/cierre-caja', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: adminToken,
+          totalTicket,
+          categorias: categoriasValidas.map((c) => ({ categoria: c.categoria.trim(), monto: Number(c.monto) })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      mensajeGuardarCierre.style.color = 'var(--stamp-green)';
+      mensajeGuardarCierre.textContent = 'Cierre de caja guardado ✓';
+      categoriasCierre = [];
+      boxCategoriasCierre.style.display = 'none';
+      boxResumenCierre.style.display = 'none';
+      mensajeOcrCierre.textContent = '';
+      cargarHistorialCierreCaja();
+    } catch (err) {
+      mensajeGuardarCierre.style.color = 'var(--stamp-red)';
+      mensajeGuardarCierre.textContent = `Error: ${err.message}`;
+    } finally {
+      btnGuardarCierre.disabled = false;
+      btnGuardarCierre.textContent = 'Guardar cierre de caja';
+    }
+  });
+
+  async function cargarHistorialCierreCaja(){
+    listaHistorialCierre.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Cargando...</div>';
+    try {
+      const res = await fetch(`/admin/cierre-caja/historial?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      const cierres = data.cierres || [];
+
+      if (cierres.length === 0) {
+        listaHistorialCierre.innerHTML = '<div style="padding:12px; font-size:15px; color:var(--ink-muted);">Todavía no hay cierres guardados.</div>';
+        return;
+      }
+
+      listaHistorialCierre.innerHTML = cierres.map((c) => {
+        const diferenciaOk = Math.abs(Number(c.diferencia) || 0) < 1;
+        const detalle = (c.detalleCategorias || [])
+          .map((d) => `${escaparHtml(d.categoria)}: $${(Number(d.monto) || 0).toLocaleString('es-AR')}`)
+          .join(' · ');
+        return `
+          <div class="item-producto" style="cursor:default; align-items:flex-start;">
+            <div class="lista-producto-info">
+              <span class="lista-producto-nombre">${escaparHtml(c.fecha)} ${escaparHtml(c.hora)}</span>
+              <span class="lista-producto-meta">
+                Ticket $${(Number(c.totalTicket) || 0).toLocaleString('es-AR')} · Escáner $${(Number(c.totalEscaner) || 0).toLocaleString('es-AR')} ·
+                <span style="color:${diferenciaOk ? 'var(--stamp-green)' : 'var(--stamp-red)'};">Dif. $${(Number(c.diferencia) || 0).toLocaleString('es-AR')}</span>
+              </span>
+              <span class="lista-producto-meta" style="display:block; margin-top:2px;">${detalle}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      listaHistorialCierre.innerHTML = `<div style="padding:12px; font-size:15px; color:var(--stamp-red);">No se pudo cargar: ${escaparHtml(err.message)}</div>`;
+    }
+  }
 
   /* ============================================================
    *  PANEL: USUARIOS (solo nivel 2)
