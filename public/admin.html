@@ -4272,9 +4272,29 @@
     btnFotoTicketCierre.disabled = true;
     ocultarAyudasOcr();
     mensajeOcrCierre.style.color = 'var(--ink-muted)';
-    mensajeOcrCierre.textContent = 'Leyendo el ticket... puede tardar unos segundos.';
+    mensajeOcrCierre.textContent = 'Leyendo el ticket... unos segundos.';
 
     try {
+      const fotoChica = await comprimirFotoTicket(archivo);
+      let visionCierra = false;
+      try {
+        const res = await fetch('/admin/cierre-caja/interpretar-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: adminToken, texto: '', imagen: fotoChica }),
+        });
+        const data = await res.json();
+        if (res.ok && data && (data.categorias || []).length) {
+          aplicarLecturaTicket(data, '');
+          visionCierra = TicketCierre.puntuarInterpretacion(data) >= 100;
+        }
+      } catch (err) {
+        console.warn('visión ticket', err);
+      }
+
+      if (visionCierra) return;
+
+      mensajeOcrCierre.textContent = 'Reintentando con lectura local...';
       const lecturas = [];
       for (const variante of ['gris', 'blanco-y-negro']) {
         const imagen = await prepararFotoTicket(archivo, variante);
@@ -4285,9 +4305,8 @@
         const categorias = TicketCierre.extraerCategoriasDelTicket(texto);
         const total = TicketCierre.buscarTotalEnTicket(texto);
         lecturas.push({ texto, total, categorias });
-        const cerradas = categorias.filter((c) => (c.productos || 0) > 0).length;
         const suma = TicketCierre.sumaCategorias(categorias);
-        if (total !== null && cerradas >= 3 && suma === total) break;
+        if (total !== null && categorias.length >= 3 && suma === total) break;
         mensajeOcrCierre.textContent = 'Reintentando con mas contraste...';
       }
 
@@ -4296,34 +4315,42 @@
       textoOcrCierre.textContent = textoFinal.trim() || '(no se leyo ningun texto en la foto)';
       detalleOcrCierre.style.display = 'block';
 
-      aplicarLecturaTicket({
+      const local = {
         origen: 'ocr',
         totalVendido: mejor.total,
         categorias: mejor.categorias || [],
         sumaCategorias: TicketCierre.sumaCategorias(mejor.categorias || []),
         sumaConfiable: TicketCierre.categoriasCierranConProductos(mejor.categorias || []),
-      }, textoFinal);
+      };
+      const actual = {
+        categorias: categoriasCierreActuales,
+        totalVendido: Number(inputTotalTicketCierre.value) || null,
+      };
+      if (TicketCierre.puntuarInterpretacion(local) > TicketCierre.puntuarInterpretacion(actual)) {
+        aplicarLecturaTicket(local, textoFinal);
+      }
 
-      mensajeOcrCierre.textContent = 'Leyendo el ticket con más detalle...';
+      const ahora = {
+        categorias: categoriasCierreActuales,
+        totalVendido: Number(inputTotalTicketCierre.value) || null,
+      };
+      if (TicketCierre.puntuarInterpretacion(ahora) >= 100) return;
+
       try {
-        const fotoChica = await comprimirFotoTicket(archivo);
         const res = await fetch('/admin/cierre-caja/interpretar-ticket', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: adminToken, texto: textoFinal, imagen: fotoChica }),
+          body: JSON.stringify({ token: adminToken, texto: textoFinal }),
         });
         const data = await res.json();
-        if (res.ok && data) {
-          const actual = {
-            categorias: categoriasCierreActuales,
-            totalVendido: Number(inputTotalTicketCierre.value) || null,
-          };
-          if (TicketCierre.puntuarInterpretacion(data) >= TicketCierre.puntuarInterpretacion(actual)) {
-            aplicarLecturaTicket(data, textoFinal);
-          }
+        if (res.ok && data && TicketCierre.puntuarInterpretacion(data) >= TicketCierre.puntuarInterpretacion({
+          categorias: categoriasCierreActuales,
+          totalVendido: Number(inputTotalTicketCierre.value) || null,
+        })) {
+          aplicarLecturaTicket(data, textoFinal);
         }
       } catch (err) {
-        // El parser local ya está en pantalla; la IA es un extra.
+        // ya hay algo en pantalla
       }
     } catch (err) {
       mensajeOcrCierre.style.color = 'var(--stamp-red)';
@@ -4342,12 +4369,13 @@
     const sumaConfiable = lectura.sumaConfiable
       || TicketCierre.categoriasCierranConProductos(categorias);
 
-    if ((total === null || total <= 0) && sumaConfiable && suma > 0) total = suma;
-    if (sumaConfiable && suma > 0 && total !== null && total !== suma) {
+    if ((total === null || total <= 0) && suma > 0 && categorias.length >= 2) total = suma;
+    if (suma > 0 && total !== null && total !== suma && categorias.length >= 3) {
       total = suma;
     }
 
-    const candidatos = TicketCierre.montosCandidatosDelTicket(textoOcr, total);
+    const cierra = categorias.length >= 2 && total !== null && suma === total;
+    const candidatos = cierra ? [] : TicketCierre.montosCandidatosDelTicket(textoOcr, total);
     if (total === null) {
       mensajeOcrCierre.style.color = 'var(--stamp-red)';
       mensajeOcrCierre.textContent = candidatos.length
@@ -4371,7 +4399,7 @@
     const bitmap = await cargarBitmapArchivo(archivo);
     const anchoOriginal = bitmap.width || bitmap.naturalWidth;
     const altoOriginal = bitmap.height || bitmap.naturalHeight;
-    const maxLado = 1400;
+    const maxLado = 1600;
     const escala = Math.min(1, maxLado / Math.max(anchoOriginal, altoOriginal));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(anchoOriginal * escala));
@@ -4381,7 +4409,24 @@
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     if (bitmap.close) bitmap.close();
-    return canvas.toDataURL('image/jpeg', 0.82);
+
+    const datos = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const px = datos.data;
+    let minimo = 255, maximo = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const gris = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114);
+      if (gris < minimo) minimo = gris;
+      if (gris > maximo) maximo = gris;
+    }
+    const rango = Math.max(1, maximo - minimo);
+    for (let i = 0; i < px.length; i += 4) {
+      const gris = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114);
+      const v = Math.max(0, Math.min(255, ((gris - minimo) / rango) * 255));
+      px[i] = px[i + 1] = px[i + 2] = v;
+      px[i + 3] = 255;
+    }
+    ctx.putImageData(datos, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.9);
   }
 
   async function prepararFotoTicket(archivo, variante){

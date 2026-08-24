@@ -2851,18 +2851,25 @@ function interpretarTicketLocal(textoOcr) {
   };
 }
 
-const PROMPT_TICKET = `Del ticket térmico de un POS de Argentina extraé:
-1. Las CATEGORÍAS en negrita de "DETALLE DE PRODUCTOS DESPACHADOS". Son renglones tipo "17 CAFE  $ 95.000,00" (cantidad + nombre en MAYÚSCULAS + monto). Debajo van productos indentados que NO son categorías.
-2. El "Total vendido".
+const PROMPT_TICKET = `Ticket térmico de POS argentino. Extraé SOLO las categorías en negrita del bloque "DETALLE DE PRODUCTOS DESPACHADOS" y el renglón "Total vendido".
 
-NO incluyas productos individuales, OTROS MOVIMIENTOS, retiros, depósitos, IVA, subtotales ni el "Total:" de cabecera.
+Una categoría es un renglón en MAYÚSCULAS con cantidad + nombre + monto, por ejemplo:
+1 LIBROS PERIPLO    $ 36.000,00
+3 ADICIONALES       $ 5.700,00
+17 CAFE             $ 95.000,00
+3 GENERICO          $ 38.200,00
+5 COMIDA            $ 27.600,00
+1 CAFE MOLIDO       $ 28.000,00
+1 LIBROS JULITA     $ 65.900,00
+Total vendido:      $ 296.400,00
 
-La suma de los montos de las categorías TIENE que ser igual al Total vendido. Si un dígito del total está mal leído, preferí la suma de las categorías.
+Debajo de cada categoría hay productos (Cafe Mediano, toston de palta, etc.). NO los incluyas.
+NO incluyas OTROS MOVIMIENTOS, retiros, depósitos, IVA, ni el "Total:" de cabecera.
 
-Montos en pesos enteros, sin centavos ni puntos de miles.
+Montos en pesos enteros, sin centavos ni puntos de miles. La suma de categorías DEBE ser el Total vendido.
 
-Respondé SOLO un JSON, sin markdown:
-{"totalVendido":296400,"categorias":[{"nombre":"CAFE","cantidad":17,"monto":95000}]}`;
+Respondé SOLO JSON, sin markdown:
+{"totalVendido":296400,"categorias":[{"nombre":"LIBROS PERIPLO","cantidad":1,"monto":36000},{"nombre":"CAFE","cantidad":17,"monto":95000}]}`;
 
 function headersOpenRouter() {
   return {
@@ -2873,38 +2880,44 @@ function headersOpenRouter() {
   };
 }
 
-function parsearRespuestaTicketIA(crudo) {
+function parsearRespuestaTicketIA(crudo, origen) {
   const match = String(crudo || '').match(/\{[\s\S]*\}/);
   if (!match) return null;
   try {
     const parsed = JSON.parse(match[0]);
     const categorias = ticketCierre.sanitizarCategorias(parsed.categorias);
-    const totalIA = Number.isFinite(Number(parsed.totalVendido)) ? Math.round(Number(parsed.totalVendido)) : null;
-    const sumaIA = ticketCierre.sumaCategorias(categorias);
     if (!categorias.length) return null;
+    const sumaIA = ticketCierre.sumaCategorias(categorias);
+    let totalIA = Number.isFinite(Number(parsed.totalVendido)) ? Math.round(Number(parsed.totalVendido)) : null;
+    const cierra = categorias.length >= 2 && totalIA !== null && sumaIA === totalIA;
+    if (!cierra && categorias.length >= 3 && sumaIA > 0) {
+      totalIA = sumaIA;
+    }
     return {
-      origen: 'ia',
+      origen: origen || 'ia',
       totalVendido: totalIA !== null ? totalIA : (sumaIA || null),
       categorias,
       sumaCategorias: sumaIA,
-      sumaConfiable: categorias.length >= 2 && totalIA !== null && sumaIA === totalIA,
+      sumaConfiable: categorias.length >= 2 && (totalIA === sumaIA || categorias.length >= 3),
     };
   } catch (err) {
     return null;
   }
 }
 
-async function llamarOpenRouter(modelo, messages) {
+async function llamarOpenRouter(modelo, messages, extras) {
+  const body = Object.assign({
+    model: modelo,
+    temperature: 0,
+    max_tokens: 2000,
+    messages,
+    provider: { allow_fallbacks: true, sort: 'throughput' },
+  }, extras || {});
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: headersOpenRouter(),
-    body: JSON.stringify({
-      model: modelo,
-      temperature: 0,
-      max_tokens: 1500,
-      messages,
-    }),
-    signal: AbortSignal.timeout(25000),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(28000),
   });
   const cuerpo = await res.text();
   if (!res.ok) {
@@ -2913,9 +2926,9 @@ async function llamarOpenRouter(modelo, messages) {
   }
   try {
     const data = JSON.parse(cuerpo);
-    return data && data.choices && data.choices[0] && data.choices[0].message
-      ? (data.choices[0].message.content || '')
-      : '';
+    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
+    if (!msg) return null;
+    return msg.content || '';
   } catch (err) {
     return null;
   }
@@ -2932,32 +2945,35 @@ function normalizarImagenDataUrl(crudo) {
 }
 
 async function interpretarTicketConVision(imagenDataUrl) {
-  const modelos = [];
-  const agregar = (m) => { if (m && !modelos.includes(m)) modelos.push(m); };
-  agregar(config.OPENROUTER_VISION_MODEL);
-  agregar('google/gemma-4-31b-it:free');
-  agregar('nvidia/nemotron-nano-12b-2-vl:free');
-  agregar('google/gemma-4-26b-a4b-it:free');
+  const principal = config.OPENROUTER_VISION_MODEL;
+  const fallbacks = [
+    'google/gemma-4-31b-it:free',
+    'google/gemma-4-26b-a4b-it:free',
+    'nvidia/nemotron-nano-12b-v2-vl:free',
+    'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+    'openrouter/free',
+  ].filter((m, i, arr) => m && m !== principal && arr.indexOf(m) === i);
 
   const messages = [
-    { role: 'system', content: 'Sos un extractor de tickets térmicos. Respondé SOLO JSON válido.' },
+    { role: 'system', content: 'Extractor de tickets térmicos. Respondé SOLO JSON válido.' },
     {
       role: 'user',
       content: [
-        { type: 'text', text: PROMPT_TICKET },
         { type: 'image_url', image_url: { url: imagenDataUrl } },
+        { type: 'text', text: PROMPT_TICKET },
       ],
     },
   ];
 
-  for (const modelo of modelos) {
-    const crudo = await llamarOpenRouter(modelo, messages);
-    const parsed = parsearRespuestaTicketIA(crudo);
-    if (parsed) {
-      parsed.origen = 'vision';
-      parsed.modelo = modelo;
-      if (parsed.sumaConfiable || parsed.categorias.length >= 3) return parsed;
-    }
+  const crudo = await llamarOpenRouter(principal, messages, { models: fallbacks });
+  const parsed = parsearRespuestaTicketIA(crudo, 'vision');
+  if (parsed) {
+    console.log('Cierre de caja visión:', parsed.categorias.length, 'categorías, suma', parsed.sumaCategorias, 'total', parsed.totalVendido);
+    return parsed;
+  }
+  if (principal !== 'openrouter/free') {
+    const crudo2 = await llamarOpenRouter('openrouter/free', messages);
+    return parsearRespuestaTicketIA(crudo2, 'vision');
   }
   return null;
 }
@@ -2965,10 +2981,10 @@ async function interpretarTicketConVision(imagenDataUrl) {
 async function interpretarTicketConTexto(textoOcr) {
   if (!textoOcr || !textoOcr.trim()) return null;
   const crudo = await llamarOpenRouter(config.OPENROUTER_MODEL, [
-    { role: 'system', content: 'Sos un extractor de tickets térmicos de un POS de Argentina. Respondé SOLO un JSON válido, sin markdown ni texto extra.' },
-    { role: 'user', content: PROMPT_TICKET + '\n\nTexto OCR:\n' + textoOcr },
+    { role: 'system', content: 'Extractor de tickets térmicos. Respondé SOLO JSON válido.' },
+    { role: 'user', content: PROMPT_TICKET + '\n\nTexto OCR:\n' + String(textoOcr).slice(0, 12000) },
   ]);
-  return parsearRespuestaTicketIA(crudo);
+  return parsearRespuestaTicketIA(crudo, 'ia');
 }
 
 async function interpretarTicketConIA(textoOcr, imagenDataUrl) {
@@ -2982,7 +2998,7 @@ async function interpretarTicketConIA(textoOcr, imagenDataUrl) {
       if (vision) candidatas.push(vision);
     }
     const yaCierra = candidatas.some((c) => ticketCierre.puntuarInterpretacion(c) >= 100);
-    if (!yaCierra) {
+    if (!yaCierra && textoOcr && textoOcr.trim()) {
       const porTexto = await interpretarTicketConTexto(textoOcr);
       if (porTexto) candidatas.push(porTexto);
     }
