@@ -36,7 +36,8 @@
   - **Cierre de caja** (nivel 2 exclusivo): foto del ticket del POS del
     local → OCR en el navegador (Tesseract.js; la foto nunca se sube) →
     parser de las **categorías en negrita** + total vendido → si hay
-    `ANTHROPIC_API_KEY`, una IA revisa el *texto* OCR (no la foto) → se
+    `OPENROUTER_API_KEY`, un modelo **gratis** (`:free`) revisa el
+    *texto* OCR (no la foto; no usa Anthropic) → se
     muestran las categorías editables, se exige que sumen el total, se
     comparan contra lo escaneado hoy (VENTAS) y se guarda en
     `CIERRE_CAJA` (totales A-F + desglose G-I). La comparación contra
@@ -77,8 +78,9 @@ Detalle JSON** — la app nunca escribe encabezados).
   números correctos, (3) usar IA si hace falta. El parser local, con
   esa transcripción, cierra exacto ($296.400). Sigue haciendo falta
   una prueba con foto real desde el celular. Si Tesseract entrega
-  texto sucio, la IA (si hay `ANTHROPIC_API_KEY`) revisa ese texto
-  — la foto no sale del navegador.
+  texto sucio, un modelo gratis de OpenRouter (si hay
+  `OPENROUTER_API_KEY`) revisa ese texto — la foto no sale del
+  navegador. Sin esa key, igual funciona el parser local.
 - **`README.md` desactualizado**: todavía describe la v1 (solo escáner
   QR → Sheets). No se tocó esta sesión — si se necesita para onboarding
   de alguien nuevo, reescribir.
@@ -158,10 +160,14 @@ un dígito). En ese caso el total se corrige a la suma. Si después de
 editar a mano las categorías no cierran con el total, al guardar
 pregunta; no se silencia.
 
-**IA.** Opcional, misma `ANTHROPIC_API_KEY` del chatbot de WhatsApp.
-Recibe el texto OCR (nunca la foto). Si el parser local ya cierra y la
-IA no, se descarta la IA. Si la IA cuadra (suma = total) y el local no,
-gana la IA. Siempre se muestra para que el admin mire el papel.
+**IA.** Opcional y **gratis**: OpenRouter con un modelo `:free`
+(default `z-ai/glm-5.2:free`, se cambia con `OPENROUTER_MODEL`).
+No usa `ANTHROPIC_API_KEY` (esa cobra tokens y queda solo para el
+chatbot de WhatsApp). Recibe el texto OCR, nunca la foto. Si el
+parser local ya cierra y la IA no, se descarta la IA. Si la IA
+cuadra (suma = total) y el local no, gana la IA. Siempre se muestra
+para que el admin mire el papel. Sin `OPENROUTER_API_KEY` el cierre
+funciona igual, solo con el parser.
 
 **Hoja.** G = texto `17 CAFE $95.000 | 5 COMIDA $27.600 | ...`, H =
 suma, I = JSON para el historial del panel. Encabezados los pone el

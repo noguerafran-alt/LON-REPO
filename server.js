@@ -220,6 +220,11 @@ if (!config.EMAIL_USER || !config.EMAIL_APP_PASSWORD) {
 if (!config.WHATSAPP_TOKEN || !config.WHATSAPP_PHONE_NUMBER_ID) {
   console.warn('⚠️  No configuraste WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID — el chatbot de WhatsApp no va a poder responder hasta que los agregues.');
 }
+if (config.OPENROUTER_API_KEY) {
+  console.log('Cierre de caja: IA gratis via OpenRouter (' + config.OPENROUTER_MODEL + ').');
+} else {
+  console.log('Cierre de caja: parser local (sin OpenRouter). Para IA gratis, agregá OPENROUTER_API_KEY.');
+}
 
 const credentials = process.env.GOOGLE_CREDENTIALS_JSON
   ? JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON)
@@ -2848,26 +2853,32 @@ function interpretarTicketLocal(textoOcr) {
 
 async function interpretarTicketConIA(textoOcr) {
   const local = interpretarTicketLocal(textoOcr);
-  if (!config.ANTHROPIC_API_KEY) return local;
+  if (!config.OPENROUTER_API_KEY) return local;
 
   const texto = String(textoOcr || '').trim().slice(0, 12000);
   if (!texto) return local;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': config.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': 'Bearer ' + config.OPENROUTER_API_KEY,
+        'HTTP-Referer': config.SITIO_URL || config.PUBLIC_URL || '',
+        'X-Title': 'LON Philosophy cierre de caja',
       },
       body: JSON.stringify({
-        model: config.ANTHROPIC_MODEL,
+        model: config.OPENROUTER_MODEL,
+        temperature: 0,
         max_tokens: 1500,
-        system: 'Sos un extractor de tickets térmicos de un POS de Argentina. Respondé SOLO un JSON válido, sin markdown ni texto extra.',
-        messages: [{
-          role: 'user',
-          content: `Del texto OCR (puede tener errores) extraé:
+        messages: [
+          {
+            role: 'system',
+            content: 'Sos un extractor de tickets térmicos de un POS de Argentina. Respondé SOLO un JSON válido, sin markdown ni texto extra.',
+          },
+          {
+            role: 'user',
+            content: `Del texto OCR (puede tener errores) extraé:
 1. Las CATEGORÍAS en negrita de "DETALLE DE PRODUCTOS DESPACHADOS". En el papel son renglones tipo "17 CAFE  $ 95.000,00" (cantidad + nombre en MAYÚSCULAS + monto). Debajo van productos indentados que NO son categorías.
 2. El "Total vendido".
 
@@ -2882,16 +2893,19 @@ ${texto}
 
 Formato exacto:
 {"totalVendido":296400,"categorias":[{"nombre":"CAFE","cantidad":17,"monto":95000}]}`,
-        }],
+          },
+        ],
       }),
     });
     if (!res.ok) {
-      console.error('IA ticket: HTTP', res.status);
+      const detalle = await res.text().catch(() => '');
+      console.error('IA ticket OpenRouter: HTTP', res.status, detalle.slice(0, 300));
       return local;
     }
     const data = await res.json();
-    const bloqueTexto = (data.content || []).find((b) => b.type === 'text');
-    const crudo = bloqueTexto ? bloqueTexto.text : '';
+    const crudo = data && data.choices && data.choices[0] && data.choices[0].message
+      ? (data.choices[0].message.content || '')
+      : '';
     const match = String(crudo).match(/\{[\s\S]*\}/);
     if (!match) return local;
     const parsed = JSON.parse(match[0]);
@@ -2949,8 +2963,8 @@ app.get('/admin/total-ventas-hoy', limiteAdmin, async (req, res) => {
 });
 
 /* Recibe el TEXTO que Tesseract leyó en el celular (la foto no viaja)
-   y devuelve categorías en negrita + total. Usa IA si hay
-   ANTHROPIC_API_KEY; si no, el parser local. */
+   y devuelve categorías en negrita + total. Usa un modelo :free de
+   OpenRouter si hay OPENROUTER_API_KEY; si no, el parser local. */
 app.post('/admin/cierre-caja/interpretar-ticket', limiteAdmin, async (req, res) => {
   try {
     const sesion = requiereNivel2(req, res);

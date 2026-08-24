@@ -513,4 +513,16 @@ module.exports = {
   // sigue funcionando con las respuestas por palabra clave (sin IA).
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
+
+  /* ------------------------------------------------------------
+   * CIERRE DE CAJA — IA opcional y GRATIS (OpenRouter :free)
+   * ------------------------------------------------------------
+   * No usa Anthropic: esa key cobra tokens. Acá se llama a un modelo
+   * con sufijo ":free" de OpenRouter. La key de OpenRouter es gratis
+   * de crear (https://openrouter.ai/keys); los modelos :free no
+   * descuentan crédito. Si la key está vacía, el cierre usa solo el
+   * parser local (también gratis, sin ningún llamado).
+   * ------------------------------------------------------------ */
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
+  OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'z-ai/glm-5.2:free',
 };
