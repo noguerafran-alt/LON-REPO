@@ -2837,17 +2837,19 @@ app.post('/admin/pedidos/registrar-unidades', limiteAdmin, async (req, res) => {
 
 function interpretarTicketLocal(textoOcr) {
   const texto = String(textoOcr || '').trim().slice(0, 12000);
-  const categorias = ticketCierre.extraerCategoriasDelTicket(texto);
   const totalVendido = ticketCierre.buscarTotalEnTicket(texto);
+  const categorias = ticketCierre.filtrarCategorias(
+    ticketCierre.extraerCategoriasDelTicket(texto),
+    totalVendido
+  );
   const suma = ticketCierre.sumaCategorias(categorias);
+  const cierra = categorias.length >= 2 && totalVendido !== null && suma === totalVendido;
   return {
     origen: 'ocr',
     totalVendido,
     categorias,
     sumaCategorias: suma,
-    sumaConfiable: ticketCierre.categoriasCierranConProductos(categorias)
-      && categorias.length >= 2
-      && (totalVendido === null || suma === totalVendido || totalVendido > 0),
+    sumaConfiable: cierra || ticketCierre.categoriasCierranConProductos(categorias),
   };
 }
 
@@ -2885,20 +2887,17 @@ function parsearRespuestaTicketIA(crudo, origen) {
   if (!match) return null;
   try {
     const parsed = JSON.parse(match[0]);
-    const categorias = ticketCierre.sanitizarCategorias(parsed.categorias);
+    let totalIA = Number.isFinite(Number(parsed.totalVendido)) ? Math.round(Number(parsed.totalVendido)) : null;
+    const categorias = ticketCierre.filtrarCategorias(parsed.categorias, totalIA);
     if (!categorias.length) return null;
     const sumaIA = ticketCierre.sumaCategorias(categorias);
-    let totalIA = Number.isFinite(Number(parsed.totalVendido)) ? Math.round(Number(parsed.totalVendido)) : null;
     const cierra = categorias.length >= 2 && totalIA !== null && sumaIA === totalIA;
-    if (!cierra && categorias.length >= 3 && sumaIA > 0) {
-      totalIA = sumaIA;
-    }
     return {
       origen: origen || 'ia',
-      totalVendido: totalIA !== null ? totalIA : (sumaIA || null),
+      totalVendido: totalIA,
       categorias,
       sumaCategorias: sumaIA,
-      sumaConfiable: categorias.length >= 2 && (totalIA === sumaIA || categorias.length >= 3),
+      sumaConfiable: cierra || ticketCierre.categoriasCierranConProductos(categorias),
     };
   } catch (err) {
     return null;
@@ -2921,16 +2920,17 @@ async function llamarOpenRouter(modelo, messages, extras) {
   });
   const cuerpo = await res.text();
   if (!res.ok) {
-    console.error('OpenRouter', modelo, res.status, cuerpo.slice(0, 400));
-    return null;
+    const aviso = 'OpenRouter ' + modelo + ' HTTP ' + res.status + ' ' + cuerpo.slice(0, 180);
+    console.error(aviso);
+    return { error: aviso };
   }
   try {
     const data = JSON.parse(cuerpo);
     const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    if (!msg) return null;
-    return msg.content || '';
+    if (!msg) return { error: 'OpenRouter sin respuesta' };
+    return { content: msg.content || '' };
   } catch (err) {
-    return null;
+    return { error: 'OpenRouter JSON inválido' };
   }
 }
 
@@ -2965,26 +2965,29 @@ async function interpretarTicketConVision(imagenDataUrl) {
     },
   ];
 
-  const crudo = await llamarOpenRouter(principal, messages, { models: fallbacks });
-  const parsed = parsearRespuestaTicketIA(crudo, 'vision');
+  const r1 = await llamarOpenRouter(principal, messages, { models: fallbacks });
+  const parsed = parsearRespuestaTicketIA(r1 && r1.content, 'vision');
   if (parsed) {
     console.log('Cierre de caja visión:', parsed.categorias.length, 'categorías, suma', parsed.sumaCategorias, 'total', parsed.totalVendido);
     return parsed;
   }
   if (principal !== 'openrouter/free') {
-    const crudo2 = await llamarOpenRouter('openrouter/free', messages);
-    return parsearRespuestaTicketIA(crudo2, 'vision');
+    const r2 = await llamarOpenRouter('openrouter/free', messages);
+    const parsed2 = parsearRespuestaTicketIA(r2 && r2.content, 'vision');
+    if (parsed2) return parsed2;
+    if (r2 && r2.error) return { origen: 'vision', categorias: [], totalVendido: null, sumaCategorias: 0, sumaConfiable: false, aviso: r2.error };
   }
+  if (r1 && r1.error) return { origen: 'vision', categorias: [], totalVendido: null, sumaCategorias: 0, sumaConfiable: false, aviso: r1.error };
   return null;
 }
 
 async function interpretarTicketConTexto(textoOcr) {
   if (!textoOcr || !textoOcr.trim()) return null;
-  const crudo = await llamarOpenRouter(config.OPENROUTER_MODEL, [
+  const r = await llamarOpenRouter(config.OPENROUTER_MODEL, [
     { role: 'system', content: 'Extractor de tickets térmicos. Respondé SOLO JSON válido.' },
     { role: 'user', content: PROMPT_TICKET + '\n\nTexto OCR:\n' + String(textoOcr).slice(0, 12000) },
   ]);
-  return parsearRespuestaTicketIA(crudo, 'ia');
+  return parsearRespuestaTicketIA(r && r.content, 'ia');
 }
 
 async function interpretarTicketConIA(textoOcr, imagenDataUrl) {
@@ -3015,6 +3018,8 @@ async function interpretarTicketConIA(textoOcr, imagenDataUrl) {
       mejor = cand;
     }
   }
+  const avisos = candidatas.map((c) => c && c.aviso).filter(Boolean);
+  if (avisos.length && !mejor.aviso) mejor = Object.assign({}, mejor, { aviso: avisos.join(' | ') });
   return mejor;
 }
 

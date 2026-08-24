@@ -86,24 +86,39 @@
       .map(([monto, linea]) => ({ monto, linea }));
   }
 
+  function extraerMontosDeLinea(linea) {
+    const re = /([$Ss5]\s*)?(-?\d{1,3}(?:[.\s]\d{3})+(?:[.,]\d{2})?|-?\d{4,}(?:[.,]\d{2})?)/g;
+    const found = [];
+    let m;
+    while ((m = re.exec(String(linea)))) {
+      const monto = parseMontoOcr(m[2]) * (/-/.test(m[2]) ? -1 : 1);
+      if (monto === 0) continue;
+      found.push({ monto, index: m.index, end: m.index + m[0].length });
+    }
+    return found;
+  }
+
   function extraerItemDeLinea(linea) {
     if (!linea) return null;
     const cruda = String(linea).replace(/\u00a0/g, ' ');
-    // Monto al final, con o sin $. Cubre 36.000,00 / 36.000.00 / 36.000 / 36000.
-    const reMonto = /([$Ss5]\s*)?(-?\d{1,3}(?:[.\s]\d{3})+(?:[.,]\d{2})?|-?\d{3,}(?:[.,]\d{2})?)\s*$/;
-    const mMonto = cruda.match(reMonto);
-    if (!mMonto) return null;
-    const monto = parseMontoOcr(mMonto[2]) * (/-/.test(mMonto[2]) ? -1 : 1);
-    if (monto === 0) return null;
+    const corteTotal = cruda.search(/total\s+vendido/i);
+    const usable = corteTotal > 0 ? cruda.slice(0, corteTotal) : cruda;
+    if (corteTotal === 0) return null;
+    if (REGEX_PALABRA_TOTAL.test(usable) && /vendido/i.test(usable)) return null;
 
-    const izquierda = cruda.slice(0, mMonto.index).trimEnd();
+    const montos = extraerMontosDeLinea(usable);
+    if (!montos.length) return null;
+    const usado = montos[0];
+    const izquierda = usable.slice(0, usado.index).trimEnd();
     const mCabeza = izquierda.match(/^(\s*)(\d{1,4})\s+(.+?)\s*$/);
     if (!mCabeza) return null;
-    const nombre = mCabeza[3].replace(/[\s.|·]+$/g, '').replace(/\s+/g, ' ').trim();
+    let nombre = mCabeza[3].replace(/[\s.|·$]+$/g, '').replace(/\s+/g, ' ').trim();
+    nombre = nombre.replace(/\s*[$Ss5]\s*-?\d[\d.,]*$/g, '').trim();
     if (!nombre || nombre.length < 2) return null;
     if (REGEX_PALABRA_TOTAL.test(nombre)) return null;
+    if (/[$]/.test(nombre)) return null;
     if (/^(otros|retiros|depositos|dep[oó]sitos|cobros)/i.test(nombre)) return null;
-    return { sangria: mCabeza[1].length, cantidad: Number(mCabeza[2]), nombre, monto };
+    return { sangria: mCabeza[1].length, cantidad: Number(mCabeza[2]), nombre, monto: usado.monto };
   }
 
   function renglonesConMontoDelDetalle(texto) {
@@ -114,25 +129,31 @@
     for (let i = 0; i < todas.length; i++) {
       if (/detalle\s+de\s+productos/i.test(todas[i])) desde = i + 1;
       else if (i > desde && /(otros\s+movimientos|retiros)/i.test(todas[i])) { hasta = i; break; }
-      else if (i > desde && REGEX_PALABRA_TOTAL.test(todas[i]) && /vendido/i.test(todas[i])) { hasta = i; break; }
+      else if (i > desde && /^\s*total\s+vendido/i.test(todas[i])) { hasta = i; break; }
     }
 
     const items = [];
     const recorte = todas.slice(desde, hasta);
     for (let i = 0; i < recorte.length; i++) {
-      let item = extraerItemDeLinea(recorte[i]);
+      let linea = recorte[i];
+      const idxTotal = linea.search(/total\s+vendido/i);
+      if (idxTotal === 0) break;
+      if (idxTotal > 0) linea = linea.slice(0, idxTotal);
+
+      let item = extraerItemDeLinea(linea);
       if (!item) {
-        const cabeza = recorte[i].match(/^(\s*)(\d{1,4})\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9/].+?)\s*$/);
+        const cabeza = linea.match(/^(\s*)(\d{1,4})\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9/].+?)\s*$/);
         const cola = extraerItemDeLinea('1 X $ ' + String(recorte[i + 1] || '').trim());
         if (cabeza && cola && cola.monto) {
-          const nombre = cabeza[3].replace(/[\s.|]+$/, '').trim();
-          if (nombre && !REGEX_PALABRA_TOTAL.test(nombre)) {
+          const nombre = cabeza[3].replace(/[\s.|$]+$/, '').trim();
+          if (nombre && !REGEX_PALABRA_TOTAL.test(nombre) && !/[$]/.test(nombre)) {
             item = { sangria: cabeza[1].length, cantidad: Number(cabeza[2]), nombre, monto: cola.monto };
             i += 1;
           }
         }
       }
       if (item) items.push(item);
+      if (idxTotal > 0) break;
     }
     return items;
   }
@@ -160,11 +181,16 @@
   function extraerCategoriasDelTicket(texto) {
     const items = renglonesConMontoDelDetalle(texto);
     if (!items.length) return [];
+    const total = buscarTotalEnTicket(texto);
 
     const categorias = [];
     let i = 0;
     while (i < items.length) {
       const actual = items[i];
+      if (total && (actual.monto === total || actual.monto > total)) {
+        i += 1;
+        continue;
+      }
       const cierre = cuantosProductosCierran(items, i);
 
       if (cierre > 0) {
@@ -187,7 +213,7 @@
       }
       i += 1;
     }
-    return categorias;
+    return filtrarCategorias(categorias, total);
   }
 
   function sumaCategorias(categorias) {
@@ -205,10 +231,15 @@
     const limpio = [];
     for (const item of crudo.slice(0, MAX_CATEGORIAS)) {
       if (!item || typeof item !== 'object') continue;
-      const nombre = String(item.nombre || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      const crudoNombre = String(item.nombre || '');
+      if (/[$]/.test(crudoNombre)) continue;
+      let nombre = crudoNombre.replace(/\s+/g, ' ').trim();
+      nombre = nombre.replace(/[\s.|·]+$/g, '').trim().slice(0, 80);
       const monto = Math.round(Number(item.monto));
       const cantidad = Math.round(Number(item.cantidad));
       if (!nombre || !Number.isFinite(monto) || monto === 0) continue;
+      if (/[$]/.test(nombre)) continue;
+      if (REGEX_PALABRA_TOTAL.test(nombre)) continue;
       limpio.push({
         nombre,
         monto,
@@ -219,6 +250,15 @@
     return limpio;
   }
 
+  function filtrarCategorias(cats, total) {
+    const t = Number(total);
+    const hayTotal = Number.isFinite(t) && t > 0;
+    return sanitizarCategorias(cats).filter((c) => {
+      if (hayTotal && (c.monto === t || c.monto > t)) return false;
+      return true;
+    });
+  }
+
   function textoCategoriasParaHoja(categorias) {
     return sanitizarCategorias(categorias)
       .map((cat) => cat.cantidad + ' ' + cat.nombre + ' $' + cat.monto.toLocaleString('es-AR'))
@@ -227,15 +267,15 @@
 
   function puntuarInterpretacion(lectura) {
     if (!lectura) return -1;
-    const cats = sanitizarCategorias(lectura.categorias || []);
-    const suma = sumaCategorias(cats);
     const total = lectura.totalVendido === null || lectura.totalVendido === undefined
       ? null
       : Number(lectura.totalVendido);
+    const cats = filtrarCategorias(lectura.categorias || [], total);
+    const suma = sumaCategorias(cats);
     let puntaje = cats.length * 10;
     puntaje += cats.filter((c) => (c.productos || 0) > 0).length * 5;
+    if (cats.some((c) => /[$]/.test(c.nombre))) puntaje -= 50;
     if (cats.length >= 2 && total !== null && suma === total) puntaje += 100;
-    else if (cats.length >= 2 && suma > 0 && (total === null || total <= 0)) puntaje += 20;
     if (categoriasCierranConProductos(cats)) puntaje += 15;
     return puntaje;
   }
@@ -267,6 +307,7 @@
     sumaCategorias,
     categoriasCierranConProductos,
     sanitizarCategorias,
+    filtrarCategorias,
     textoCategoriasParaHoja,
     puntuarInterpretacion,
     elegirMejorLectura,
