@@ -2191,9 +2191,11 @@ async function getTotalVentasHoy(sheetsClient, spreadsheetId, sheetName, fecha) 
 
 /**
  * Guarda un cierre de caja (hoja CIERRE_CAJA) y devuelve la fila
- * guardada: la comparacion es solo entre dos numeros, el total del
- * ticket del POS del local y el total que la app tiene escaneado ese
- * mismo dia.
+ * guardada. La comparación contra el escáner sigue siendo solo por
+ * total. Las categorías son las en negrita del ticket del POS (CAFE,
+ * COMIDA, LIBROS PERIPLO...) — otra taxonomía, no se cruzan con las
+ * de LON. Se guardan al final de la fila para poder ver qué se vendió
+ * por rubro ese día.
  */
 async function registrarCierreCaja(sheetsClient, spreadsheetId, sheetName, datos) {
   const cols = config.COLUMNAS_CIERRE_CAJA;
@@ -2204,6 +2206,11 @@ async function registrarCierreCaja(sheetsClient, spreadsheetId, sheetName, datos
   fila[cols.totalEscaner] = datos.totalEscaner;
   fila[cols.diferencia] = datos.diferencia;
   fila[cols.vendedor] = datos.vendedor || '';
+  fila[cols.categoriasTexto] = datos.categoriasTexto || '';
+  fila[cols.sumaCategorias] = datos.sumaCategorias === undefined || datos.sumaCategorias === null
+    ? ''
+    : datos.sumaCategorias;
+  fila[cols.categoriasJson] = datos.categoriasJson || '';
 
   await appendRow(sheetsClient, spreadsheetId, sheetName, fila);
   return datos;
@@ -2226,6 +2233,16 @@ async function getHistorialCierreCaja(sheetsClient, spreadsheetId, sheetName, li
     const fila = rows[i];
     const fecha = fila[cols.fecha] ? String(fila[cols.fecha]).trim() : '';
     if (!fecha) continue;
+    let categorias = [];
+    const crudoJson = fila[cols.categoriasJson] ? String(fila[cols.categoriasJson]).trim() : '';
+    if (crudoJson) {
+      try {
+        const parsed = JSON.parse(crudoJson);
+        if (Array.isArray(parsed)) categorias = parsed;
+      } catch (err) {
+        categorias = [];
+      }
+    }
     cierres.push({
       fecha,
       hora: fila[cols.hora] || '',
@@ -2233,6 +2250,9 @@ async function getHistorialCierreCaja(sheetsClient, spreadsheetId, sheetName, li
       totalEscaner: parseNumeroFormatoArgentino(fila[cols.totalEscaner]),
       diferencia: parseNumeroFormatoArgentino(fila[cols.diferencia]),
       vendedor: fila[cols.vendedor] || '',
+      categoriasTexto: fila[cols.categoriasTexto] || '',
+      sumaCategorias: parseNumeroFormatoArgentino(fila[cols.sumaCategorias]),
+      categorias,
     });
   }
 

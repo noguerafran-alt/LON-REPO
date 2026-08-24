@@ -14,6 +14,7 @@
 <!-- Reconocimiento de texto (OCR) para el ticket del cierre de caja — corre
      entero en el navegador, la foto nunca se sube a ningun servidor. -->
 <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="/ticketCierre.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
@@ -427,6 +428,12 @@
     margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius);
     background:var(--bg-alt); display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
+  .fila-categoria-cierre .nombre-cat{
+    flex:1; min-width:120px; padding:8px 10px; font-size:15px; font-weight:700;
+    letter-spacing:.02em; border-radius:var(--radius);
+    border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
+    font-family:'Archivo', sans-serif; text-transform:uppercase;
+  }
   .fila-categoria-cierre input[type="text"]{
     flex:1; min-width:120px; padding:8px 10px; font-size:15px; border-radius:var(--radius);
     border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
@@ -435,6 +442,7 @@
     width:110px; padding:8px 10px; font-size:15px; border-radius:var(--radius);
     border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
   }
+  .fila-categoria-cierre input.cant-cat{ width:64px; text-align:center; }
   .fila-categoria-cierre button.quitar{
     background:none; border:none; color:var(--stamp-red); font-size:18px; line-height:1; cursor:pointer; padding:4px 8px;
   }
@@ -446,6 +454,11 @@
   .fila-resumen-cierre strong{ font-family:'IBM Plex Mono', monospace; }
   #filaDiferenciaCierre.ok strong{ color:var(--stamp-green); }
   #filaDiferenciaCierre.error strong{ color:var(--stamp-red); }
+  .chip-categoria-cierre{
+    display:inline-block; margin:4px 6px 0 0; padding:3px 8px; border-radius:20px;
+    background:var(--bg-alt); border:1px solid var(--line); font-size:12px;
+  }
+  .chip-categoria-cierre b{ font-weight:700; }
 
   .badge-stock{
     font-family:'IBM Plex Mono', monospace; font-size:13px; padding:2px 8px; border-radius:20px;
@@ -807,7 +820,7 @@
   <div id="panelCierreCaja" style="display:none; padding:16px 24px 40px;">
     <div class="campo">
       <label>Cierre de caja diario</label>
-      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 10px;">Sacá una foto del ticket de cierre del POS del local. Se busca el <strong>total vendido</strong> del ticket y se compara contra el total que la app tiene escaneado hoy. Si no lo encuentra, aparecen abajo los montos que sí leyó para que toques el correcto. Revisá el número antes de guardar (o escribilo a mano).</p>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 10px;">Sacá una foto del ticket de cierre del POS. Se leen las <strong>categorías en negrita</strong> (CAFE, COMIDA, LIBROS…) y el <strong>total vendido</strong>, se cruzan entre sí para que los números cierren, y se comparan contra lo escaneado hoy en la app. Revisá el desglose contra el papel antes de guardar.</p>
       <button type="button" class="btn-generar" id="btnFotoTicketCierre">📷 Sacar foto del ticket</button>
       <input type="file" id="inputFotoTicketCierre" accept="image/*" capture="environment" style="display:none;">
       <p id="mensajeOcrCierre" style="font-size:12.5px; color:var(--ink-muted); margin:8px 0 0; min-height:1em;"></p>
@@ -829,15 +842,16 @@
       </details>
     </div>
 
-    <!-- Desglose por categoria del ticket del POS (CAFE, BAKERY, GENERICO...).
-         Es informativo: se muestra tal como viene del ticket. NO se cruza con
-         las categorias internas de LON ni se guarda en CIERRE_CAJA -- las del
-         POS son otras y no tienen por que coincidir. La fila de control
-         "Suma de categorias" existe para detectar cuando el OCR leyo mal un
-         renglon: si no coincide con el total vendido, algun monto salio mal. -->
+    <!-- Desglose por categoria del ticket del POS (las que van en negrita:
+         CAFE, COMIDA, LIBROS PERIPLO...). Se muestra, se puede corregir a
+         mano y se GUARDA en CIERRE_CAJA. NO se cruza con las categorias
+         internas de LON. La fila de control "Suma de categorias" existe
+         para que el total no se guarde con un digito mal leido. -->
     <div class="campo" id="desgloseCategoriasCierre" style="display:none;">
-      <label>Detalle del ticket por categoría</label>
+      <label>Vendido hoy por categoría</label>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Las que en el ticket van en negrita. Tocá un número si el OCR se equivocó, o agregá la que falte.</p>
       <div id="listaCategoriasCierre"></div>
+      <button type="button" class="btn-generar" id="btnAgregarCategoriaCierre" style="margin-top:8px; padding:8px 12px; font-size:13px;">+ Agregar categoría</button>
       <p id="avisoSumaCategorias" style="font-size:12.5px; margin:8px 0 0;"></p>
     </div>
 
@@ -4217,15 +4231,11 @@
   /* ============================================================
    *  PANEL: CIERRE DE CAJA (solo nivel 2)
    * ============================================================
-   * Foto del ticket -> reconocimiento de texto EN EL NAVEGADOR
-   * (Tesseract.js, la foto nunca se sube a ningún servidor) -> se busca
-   * el TOTAL VENDIDO del ticket -> se compara contra el total que la app
-   * tiene escaneado hoy -> se guarda.
-   *
-   * La comparación es solo entre esos dos números. Las categorías del
-   * ticket (CAFE, BAKERY, GENERICO...) son del POS del local y no tienen
-   * por qué coincidir con las categorías internas de LON, así que no se
-   * cruzan ni se guardan.
+   * Foto del ticket -> OCR EN EL NAVEGADOR (Tesseract.js, la foto
+   * nunca se sube) -> parser local + opcional IA sobre el TEXTO ->
+   * se muestran las categorías en negrita y el total vendido, se
+   * cruzan entre sí para que los números cierren, se comparan contra
+   * lo escaneado hoy, se guardan.
    * ============================================================ */
   const btnFotoTicketCierre = document.getElementById('btnFotoTicketCierre');
   const inputFotoTicketCierre = document.getElementById('inputFotoTicketCierre');
@@ -4245,8 +4255,10 @@
   const desgloseCategoriasCierre = document.getElementById('desgloseCategoriasCierre');
   const listaCategoriasCierre = document.getElementById('listaCategoriasCierre');
   const avisoSumaCategorias = document.getElementById('avisoSumaCategorias');
+  const btnAgregarCategoriaCierre = document.getElementById('btnAgregarCategoriaCierre');
 
   let totalEscanerHoyCache = null;
+  let categoriasCierreActuales = [];
 
   btnFotoTicketCierre.addEventListener('click', () => {
     inputFotoTicketCierre.value = '';
@@ -4263,42 +4275,46 @@
     mensajeOcrCierre.textContent = 'Leyendo el ticket... puede tardar unos segundos.';
 
     try {
-      /* Dos pasadas con preprocesado distinto. El ticket termico tiene letra
-         chica y contraste bajo: la foto cruda casi nunca alcanza. Si la
-         primera variante no encuentra el total, se prueba la segunda antes
-         de darse por vencido. */
-      let textoFinal = '';
-      let total = null;
-
+      const lecturas = [];
       for (const variante of ['gris', 'blanco-y-negro']) {
         const imagen = await prepararFotoTicket(archivo, variante);
         const resultado = await Tesseract.recognize(imagen, 'spa');
         const texto = (resultado && resultado.data && resultado.data.text) || '';
-        if (texto.trim().length > textoFinal.trim().length) textoFinal = texto;
-        total = buscarTotalEnTicket(texto);
-        if (total !== null) break;
+        const categorias = TicketCierre.extraerCategoriasDelTicket(texto);
+        const total = TicketCierre.buscarTotalEnTicket(texto);
+        lecturas.push({ texto, total, categorias });
+        const cerradas = categorias.filter((c) => (c.productos || 0) > 0).length;
+        if (total !== null && cerradas >= 3) break;
         mensajeOcrCierre.textContent = 'Reintentando con mas contraste...';
       }
 
+      const mejor = TicketCierre.elegirMejorLectura(lecturas);
+      const textoFinal = mejor.texto || '';
       textoOcrCierre.textContent = textoFinal.trim() || '(no se leyo ningun texto en la foto)';
       detalleOcrCierre.style.display = 'block';
 
-      const candidatos = montosCandidatosDelTicket(textoFinal, total);
+      aplicarLecturaTicket({
+        origen: 'ocr',
+        totalVendido: mejor.total,
+        categorias: mejor.categorias || [],
+        sumaCategorias: TicketCierre.sumaCategorias(mejor.categorias || []),
+        sumaConfiable: TicketCierre.categoriasCierranConProductos(mejor.categorias || []),
+      }, textoFinal);
 
-      if (total === null) {
-        mensajeOcrCierre.style.color = 'var(--stamp-red)';
-        mensajeOcrCierre.textContent = candidatos.length
-          ? 'No se pudo identificar cual es el total. Elegilo de la lista o escribilo a mano abajo.'
-          : 'No se leyo ningun monto en la foto. Proba con mas luz y el ticket estirado, o escribi el total a mano abajo.';
-      } else {
-        inputTotalTicketCierre.value = total;
-        mensajeOcrCierre.style.color = 'var(--stamp-green)';
-        mensajeOcrCierre.textContent = 'Total leido: $' + total.toLocaleString('es-AR') + ' - revisalo contra el ticket antes de guardar.';
+      mensajeOcrCierre.textContent = 'Revisando números...';
+      try {
+        const res = await fetch('/admin/cierre-caja/interpretar-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: adminToken, texto: textoFinal }),
+        });
+        const data = await res.json();
+        if (res.ok && data && (data.categorias || []).length) {
+          aplicarLecturaTicket(data, textoFinal);
+        }
+      } catch (err) {
+        // El parser local ya está en pantalla; la IA es un extra.
       }
-
-      mostrarCandidatosOcr(candidatos);
-      mostrarDesgloseCategorias(extraerCategoriasDelTicket(textoFinal), total);
-      actualizarResumenCierre();
     } catch (err) {
       mensajeOcrCierre.style.color = 'var(--stamp-red)';
       mensajeOcrCierre.textContent = 'No se pudo leer la foto: ' + err.message;
@@ -4307,14 +4323,40 @@
     }
   });
 
-  /* Preprocesa la foto en un canvas antes del OCR:
-     - la escala a ~1600px de ancho (Tesseract necesita letra grande; las
-       fotos de celular vienen con el ticket chico en el medio),
-     - la pasa a grises y le estira el contraste entre el minimo y el maximo
-       real de la imagen (papel amarillento + tinta gris -> blanco y negro),
-     - en la variante 'blanco-y-negro' ademas binariza con un umbral sacado
-       del promedio, que es lo que salva los tickets impresos flojos.
-     Todo local: la foto no sale del navegador. */
+  function aplicarLecturaTicket(lectura, textoOcr) {
+    const categorias = TicketCierre.sanitizarCategorias(lectura.categorias || []);
+    let total = lectura.totalVendido === null || lectura.totalVendido === undefined
+      ? null
+      : Number(lectura.totalVendido);
+    const suma = TicketCierre.sumaCategorias(categorias);
+    const sumaConfiable = lectura.sumaConfiable
+      || TicketCierre.categoriasCierranConProductos(categorias);
+
+    if ((total === null || total <= 0) && sumaConfiable && suma > 0) total = suma;
+    if (sumaConfiable && suma > 0 && total !== null && total !== suma) {
+      total = suma;
+    }
+
+    const candidatos = TicketCierre.montosCandidatosDelTicket(textoOcr, total);
+    if (total === null) {
+      mensajeOcrCierre.style.color = 'var(--stamp-red)';
+      mensajeOcrCierre.textContent = candidatos.length
+        ? 'No se pudo identificar cual es el total. Elegilo de la lista o escribilo a mano abajo.'
+        : 'No se leyo ningun monto en la foto. Proba con mas luz y el ticket estirado, o escribi el total a mano abajo.';
+    } else {
+      inputTotalTicketCierre.value = total;
+      mensajeOcrCierre.style.color = 'var(--stamp-green)';
+      const como = lectura.origen === 'ia' ? ' (lectura revisada)' : '';
+      mensajeOcrCierre.textContent = 'Total leido: $' + total.toLocaleString('es-AR') + como
+        + ' — revisalo contra el ticket antes de guardar.';
+    }
+
+    mostrarCandidatosOcr(candidatos);
+    categoriasCierreActuales = categorias;
+    renderizarCategoriasCierre();
+    actualizarResumenCierre();
+  }
+
   async function prepararFotoTicket(archivo, variante){
     const bitmap = await cargarBitmapArchivo(archivo);
     const anchoOriginal = bitmap.width || bitmap.naturalWidth;
@@ -4346,8 +4388,6 @@
     }
     const rango = Math.max(1, maximo - minimo);
     const promedio = suma / (px.length / 4);
-    // Umbral apenas por debajo del promedio: la mayor parte del ticket es
-    // papel claro, asi que el promedio queda del lado del fondo.
     const umbral = promedio * 0.88;
 
     for (let i = 0; i < px.length; i += 4) {
@@ -4362,7 +4402,6 @@
 
   function cargarBitmapArchivo(archivo){
     if (typeof createImageBitmap === 'function') return createImageBitmap(archivo);
-    // Fallback para navegadores viejos.
     return new Promise((resolver, rechazar) => {
       const url = URL.createObjectURL(archivo);
       const img = new Image();
@@ -4370,64 +4409,6 @@
       img.onerror = () => { URL.revokeObjectURL(url); rechazar(new Error('no se pudo abrir la imagen')); };
       img.src = url;
     });
-  }
-
-  /* Reconoce la palabra "total" aunque el OCR la haya leido mal: TOTAL sale
-     seguido como T0TAL, TQTAL, TOTAI, IOTAL, T07AL. */
-  const REGEX_PALABRA_TOTAL = /[t7i1][o0qc][t7i1][a4@][li1|!]/i;
-
-  /* Busca el total vendido en el texto reconocido. Estrategia, en orden:
-       1. lineas que dicen "total" con una etiqueta fuerte ("total vendido",
-          "total general", "venta total") -> el mayor de esas;
-       2. cualquier linea con "total" y un monto -> el mayor (el total del
-          dia nunca puede ser menor que un subtotal parcial);
-       3. el monto puede estar en la linea SIGUIENTE: en muchos tickets la
-          etiqueta y el importe quedan tan separados que el OCR los corta.
-     Devuelve null si no encuentra nada; ahi el admin elige de los
-     candidatos o lo escribe a mano. */
-  function buscarTotalEnTicket(texto){
-    const lineas = String(texto || '').split(/\r?\n/);
-    let mejorFuerte = null;
-    let mejorSimple = null;
-
-    for (let i = 0; i < lineas.length; i++) {
-      const linea = lineas[i];
-      if (!REGEX_PALABRA_TOTAL.test(linea)) continue;
-
-      // Descarta lineas que hablan de otra cosa que tambien lleva "total".
-      if (/(cantidad|unidades|items|art[iI]culos|iva|descuento|anulad)/i.test(linea)) continue;
-
-      let monto = mayorMontoDeTexto(linea);
-      // Etiqueta sola: el importe cayo en la linea de abajo.
-      if (monto === null) monto = mayorMontoDeTexto(lineas[i + 1] || '');
-      if (monto === null) continue;
-
-      const esFuerte = /(vendido|general|del d[iI]a|venta)/i.test(linea);
-      if (esFuerte && (mejorFuerte === null || monto > mejorFuerte)) mejorFuerte = monto;
-      if (mejorSimple === null || monto > mejorSimple) mejorSimple = monto;
-    }
-    return mejorFuerte !== null ? mejorFuerte : mejorSimple;
-  }
-
-  /* Todos los montos que aparecen en el ticket, de mayor a menor, con la
-     linea donde salieron, para que el admin toque el correcto en vez de
-     escribirlo a mano. */
-  function montosCandidatosDelTicket(texto, yaElegido){
-    const vistos = new Map();
-    for (const linea of String(texto || '').split(/\r?\n/)) {
-      for (const bruto of linea.match(/\d[\d.,\s]*\d|\d/g) || []) {
-        const monto = parseMontoOcr(bruto);
-        // Los totales de cierre son montos grandes; por debajo de 1000 es
-        // ruido (numeros de ticket, cantidades, horas).
-        if (monto < 1000) continue;
-        if (monto === yaElegido) continue;
-        if (!vistos.has(monto)) vistos.set(monto, linea.trim());
-      }
-    }
-    return [...vistos.entries()]
-      .sort((a, b) => b[0] - a[0])
-      .slice(0, 8)
-      .map(([monto, linea]) => ({ monto, linea }));
   }
 
   function mostrarCandidatosOcr(candidatos){
@@ -4446,6 +4427,7 @@
         mensajeOcrCierre.style.color = 'var(--stamp-green)';
         mensajeOcrCierre.textContent = 'Total elegido: $' + candidato.monto.toLocaleString('es-AR') + '.';
         actualizarResumenCierre();
+        actualizarAvisoSumaCategorias();
       });
       listaCandidatosOcrCierre.appendChild(btn);
     }
@@ -4453,6 +4435,7 @@
   }
 
   function ocultarAyudasOcr(){
+    categoriasCierreActuales = [];
     desgloseCategoriasCierre.style.display = 'none';
     listaCategoriasCierre.innerHTML = '';
     avisoSumaCategorias.textContent = '';
@@ -4463,217 +4446,162 @@
     textoOcrCierre.textContent = '';
   }
 
-  function mayorMontoDeTexto(texto){
-    let mayor = null;
-    for (const bruto of String(texto).match(/\d[\d.,\s]*\d|\d/g) || []) {
-      const monto = parseMontoOcr(bruto);
-      if (monto <= 0) continue;
-      if (mayor === null || monto > mayor) mayor = monto;
-    }
-    return mayor;
+  function leerCategoriasDesdeFormulario(){
+    const filas = listaCategoriasCierre.querySelectorAll('.fila-categoria-cierre');
+    const cats = [];
+    filas.forEach((fila) => {
+      const nombre = (fila.querySelector('.nombre-cat').value || '').trim();
+      const cantidad = Number(fila.querySelector('.cant-cat').value);
+      const monto = Number(fila.querySelector('.monto-cat').value);
+      if (!nombre || !Number.isFinite(monto) || monto === 0) return;
+      cats.push({
+        nombre,
+        cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
+        monto: Math.round(monto),
+        productos: Number(fila.dataset.productos) || 0,
+      });
+    });
+    return cats;
   }
 
-  /* ---------- Desglose por categoria del ticket ----------
-     El ticket del POS lista, en la seccion "DETALLE DE PRODUCTOS
-     DESPACHADOS", una linea por categoria (la que en el papel esta en
-     negrita y mas grande: "32 CAFE  $ 187.300,00") y debajo, indentados,
-     los productos de esa categoria.
-
-     El OCR no ve la negrita ni el tamano, y la sangria se pierde seguido.
-     Lo que si se cumple siempre es que **los productos de una categoria
-     suman el monto de la categoria**: 32 CAFE = 187.300 = 24.800 + 52.200 +
-     60.000 + 14.400 + 23.000 + 6.400 + 6.500. Asi que la categoria se
-     detecta por esa estructura, no por como se ve el texto. Si un renglon no
-     cierra por un error de lectura, se cae a la heuristica de "nombre todo
-     en MAYUSCULAS y sin sangria". */
-
-  const MAX_PRODUCTOS_POR_CATEGORIA = 15;
-
-  function extraerCategoriasDelTicket(texto){
-    const items = renglonesConMontoDelDetalle(texto);
-    if (!items.length) return [];
-
-    const categorias = [];
-    let i = 0;
-    while (i < items.length) {
-      const actual = items[i];
-      const cierre = cuantosProductosCierran(items, i);
-
-      if (cierre > 0) {
-        categorias.push({ nombre: actual.nombre, monto: actual.monto, productos: cierre });
-        i += cierre + 1;
-        continue;
-      }
-      // No cerro con sus productos: se acepta como categoria solo si parece
-      // un encabezado (MAYUSCULAS, sin sangria). Si no, es un producto
-      // suelto de una categoria ya contada y se ignora.
-      if (pareceEncabezadoCategoria(actual)) {
-        categorias.push({ nombre: actual.nombre, monto: actual.monto, productos: 0 });
-      }
-      i += 1;
-    }
-    return categorias;
-  }
-
-  /* Cuantos renglones seguidos, a partir de i+1, suman exacto el monto de
-     items[i]. 0 si ninguno cierra. */
-  function cuantosProductosCierran(items, i){
-    const objetivo = items[i].monto;
-    if (objetivo <= 0) return 0;
-    let suma = 0;
-    const tope = Math.min(items.length - 1, i + MAX_PRODUCTOS_POR_CATEGORIA);
-    for (let k = i + 1; k <= tope; k++) {
-      suma += items[k].monto;
-      if (suma === objetivo) return k - i;
-      if (suma > objetivo) return 0;
-    }
-    return 0;
-  }
-
-  function pareceEncabezadoCategoria(item){
-    const letras = item.nombre.replace(/[^A-Za-z\u00C0-\u017F]/g, '');
-    if (letras.length < 3) return false;
-    // Tolera una minuscula: el OCR confunde I/l, O/o en palabras cortas.
-    const minusculas = letras.length - letras.replace(/[a-z\u00E0-\u00FF]/g, '').length;
-    return minusculas <= 1 && item.sangria <= 2;
-  }
-
-  /* Renglones "<cantidad> <NOMBRE> $ <monto>" de la seccion de detalle. Se
-     corta en "OTROS MOVIMIENTOS" / "Total vendido" para no arrastrar los
-     retiros de caja, que no son categorias vendidas. */
-  function renglonesConMontoDelDetalle(texto){
-    const todas = String(texto || '').split(/\r?\n/);
-    let desde = 0, hasta = todas.length;
-
-    for (let i = 0; i < todas.length; i++) {
-      if (/detalle\s+de\s+productos/i.test(todas[i])) desde = i + 1;
-      else if (i > desde && /(otros\s+movimientos|retiros)/i.test(todas[i])) { hasta = i; break; }
-      else if (i > desde && REGEX_PALABRA_TOTAL.test(todas[i]) && /vendido/i.test(todas[i])) { hasta = i; break; }
-    }
-
-    const items = [];
-    for (const linea of todas.slice(desde, hasta)) {
-      // El simbolo $ sale seguido leido como S o 5, o directamente perdido,
-      // asi que es opcional; lo que ancla el renglon es el monto con sus dos
-      // decimales al final ("9.500,00"), que en este ticket siempre estan.
-      const m = linea.match(/^(\s*)(\d+)\s+(.+?)\s+[$Ss5]?\s*(-?\s*\d[\d.,]*[.,]\d{2})\s*$/);
-      if (!m) continue;
-      const nombre = m[3].replace(/[\s.]+$/, '').trim();
-      if (!nombre || REGEX_PALABRA_TOTAL.test(nombre)) continue;
-      const negativo = /-/.test(m[4]);
-      const monto = parseMontoOcr(m[4]) * (negativo ? -1 : 1);
-      if (monto === 0) continue;
-      items.push({ sangria: m[1].length, cantidad: Number(m[2]), nombre, monto });
-    }
-    return items;
-  }
-
-  function mostrarDesgloseCategorias(categorias, totalVendido){
+  function renderizarCategoriasCierre(){
     listaCategoriasCierre.innerHTML = '';
     avisoSumaCategorias.textContent = '';
-    if (!categorias.length) { desgloseCategoriasCierre.style.display = 'none'; return; }
-
-    for (const cat of categorias) {
-      const fila = document.createElement('div');
-      fila.className = 'fila-resumen-cierre';
-      const nombre = document.createElement('span');
-      nombre.textContent = cat.nombre;
-      const monto = document.createElement('strong');
-      monto.textContent = (cat.monto < 0 ? '-$' : '$') + Math.abs(cat.monto).toLocaleString('es-AR');
-      fila.appendChild(nombre);
-      fila.appendChild(monto);
-      listaCategoriasCierre.appendChild(fila);
+    if (!categoriasCierreActuales.length) {
+      desgloseCategoriasCierre.style.display = 'none';
+      return;
     }
 
-    const suma = categorias.reduce((acc, cat) => acc + cat.monto, 0);
+    categoriasCierreActuales.forEach((cat, indice) => {
+      const fila = document.createElement('div');
+      fila.className = 'fila-categoria-cierre';
+      fila.dataset.productos = String(cat.productos || 0);
+
+      const cant = document.createElement('input');
+      cant.type = 'number';
+      cant.className = 'cant-cat';
+      cant.min = '1';
+      cant.step = '1';
+      cant.value = cat.cantidad || 1;
+      cant.title = 'Cantidad de ítems de esta categoría';
+      cant.addEventListener('input', onEditarCategoriaCierre);
+
+      const nombre = document.createElement('input');
+      nombre.type = 'text';
+      nombre.className = 'nombre-cat';
+      nombre.value = cat.nombre;
+      nombre.placeholder = 'CATEGORÍA';
+      nombre.addEventListener('input', onEditarCategoriaCierre);
+
+      const monto = document.createElement('input');
+      monto.type = 'number';
+      monto.className = 'monto-cat';
+      monto.min = '0';
+      monto.step = '1';
+      monto.value = cat.monto;
+      monto.title = 'Monto vendido en pesos';
+      monto.addEventListener('input', onEditarCategoriaCierre);
+
+      const quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.className = 'quitar';
+      quitar.textContent = '×';
+      quitar.title = 'Quitar categoría';
+      quitar.addEventListener('click', () => {
+        categoriasCierreActuales.splice(indice, 1);
+        renderizarCategoriasCierre();
+      });
+
+      fila.appendChild(cant);
+      fila.appendChild(nombre);
+      fila.appendChild(monto);
+      fila.appendChild(quitar);
+      listaCategoriasCierre.appendChild(fila);
+    });
+
+    const suma = TicketCierre.sumaCategorias(categoriasCierreActuales);
     const filaSuma = document.createElement('div');
     filaSuma.className = 'fila-resumen-cierre';
+    filaSuma.id = 'filaSumaCategoriasCierre';
     const etiquetaSuma = document.createElement('span');
-    etiquetaSuma.textContent = 'Suma de categorías';
+    const negritaSuma = document.createElement('strong');
+    negritaSuma.textContent = 'Suma de categorías';
+    etiquetaSuma.appendChild(negritaSuma);
     const montoSuma = document.createElement('strong');
+    montoSuma.id = 'montoSumaCategoriasCierre';
     montoSuma.textContent = '$' + suma.toLocaleString('es-AR');
     filaSuma.appendChild(etiquetaSuma);
     filaSuma.appendChild(montoSuma);
     listaCategoriasCierre.appendChild(filaSuma);
 
-    /* Cuando la suma no coincide con el total leido, uno de los dos numeros
-       tiene un digito mal leido. No son igual de confiables: el monto de una
-       categoria que cerro con sus productos esta validado por dos lecturas
-       independientes del papel (la categoria y la suma de sus productos),
-       mientras que el total vendido se leyo una sola vez. Si TODAS las
-       categorias con monto positivo cerraron asi, la suma es la fuente mas
-       confiable y se ofrece para reemplazar el total — con un boton, no
-       automatico: el admin tiene que poder mirar el papel. */
-    const sinValidar = categorias.filter(cat => cat.monto > 0 && cat.productos === 0);
-    const sumaConfiable = categorias.length >= 3 && sinValidar.length === 0;
+    desgloseCategoriasCierre.style.display = 'block';
+    actualizarAvisoSumaCategorias();
+  }
 
-    if (totalVendido !== null && suma !== totalVendido) {
+  function onEditarCategoriaCierre(){
+    categoriasCierreActuales = leerCategoriasDesdeFormulario();
+    const sumaEl = document.getElementById('montoSumaCategoriasCierre');
+    if (sumaEl) sumaEl.textContent = '$' + TicketCierre.sumaCategorias(categoriasCierreActuales).toLocaleString('es-AR');
+    actualizarAvisoSumaCategorias();
+  }
+
+  function actualizarAvisoSumaCategorias(){
+    const cats = categoriasCierreActuales;
+    const suma = TicketCierre.sumaCategorias(cats);
+    const totalVendido = Number(inputTotalTicketCierre.value);
+    const totalOk = Number.isFinite(totalVendido) && totalVendido > 0;
+    const sumaEl = document.getElementById('montoSumaCategoriasCierre');
+    avisoSumaCategorias.textContent = '';
+    if (sumaEl) sumaEl.style.color = '';
+
+    if (!cats.length) return;
+
+    if (totalOk && suma !== totalVendido) {
       const dif = suma - totalVendido;
-      montoSuma.style.color = 'var(--stamp-red)';
+      if (sumaEl) sumaEl.style.color = 'var(--stamp-red)';
       avisoSumaCategorias.style.color = 'var(--stamp-red)';
       avisoSumaCategorias.textContent = 'Ojo: las categorías suman $'
         + Math.abs(dif).toLocaleString('es-AR') + (dif > 0 ? ' más' : ' menos')
-        + ' que el total leído ($' + totalVendido.toLocaleString('es-AR')
-        + '). Algún renglón se leyó mal — comparalo con el papel.';
+        + ' que el total ($' + totalVendido.toLocaleString('es-AR')
+        + '). Corregí el renglón que no cierra contra el papel.';
 
+      const sumaConfiable = TicketCierre.categoriasCierranConProductos(cats) && cats.length >= 2;
       if (sumaConfiable) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn-generar';
         btn.style.cssText = 'display:block; padding:8px 12px; font-size:13px; margin-top:8px;';
         btn.textContent = 'Usar $' + suma.toLocaleString('es-AR') + ' (suma de categorías)';
-        btn.title = 'Cada categoría cuadra con sus productos, así que esta suma se leyó dos veces bien.';
         btn.addEventListener('click', () => {
           inputTotalTicketCierre.value = suma;
           mensajeOcrCierre.style.color = 'var(--stamp-green)';
           mensajeOcrCierre.textContent = 'Total corregido a $' + suma.toLocaleString('es-AR')
             + ' con la suma de las categorías.';
           actualizarResumenCierre();
+          actualizarAvisoSumaCategorias();
         });
         avisoSumaCategorias.appendChild(btn);
       }
-    } else if (totalVendido !== null) {
+    } else if (totalOk) {
       avisoSumaCategorias.style.color = 'var(--stamp-green)';
       avisoSumaCategorias.textContent = 'Las categorías cierran con el total vendido.';
-    } else if (sumaConfiable) {
-      // No se encontro el total en la foto, pero las categorias cuadran entre
-      // ellas: la suma sirve como total.
-      inputTotalTicketCierre.value = suma;
-      avisoSumaCategorias.style.color = 'var(--stamp-green)';
-      avisoSumaCategorias.textContent = 'No se encontró el renglón del total, '
-        + 'pero las categorías cuadran con sus productos: se usó la suma ($'
-        + suma.toLocaleString('es-AR') + '). Revisala contra el papel.';
     }
+  }
 
+  btnAgregarCategoriaCierre.addEventListener('click', () => {
+    categoriasCierreActuales = leerCategoriasDesdeFormulario();
+    categoriasCierreActuales.push({ nombre: '', cantidad: 1, monto: 0, productos: 0 });
+    renderizarCategoriasCierre();
     desgloseCategoriasCierre.style.display = 'block';
-  }
+    const inputs = listaCategoriasCierre.querySelectorAll('.nombre-cat');
+    const ultimo = inputs[inputs.length - 1];
+    if (ultimo) ultimo.focus();
+  });
 
-  /* Parsea un monto leido por OCR sin asumir el formato del POS. Decide cual
-     separador es el decimal por la cantidad de digitos que le siguen:
-       "446.800,00" -> 446800    (coma decimal, formato argentino)
-       "446.800.00" -> 446800    (el OCR confundio la coma con un punto)
-       "446,800"    -> 446800    (formato con coma de miles)
-       "446.800"    -> 446800
-     Devuelve pesos enteros: el cierre se compara en pesos, los centavos del
-     ticket no aportan. */
-  function parseMontoOcr(bruto){
-    const limpio = String(bruto).replace(/\s/g, '').replace(/[^\d.,]/g, '').replace(/[.,]+$/, '');
-    if (!/\d/.test(limpio)) return 0;
-
-    const ultimoSeparador = Math.max(limpio.lastIndexOf('.'), limpio.lastIndexOf(','));
-    const soloDigitos = limpio.replace(/[.,]/g, '');
-    if (ultimoSeparador === -1) return Math.round(Number(soloDigitos)) || 0;
-
-    const decimales = limpio.length - ultimoSeparador - 1;
-    if (decimales === 1 || decimales === 2) {
-      const entero = limpio.slice(0, ultimoSeparador).replace(/[.,]/g, '');
-      return Math.round(Number(entero + '.' + limpio.slice(ultimoSeparador + 1))) || 0;
-    }
-    // 3 digitos (o mas de un grupo raro): era separador de miles.
-    return Math.round(Number(soloDigitos)) || 0;
-  }
-
-  inputTotalTicketCierre.addEventListener('input', actualizarResumenCierre);
+  inputTotalTicketCierre.addEventListener('input', () => {
+    actualizarResumenCierre();
+    actualizarAvisoSumaCategorias();
+  });
 
   async function cargarTotalEscanerHoy(){
     try {
@@ -4705,11 +4633,22 @@
   }
 
   btnGuardarCierre.addEventListener('click', async () => {
+    categoriasCierreActuales = leerCategoriasDesdeFormulario();
     const totalTicket = Number(inputTotalTicketCierre.value);
     if (!Number.isFinite(totalTicket) || totalTicket <= 0) {
       mensajeGuardarCierre.style.color = 'var(--stamp-red)';
       mensajeGuardarCierre.textContent = 'Cargá el total del ticket antes de guardar.';
       return;
+    }
+
+    const suma = TicketCierre.sumaCategorias(categoriasCierreActuales);
+    if (categoriasCierreActuales.length && suma !== totalTicket) {
+      const seguir = confirm(
+        'Las categorías suman $' + suma.toLocaleString('es-AR')
+        + ' y el total es $' + totalTicket.toLocaleString('es-AR')
+        + '. ¿Guardar igual?'
+      );
+      if (!seguir) return;
     }
 
     btnGuardarCierre.disabled = true;
@@ -4719,7 +4658,11 @@
       const res = await fetch('/admin/cierre-caja', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: adminToken, totalTicket }),
+        body: JSON.stringify({
+          token: adminToken,
+          totalTicket,
+          categorias: categoriasCierreActuales,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
@@ -4728,6 +4671,7 @@
       mensajeGuardarCierre.textContent = 'Cierre de caja guardado ✓';
       inputTotalTicketCierre.value = '';
       mensajeOcrCierre.textContent = '';
+      ocultarAyudasOcr();
       actualizarResumenCierre();
       cargarHistorialCierreCaja();
     } catch (err) {
@@ -4755,6 +4699,10 @@
 
       listaHistorialCierre.innerHTML = cierres.map((c) => {
         const diferenciaOk = Math.abs(Number(c.diferencia) || 0) < 1;
+        const cats = Array.isArray(c.categorias) ? c.categorias : [];
+        const chips = cats.map((cat) =>
+          `<span class="chip-categoria-cierre"><b>${escaparHtml(String(cat.cantidad || '') + ' ' + (cat.nombre || ''))}</b> $${(Number(cat.monto) || 0).toLocaleString('es-AR')}</span>`
+        ).join('');
         return `
           <div class="item-producto" style="cursor:default; align-items:flex-start;">
             <div class="lista-producto-info">
@@ -4763,6 +4711,7 @@
                 Ticket $${(Number(c.totalTicket) || 0).toLocaleString('es-AR')} · Escáner $${(Number(c.totalEscaner) || 0).toLocaleString('es-AR')} ·
                 <span style="color:${diferenciaOk ? 'var(--stamp-green)' : 'var(--stamp-red)'};">Dif. $${(Number(c.diferencia) || 0).toLocaleString('es-AR')}</span>
               </span>
+              ${chips ? `<div style="margin-top:4px;">${chips}</div>` : ''}
             </div>
           </div>
         `;

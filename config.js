@@ -214,6 +214,12 @@ module.exports = {
     totalEscaner: 3,          // D: total de VENTAS marcadas "Vendido" ese mismo dia
     diferencia: 4,            // E: totalTicket - totalEscaner
     vendedor: 5,              // F: email de la cuenta admin que guardo el cierre
+    // Columnas nuevas al FINAL (nunca insertar en el medio: no se corren
+    // los cierres ya guardados). El usuario tiene que poner los
+    // encabezados a mano en la fila 1: Categorias | Suma categorias | Detalle JSON.
+    categoriasTexto: 6,       // G: "17 CAFE $95.000 | 5 COMIDA $27.600 | ..." (las en negrita del ticket)
+    sumaCategorias: 7,        // H: suma de esas categorias, en pesos
+    categoriasJson: 8,        // I: JSON para que el panel pueda volver a mostrar el desglose
   },
 
   // Columnas de la hoja AdminUsers (planilla de PRODUCTOS). Lista blanca

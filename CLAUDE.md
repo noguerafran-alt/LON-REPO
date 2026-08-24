@@ -77,9 +77,11 @@ reintentarlo), un bug que costó encontrar, y lo que quedó a medias.
 ## Cosas del negocio que no son obvias
 
 - El local tiene un **POS aparte** (café/gastronomía) que emite tickets
-  con sus propias categorías (CAFE, BAKERY, GENERICO...) — no son las
-  categorías internas de LON (Libros, Velas, Joyas). Nunca mapear una
-  taxonomía con la otra.
+  con sus propias categorías (CAFE, BAKERY, GENERICO, LIBROS PERIPLO...)
+  — no son las categorías internas de LON (Libros, Velas, Joyas). Nunca
+  mapear una taxonomía con la otra. En el cierre de caja esas categorías
+  del POS **sí se guardan** (desglose de lo vendido ese día) pero **no
+  se comparan** contra las de LON ni contra el escáner.
 - El programa de fidelidad de café: 3 escaneos pagos → el contador queda
   "pendiente" (no se resetea) → el 4to escaneo es el regalo y ahí sí
   resetea a 0.

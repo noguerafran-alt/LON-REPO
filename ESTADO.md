@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-08-23**
+> Última actualización: **2026-08-23 (noche)**
 
 ## Qué hace la app hoy
 
@@ -34,14 +34,14 @@
   - **Pedidos** (nivel 1+2): ver/filtrar pedidos online, cambiar estado,
     registrar la unidad física que sale del local.
   - **Cierre de caja** (nivel 2 exclusivo): foto del ticket del POS del
-    local → OCR en el navegador (Tesseract.js) busca el **total
-    vendido** → se compara contra el total que la app tiene escaneado
-    ese día (VENTAS) → se guarda en hoja `CIERRE_CAJA`. La
-    **comparación** sigue siendo solo por el total. Además se **muestra
-    en pantalla** el desglose por categoría del ticket (CAFE, BAKERY,
-    GENERICO...) — informativo, no se compara ni se guarda. Ver
-    “Cierre de caja: categorías del ticket” más abajo para la historia
-    de esta decisión, que fue y volvió.
+    local → OCR en el navegador (Tesseract.js; la foto nunca se sube) →
+    parser de las **categorías en negrita** + total vendido → si hay
+    `ANTHROPIC_API_KEY`, una IA revisa el *texto* OCR (no la foto) → se
+    muestran las categorías editables, se exige que sumen el total, se
+    comparan contra lo escaneado hoy (VENTAS) y se guarda en
+    `CIERRE_CAJA` (totales A-F + desglose G-I). La comparación contra
+    el escáner sigue siendo solo por el total: las categorías del POS
+    no se cruzan con las internas de LON.
   - **Usuarios** (nivel 2 exclusivo): alta/baja/nivel de cuentas admin.
 - **Bots/integraciones**: chatbot de WhatsApp (Cloud API), mail de
   confirmación de transferencia (Gmail SMTP), SEO dinámico por producto
@@ -55,9 +55,10 @@ recargo MP), `CODIGOS_BARRA`, `VISITAS`, `Envios`, `CONTADOR_UNIDADES`,
 `IMPRIMIR`, `IMPRIMIR APP`, `HISTORICO_SKU`.
 
 **Planilla `SHEET_ID_VENTAS`**: `VENTAS`, `PEDIDOS`, `Clientes`,
-`AdminUsers`, **`CIERRE_CAJA` (creada 2026-08-23, hay que verificar que
-el usuario ya le puso los encabezados: Fecha, Hora, Total Ticket, Total
-Escáner, Diferencia, Vendedor — A a F)**.
+`AdminUsers`, **`CIERRE_CAJA`** (A-F ya existían: Fecha, Hora, Total
+Ticket, Total Escáner, Diferencia, Vendedor. **Agregar a mano en la
+fila 1**, al final: **G Categorias**, **H Suma categorias**, **I
+Detalle JSON** — la app nunca escribe encabezados).
 
 ## Pendiente / a medias
 
@@ -68,17 +69,16 @@ Escáner, Diferencia, Vendedor — A a F)**.
 - **Mercado Pago / Payway en el carrito**: no implementado, solo
   transferencia. Si se pide, hay que resolver el recargo MP cuando el
   carrito tiene productos de categorías distintas (cada una con su %).
-- **Cierre de caja / OCR**: probándolo en el celular el 2026-08-23 **no
-  reconoció el total** ("No se encontró el total en la foto"). Se
-  reforzó en tres frentes (ver sección propia más abajo), pero **sigue
-  sin haber una prueba exitosa contra un ticket real**: el usuario tiene
-  que volver a probarlo. Si aún así falla seguido, el camino no es
-  seguir ajustando el OCR sino apoyarse en la lista de montos
-  candidatos (que ya no requiere tipear) o pedir el total a mano
-  directamente. **Falta que el usuario diga qué número exacto vio en
-  pantalla** el 2026-08-23 (reportó “$1000 menos”): si fue 445.800 ya
-  queda cubierto por la corrección con la suma de categorías; si fue
-  otro, hay algo más que mirar.
+- **Cierre de caja / OCR**: el 2026-08-23 a la noche el usuario mandó
+  un ticket real de ejemplo (total vendido $296.400, categorías
+  LIBROS PERIPLO / ADICIONALES / CAFE / GENERICO / COMIDA / CAFE
+  MOLIDO / LIBROS JULITA) y pidió (1) guardar lo vendido por día en
+  cada categoría en negrita, (2) que el análisis tenga siempre
+  números correctos, (3) usar IA si hace falta. El parser local, con
+  esa transcripción, cierra exacto ($296.400). Sigue haciendo falta
+  una prueba con foto real desde el celular. Si Tesseract entrega
+  texto sucio, la IA (si hay `ANTHROPIC_API_KEY`) revisa ese texto
+  — la foto no sale del navegador.
 - **`README.md` desactualizado**: todavía describe la v1 (solo escáner
   QR → Sheets). No se tocó esta sesión — si se necesita para onboarding
   de alguien nuevo, reescribir.
@@ -128,70 +128,57 @@ decimal), así que `446.800,00`, `446.800.00`, `446,800` y `446.800`
 dan todos 446800. Hay 12 casos de prueba de esta lógica corridos a
 mano con Node (no quedaron en el repo: no hay runner de tests todavía).
 
-## Cierre de caja: categorías del ticket (2026-08-23, segunda vuelta)
+## Cierre de caja: categorías del ticket (2026-08-23, tercera vuelta)
 
-El desglose por categoría se había implementado, se **sacó** ese mismo
-día por pedido del usuario, y se volvió a pedir unas horas después. No
-es una contradicción: lo que se sacó fue **comparar** las categorías del
-ticket contra las de LON (no coinciden, no tiene sentido); lo que se
-pidió ahora es solo **verlas en pantalla** al escanear, además del
-total. La comparación y lo que se guarda en `CIERRE_CAJA` no cambiaron
-— siguen siendo las 6 columnas A-F, solo el total.
+Se pidió de nuevo, ahora **guardar** lo vendido por día en cada
+categoría en negrita del ticket (no solo mostrarlo). La comparación
+contra el escáner de LON **sigue siendo solo el total**: las taxonomías
+no se cruzan. Lo nuevo es el desglose POS → columnas G-I.
 
-**Cómo se detecta cuál línea es una categoría.** En el papel la
-categoría está en negrita y más grande (`32 CAFE  $ 187.300,00`) y sus
-productos van indentados debajo. El OCR no ve negrita ni tamaño, y la
-sangría se pierde seguido, así que no se puede usar el aspecto. Lo que
-**siempre** se cumple es que los productos de una categoría suman el
-monto de la categoría: 32 CAFE = 187.300 = 24.800 + 52.200 + 60.000 +
-14.400 + 23.000 + 6.400 + 6.500. `extraerCategoriasDelTicket` recorre
-los renglones y toma como categoría la que cierra con los siguientes
-(`cuantosProductosCierran`); si un renglón no cierra por un error de
-lectura, cae a la heurística de “nombre todo en MAYÚSCULAS y sin
-sangría”. Esto además resuelve el caso molesto de los productos que
-también están en mayúsculas (`1 NUEZ C/ CHOCOLATE`, `1 VELA HARROW`):
-no se cuentan como categoría porque ya fueron consumidos como producto
-de la de arriba.
+**Cómo se detecta cuál línea es una categoría.** En el papel va en
+negrita y más grande (`17 CAFE  $ 95.000,00`) y sus productos van
+indentados debajo. El OCR no ve negrita ni tamaño. Lo que **siempre**
+se cumple es que los productos de una categoría suman el monto de esa
+categoría. `extraerCategoriasDelTicket` (ahora en `ticketCierre.js`,
+compartido entre navegador y servidor) toma como categoría la que
+cierra con los renglones siguientes; si un renglón no cierra, cae a
+“nombre todo en MAYÚSCULAS y sin sangría”. Los productos que también
+están en mayúsculas (`1 LIBROS` debajo de LIBROS JULITA) no se cuentan
+como categoría porque ya fueron consumidos como producto de la de
+arriba.
 
-Detalles que importan: se lee solo la sección “DETALLE DE PRODUCTOS
-DESPACHADOS” y se corta en “OTROS MOVIMIENTOS”, para no sumar los
-**retiros de caja** (`Total Retiros: $ -140.000,00`) como si fueran
-ventas. `DESCUENTOS` viene en negativo y se respeta el signo — es lo que
-hace que la suma cierre. El símbolo `$` es opcional en el regex del
-renglón porque el OCR lo lee como `S` o `5`; lo que ancla el renglón son
-los dos decimales del final.
+Se lee solo “DETALLE DE PRODUCTOS DESPACHADOS” y se corta en “OTROS
+MOVIMIENTOS” / “Total vendido”, para no sumar retiros. `DESCUENTOS`
+viene en negativo y se respeta el signo.
 
-**Fila de control “Suma de categorías”**: se muestra la suma y se avisa
-en rojo si no coincide con el total vendido. No es decoración — es la
-forma de darse cuenta de que el OCR leyó mal un renglón, que es
-precisamente el tipo de error que si no se ve termina guardado en la
-hoja. Probado contra la transcripción del ticket real del 2026-08-23:
-detecta las 12 categorías, ninguna de más, y la suma da 446.800 = total
-vendido.
+**Números correctos.** Si todas las categorías con monto positivo
+cerraron con sus productos, la suma es más confiable que el renglón
+“Total vendido” (que se leyó una sola vez y Tesseract puede cambiarle
+un dígito). En ese caso el total se corrige a la suma. Si después de
+editar a mano las categorías no cierran con el total, al guardar
+pregunta; no se silencia.
 
-**Corrección del total con la suma (el caso “me restó $1000”).** El
-2026-08-23 el usuario reportó que la app mostró en pantalla un total
-distinto (menor) al del ticket. No es un bug del código: el camino
-input → `POST /admin/cierre-caja` → hoja manda el número tal cual, sin
-transformarlo. Es Tesseract leyendo mal **un dígito** (`446.800` →
-`445.800`), y eso no se arregla con regex.
+**IA.** Opcional, misma `ANTHROPIC_API_KEY` del chatbot de WhatsApp.
+Recibe el texto OCR (nunca la foto). Si el parser local ya cierra y la
+IA no, se descarta la IA. Si la IA cuadra (suma = total) y el local no,
+gana la IA. Siempre se muestra para que el admin mire el papel.
 
-Lo que sí se puede hacer es detectarlo, porque el ticket trae la
-información dos veces. El monto de una categoría que **cerró con sus
-productos** está validado por dos lecturas independientes del papel; el
-total vendido se leyó una sola vez. Así que cuando todas las categorías
-con monto positivo cerraron (`sumaConfiable`), la suma es más confiable
-que el total leído y aparece un botón **“Usar $X (suma de
-categorías)”**. Es un botón y no una corrección automática a propósito:
-el número termina en una planilla de plata y el admin tiene que poder
-mirar el papel antes. Si el total no se encontró en la foto pero las
-categorías cuadran, la suma se carga sola en el input (avisando).
+**Hoja.** G = texto `17 CAFE $95.000 | 5 COMIDA $27.600 | ...`, H =
+suma, I = JSON para el historial del panel. Encabezados los pone el
+usuario a mano.
 
-Ojo con la asimetría: si el dígito mal leído cae en una **categoría** y
-no en el total, esa categoría no cierra con sus productos,
-`sumaConfiable` da falso y solo se avisa — no se ofrece corregir nada,
-que es lo correcto. Verificado con Node simulando el total en 445.800:
-avisa y ofrece corregir a 446.800.
+Ticket de ejemplo del 2026-08-23 (noche), parser local:
+
+| Categoría | Cant. | Monto |
+|---|---|---|
+| LIBROS PERIPLO | 1 | 36.000 |
+| ADICIONALES | 3 | 5.700 |
+| CAFE | 17 | 95.000 |
+| GENERICO | 3 | 38.200 |
+| COMIDA | 5 | 27.600 |
+| CAFE MOLIDO | 1 | 28.000 |
+| LIBROS JULITA | 1 | 65.900 |
+| **Total vendido** | | **296.400** |
 
 ## Bugs corregidos recientemente que vale la pena recordar
 

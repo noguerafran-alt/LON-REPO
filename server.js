@@ -68,6 +68,7 @@ const QRCode = require('qrcode');
 const payway = require('./payway');
 const mercadopago = require('./mercadopago');
 const emailService = require('./email');
+const ticketCierre = require('./ticketCierre');
 const imagenes = require('./imagenes');
 const whatsapp = require('./whatsapp');
 const helmet = require('helmet');
@@ -183,6 +184,10 @@ app.use(limiteGeneral);
 // Rutas amigables (sin ".html") ademas del acceso directo a los archivos.
 app.get('/cliente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cliente.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/ticketCierre.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'ticketCierre.js'));
+});
 
 
 if (!config.SHEET_ID_VENTAS || config.SHEET_ID_VENTAS.startsWith('PONE_ACA')) {
@@ -2819,10 +2824,112 @@ app.post('/admin/pedidos/registrar-unidades', limiteAdmin, async (req, res) => {
  * del local (el admin le saca una foto, se reconoce con OCR del lado del
  * navegador, y lo revisa/corrige antes de confirmar) contra el total que
  * la app tiene registrado como vendido ese mismo dia (VENTAS marcadas
- * "Vendido"). Nada se compara por categoria: las categorias del ticket
- * son las del POS del local y no tienen por que coincidir con las
- * categorias internas de LON. Exclusivo de nivel 2.
+ * "Vendido"). Nada se compara por categoria contra LON: las categorias
+ * del ticket son las del POS (CAFE, COMIDA, LIBROS PERIPLO...) y se
+ * GUARDAN como desglose de lo vendido ese dia, sin cruzarlas. Exclusivo
+ * de nivel 2.
  * ============================================================ */
+
+function interpretarTicketLocal(textoOcr) {
+  const texto = String(textoOcr || '').trim().slice(0, 12000);
+  const categorias = ticketCierre.extraerCategoriasDelTicket(texto);
+  const totalVendido = ticketCierre.buscarTotalEnTicket(texto);
+  const suma = ticketCierre.sumaCategorias(categorias);
+  return {
+    origen: 'ocr',
+    totalVendido,
+    categorias,
+    sumaCategorias: suma,
+    sumaConfiable: ticketCierre.categoriasCierranConProductos(categorias)
+      && categorias.length >= 2
+      && (totalVendido === null || suma === totalVendido || totalVendido > 0),
+  };
+}
+
+async function interpretarTicketConIA(textoOcr) {
+  const local = interpretarTicketLocal(textoOcr);
+  if (!config.ANTHROPIC_API_KEY) return local;
+
+  const texto = String(textoOcr || '').trim().slice(0, 12000);
+  if (!texto) return local;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': config.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: config.ANTHROPIC_MODEL,
+        max_tokens: 1500,
+        system: 'Sos un extractor de tickets térmicos de un POS de Argentina. Respondé SOLO un JSON válido, sin markdown ni texto extra.',
+        messages: [{
+          role: 'user',
+          content: `Del texto OCR (puede tener errores) extraé:
+1. Las CATEGORÍAS en negrita de "DETALLE DE PRODUCTOS DESPACHADOS". En el papel son renglones tipo "17 CAFE  $ 95.000,00" (cantidad + nombre en MAYÚSCULAS + monto). Debajo van productos indentados que NO son categorías.
+2. El "Total vendido".
+
+NO incluyas productos individuales, OTROS MOVIMIENTOS, retiros, depósitos, IVA, subtotales ni el "Total:" de cabecera.
+
+La suma de los montos de las categorías TIENE que ser igual al Total vendido. Si un dígito del total está mal leído, preferí la suma de las categorías que cierran con sus productos.
+
+Montos en pesos enteros, sin centavos ni puntos de miles.
+
+Texto OCR:
+${texto}
+
+Formato exacto:
+{"totalVendido":296400,"categorias":[{"nombre":"CAFE","cantidad":17,"monto":95000}]}`,
+        }],
+      }),
+    });
+    if (!res.ok) {
+      console.error('IA ticket: HTTP', res.status);
+      return local;
+    }
+    const data = await res.json();
+    const bloqueTexto = (data.content || []).find((b) => b.type === 'text');
+    const crudo = bloqueTexto ? bloqueTexto.text : '';
+    const match = String(crudo).match(/\{[\s\S]*\}/);
+    if (!match) return local;
+    const parsed = JSON.parse(match[0]);
+    const categorias = ticketCierre.sanitizarCategorias(parsed.categorias);
+    const totalIA = Number.isFinite(Number(parsed.totalVendido)) ? Math.round(Number(parsed.totalVendido)) : null;
+    const sumaIA = ticketCierre.sumaCategorias(categorias);
+    const iaCuadra = categorias.length >= 2 && totalIA !== null && sumaIA === totalIA;
+    const localCuadra = local.sumaConfiable && local.categorias.length >= 2
+      && (local.totalVendido === null || local.sumaCategorias === local.totalVendido);
+
+    // Números correctos primero: si el OCR local cierra con sus productos
+    // y la IA no cuadra, nos quedamos con el local. Si la IA cuadra (suma
+    // = total), gana: repara dígitos mal leídos que el regex no ve.
+    if (iaCuadra && (!localCuadra || categorias.length >= local.categorias.length)) {
+      return {
+        origen: 'ia',
+        totalVendido: totalIA,
+        categorias,
+        sumaCategorias: sumaIA,
+        sumaConfiable: true,
+      };
+    }
+    if (local.categorias.length) return local;
+    if (categorias.length) {
+      return {
+        origen: 'ia',
+        totalVendido: totalIA !== null ? totalIA : (sumaIA || null),
+        categorias,
+        sumaCategorias: sumaIA,
+        sumaConfiable: iaCuadra,
+      };
+    }
+    return local;
+  } catch (err) {
+    console.error('Error interpretando ticket con IA:', err.message);
+    return local;
+  }
+}
 
 /* Total que la app tiene escaneado HOY, para cruzar contra el ticket. */
 app.get('/admin/total-ventas-hoy', limiteAdmin, async (req, res) => {
@@ -2841,15 +2948,34 @@ app.get('/admin/total-ventas-hoy', limiteAdmin, async (req, res) => {
   }
 });
 
+/* Recibe el TEXTO que Tesseract leyó en el celular (la foto no viaja)
+   y devuelve categorías en negrita + total. Usa IA si hay
+   ANTHROPIC_API_KEY; si no, el parser local. */
+app.post('/admin/cierre-caja/interpretar-ticket', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const texto = String((req.body && req.body.texto) || '');
+    if (!texto.trim()) {
+      return res.status(400).json({ error: 'No llegó texto del ticket.' });
+    }
+    const interpretacion = await interpretarTicketConIA(texto);
+    res.json(interpretacion);
+  } catch (err) {
+    console.error('Error interpretando el ticket de cierre:', err.message);
+    res.status(500).json({ error: 'No se pudo interpretar el ticket.' });
+  }
+});
+
 /* Guarda un cierre de caja. El total del escáner se vuelve a calcular
    ACA (no se confía en lo que mande el navegador) para que quede como
    registro fiel de lo que la app tenía en ese momento — el total del
-   ticket sí viene del navegador porque es un dato que ya pasó por
-   revisión humana (OCR + corrección manual), no algo que haga falta
-   recalcular del lado del servidor. */
+   ticket y las categorías sí vienen del navegador porque ya pasaron por
+   revisión humana (OCR + IA + corrección manual). */
 app.post('/admin/cierre-caja', limiteAdmin, async (req, res) => {
   try {
-    const { totalTicket } = req.body;
+    const { totalTicket, categorias } = req.body;
     const sesion = requiereNivel2(req, res);
     if (!sesion) return;
 
@@ -2857,6 +2983,9 @@ app.post('/admin/cierre-caja', limiteAdmin, async (req, res) => {
     if (!Number.isFinite(totalTicketNum) || totalTicketNum < 0) {
       return res.status(400).json({ error: 'El total del ticket tiene que ser un número.' });
     }
+
+    const categoriasLimpias = ticketCierre.sanitizarCategorias(categorias);
+    const sumaCategorias = ticketCierre.sumaCategorias(categoriasLimpias);
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const { fecha, hora } = fechaYHoraActual();
@@ -2869,6 +2998,9 @@ app.post('/admin/cierre-caja', limiteAdmin, async (req, res) => {
       totalEscaner,
       diferencia,
       vendedor: sesion.email,
+      categoriasTexto: ticketCierre.textoCategoriasParaHoja(categoriasLimpias),
+      sumaCategorias: categoriasLimpias.length ? sumaCategorias : '',
+      categoriasJson: categoriasLimpias.length ? JSON.stringify(categoriasLimpias) : '',
     });
 
     res.json({ ok: true, cierre });
