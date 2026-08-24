@@ -3,8 +3,6 @@
  *  Parser del ticket de cierre del POS del local.
  *
  *  Corre en el servidor (require) y en el navegador (script src).
- *  No usa APIs externas ni config: la foto nunca sale del celular,
- *  acá entra SOLO el texto que ya leyó Tesseract.
  *
  *  Cómo se detecta una categoría (las que en el papel van en negrita):
  *  no se usa el aspecto, el OCR no lo ve. Se usa que los productos de
@@ -90,20 +88,22 @@
 
   function extraerItemDeLinea(linea) {
     if (!linea) return null;
-    // Ancla preferida: dos decimales al final (formato del POS).
-    let m = linea.match(/^(\s*)(\d+)\s+(.+?)\s+[$Ss5]?\s*(-?\s*\d[\d.,]*[.,]\d{2})\s*$/);
-    if (!m) {
-      // El OCR a veces pierde los centavos o el $. Pedimos un $ (o S/5)
-      // para no tragar números sueltos (cantidades, horas).
-      m = linea.match(/^(\s*)(\d+)\s+(.+?)\s+[$Ss5]\s*(-?\s*\d[\d.,]+)\s*$/);
-    }
-    if (!m) return null;
-    const nombre = m[3].replace(/[\s.]+$/, '').trim();
-    if (!nombre || REGEX_PALABRA_TOTAL.test(nombre)) return null;
-    const negativo = /-/.test(m[4]);
-    const monto = parseMontoOcr(m[4]) * (negativo ? -1 : 1);
+    const cruda = String(linea).replace(/\u00a0/g, ' ');
+    // Monto al final, con o sin $. Cubre 36.000,00 / 36.000.00 / 36.000 / 36000.
+    const reMonto = /([$Ss5]\s*)?(-?\d{1,3}(?:[.\s]\d{3})+(?:[.,]\d{2})?|-?\d{3,}(?:[.,]\d{2})?)\s*$/;
+    const mMonto = cruda.match(reMonto);
+    if (!mMonto) return null;
+    const monto = parseMontoOcr(mMonto[2]) * (/-/.test(mMonto[2]) ? -1 : 1);
     if (monto === 0) return null;
-    return { sangria: m[1].length, cantidad: Number(m[2]), nombre, monto };
+
+    const izquierda = cruda.slice(0, mMonto.index).trimEnd();
+    const mCabeza = izquierda.match(/^(\s*)(\d{1,4})\s+(.+?)\s*$/);
+    if (!mCabeza) return null;
+    const nombre = mCabeza[3].replace(/[\s.|·]+$/g, '').replace(/\s+/g, ' ').trim();
+    if (!nombre || nombre.length < 2) return null;
+    if (REGEX_PALABRA_TOTAL.test(nombre)) return null;
+    if (/^(otros|retiros|depositos|dep[oó]sitos|cobros)/i.test(nombre)) return null;
+    return { sangria: mCabeza[1].length, cantidad: Number(mCabeza[2]), nombre, monto };
   }
 
   function renglonesConMontoDelDetalle(texto) {
@@ -121,12 +121,11 @@
     const recorte = todas.slice(desde, hasta);
     for (let i = 0; i < recorte.length; i++) {
       let item = extraerItemDeLinea(recorte[i]);
-      // Etiqueta y monto en dos renglones (el OCR los parte).
       if (!item) {
-        const cabeza = recorte[i].match(/^(\s*)(\d+)\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9/].+?)\s*$/);
+        const cabeza = recorte[i].match(/^(\s*)(\d{1,4})\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9/].+?)\s*$/);
         const cola = extraerItemDeLinea('1 X $ ' + String(recorte[i + 1] || '').trim());
-        if (cabeza && /[$Ss5]?\s*-?\s*\d[\d.,]+/.test(recorte[i + 1] || '') && cola) {
-          const nombre = cabeza[3].replace(/[\s.]+$/, '').trim();
+        if (cabeza && cola && cola.monto) {
+          const nombre = cabeza[3].replace(/[\s.|]+$/, '').trim();
           if (nombre && !REGEX_PALABRA_TOTAL.test(nombre)) {
             item = { sangria: cabeza[1].length, cantidad: Number(cabeza[2]), nombre, monto: cola.monto };
             i += 1;
@@ -226,20 +225,30 @@
       .join(' | ');
   }
 
+  function puntuarInterpretacion(lectura) {
+    if (!lectura) return -1;
+    const cats = sanitizarCategorias(lectura.categorias || []);
+    const suma = sumaCategorias(cats);
+    const total = lectura.totalVendido === null || lectura.totalVendido === undefined
+      ? null
+      : Number(lectura.totalVendido);
+    let puntaje = cats.length * 10;
+    puntaje += cats.filter((c) => (c.productos || 0) > 0).length * 5;
+    if (cats.length >= 2 && total !== null && suma === total) puntaje += 100;
+    else if (cats.length >= 2 && suma > 0 && (total === null || total <= 0)) puntaje += 20;
+    if (categoriasCierranConProductos(cats)) puntaje += 15;
+    return puntaje;
+  }
+
   function elegirMejorLectura(lecturas) {
     if (!lecturas || !lecturas.length) return { texto: '', total: null, categorias: [] };
     let mejor = lecturas[0];
     let mejorPuntaje = -1;
     for (const lectura of lecturas) {
-      const cats = lectura.categorias || [];
-      const cerradas = cats.filter((c) => (c.productos || 0) > 0).length;
-      const suma = sumaCategorias(cats);
-      const total = lectura.total;
-      let puntaje = cerradas * 10 + cats.length;
-      if (total !== null && suma === total) puntaje += 50;
-      if (categoriasCierranConProductos(cats)) puntaje += 20;
-      if (total !== null) puntaje += 5;
-      if (String(lectura.texto || '').length > 80) puntaje += 1;
+      const puntaje = puntuarInterpretacion({
+        categorias: lectura.categorias,
+        totalVendido: lectura.total !== undefined ? lectura.total : lectura.totalVendido,
+      }) + (String(lectura.texto || '').length > 80 ? 1 : 0);
       if (puntaje > mejorPuntaje) {
         mejorPuntaje = puntaje;
         mejor = lectura;
@@ -259,6 +268,7 @@
     categoriasCierranConProductos,
     sanitizarCategorias,
     textoCategoriasParaHoja,
+    puntuarInterpretacion,
     elegirMejorLectura,
   };
 });

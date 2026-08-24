@@ -4278,13 +4278,16 @@
       const lecturas = [];
       for (const variante of ['gris', 'blanco-y-negro']) {
         const imagen = await prepararFotoTicket(archivo, variante);
-        const resultado = await Tesseract.recognize(imagen, 'spa');
+        const resultado = await Tesseract.recognize(imagen, 'spa', {
+          tessedit_pageseg_mode: '6',
+        });
         const texto = (resultado && resultado.data && resultado.data.text) || '';
         const categorias = TicketCierre.extraerCategoriasDelTicket(texto);
         const total = TicketCierre.buscarTotalEnTicket(texto);
         lecturas.push({ texto, total, categorias });
         const cerradas = categorias.filter((c) => (c.productos || 0) > 0).length;
-        if (total !== null && cerradas >= 3) break;
+        const suma = TicketCierre.sumaCategorias(categorias);
+        if (total !== null && cerradas >= 3 && suma === total) break;
         mensajeOcrCierre.textContent = 'Reintentando con mas contraste...';
       }
 
@@ -4301,16 +4304,23 @@
         sumaConfiable: TicketCierre.categoriasCierranConProductos(mejor.categorias || []),
       }, textoFinal);
 
-      mensajeOcrCierre.textContent = 'Revisando números...';
+      mensajeOcrCierre.textContent = 'Leyendo el ticket con más detalle...';
       try {
+        const fotoChica = await comprimirFotoTicket(archivo);
         const res = await fetch('/admin/cierre-caja/interpretar-ticket', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: adminToken, texto: textoFinal }),
+          body: JSON.stringify({ token: adminToken, texto: textoFinal, imagen: fotoChica }),
         });
         const data = await res.json();
-        if (res.ok && data && (data.categorias || []).length) {
-          aplicarLecturaTicket(data, textoFinal);
+        if (res.ok && data) {
+          const actual = {
+            categorias: categoriasCierreActuales,
+            totalVendido: Number(inputTotalTicketCierre.value) || null,
+          };
+          if (TicketCierre.puntuarInterpretacion(data) >= TicketCierre.puntuarInterpretacion(actual)) {
+            aplicarLecturaTicket(data, textoFinal);
+          }
         }
       } catch (err) {
         // El parser local ya está en pantalla; la IA es un extra.
@@ -4346,7 +4356,7 @@
     } else {
       inputTotalTicketCierre.value = total;
       mensajeOcrCierre.style.color = 'var(--stamp-green)';
-      const como = lectura.origen === 'ia' ? ' (lectura revisada)' : '';
+      const como = lectura.origen === 'vision' || lectura.origen === 'ia' ? ' (lectura revisada)' : '';
       mensajeOcrCierre.textContent = 'Total leido: $' + total.toLocaleString('es-AR') + como
         + ' — revisalo contra el ticket antes de guardar.';
     }
@@ -4355,6 +4365,23 @@
     categoriasCierreActuales = categorias;
     renderizarCategoriasCierre();
     actualizarResumenCierre();
+  }
+
+  async function comprimirFotoTicket(archivo){
+    const bitmap = await cargarBitmapArchivo(archivo);
+    const anchoOriginal = bitmap.width || bitmap.naturalWidth;
+    const altoOriginal = bitmap.height || bitmap.naturalHeight;
+    const maxLado = 1400;
+    const escala = Math.min(1, maxLado / Math.max(anchoOriginal, altoOriginal));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(anchoOriginal * escala));
+    canvas.height = Math.max(1, Math.round(altoOriginal * escala));
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    if (bitmap.close) bitmap.close();
+    return canvas.toDataURL('image/jpeg', 0.82);
   }
 
   async function prepararFotoTicket(archivo, variante){

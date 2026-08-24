@@ -100,9 +100,9 @@ Google: `GOOGLE_CREDENTIALS_JSON` (o `credentials.json` local),
 `PAYWAY_PUBLIC_API_KEY` / `PAYWAY_SITE_ID`. Mail:
 `EMAIL_USER`/`EMAIL_APP_PASSWORD`. WhatsApp: `WHATSAPP_TOKEN` /
 `WHATSAPP_PHONE_NUMBER_ID`. Cierre de caja (IA gratis, opcional):
-`OPENROUTER_API_KEY` / `OPENROUTER_MODEL` (default
-`z-ai/glm-5.2:free`). El chatbot de WhatsApp sigue usando
-`ANTHROPIC_API_KEY` si está, pero el cierre de caja **no**.
+`OPENROUTER_API_KEY` / `OPENROUTER_MODEL` / `OPENROUTER_VISION_MODEL`
+(default visión `google/gemma-4-31b-it:free`). El chatbot de WhatsApp
+sigue usando `ANTHROPIC_API_KEY` si está, pero el cierre de caja **no**.
 
 ## Antes de decir que algo "funciona"
 

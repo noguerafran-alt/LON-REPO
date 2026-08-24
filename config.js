@@ -525,4 +525,7 @@ module.exports = {
    * ------------------------------------------------------------ */
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
   OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'z-ai/glm-5.2:free',
+  // Modelo con visión (lee la FOTO del ticket). Es lo que hace que el
+  // cierre cierre cuando Tesseract entrega texto sucio. También :free.
+  OPENROUTER_VISION_MODEL: process.env.OPENROUTER_VISION_MODEL || 'google/gemma-4-31b-it:free',
 };

@@ -100,7 +100,7 @@ app.use(helmet({
 }));
 
 app.use(express.json({
-  limit: '2mb',
+  limit: '6mb',
   // Guardamos el cuerpo crudo ANTES de parsearlo: hace falta tal cual
   // (bytes exactos) para verificar la firma HMAC de Meta en el webhook
   // de WhatsApp — si se recalcula desde el JSON ya parseado, la firma
@@ -2851,98 +2851,155 @@ function interpretarTicketLocal(textoOcr) {
   };
 }
 
-async function interpretarTicketConIA(textoOcr) {
-  const local = interpretarTicketLocal(textoOcr);
-  if (!config.OPENROUTER_API_KEY) return local;
-
-  const texto = String(textoOcr || '').trim().slice(0, 12000);
-  if (!texto) return local;
-
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + config.OPENROUTER_API_KEY,
-        'HTTP-Referer': config.SITIO_URL || config.PUBLIC_URL || '',
-        'X-Title': 'LON Philosophy cierre de caja',
-      },
-      body: JSON.stringify({
-        model: config.OPENROUTER_MODEL,
-        temperature: 0,
-        max_tokens: 1500,
-        messages: [
-          {
-            role: 'system',
-            content: 'Sos un extractor de tickets térmicos de un POS de Argentina. Respondé SOLO un JSON válido, sin markdown ni texto extra.',
-          },
-          {
-            role: 'user',
-            content: `Del texto OCR (puede tener errores) extraé:
-1. Las CATEGORÍAS en negrita de "DETALLE DE PRODUCTOS DESPACHADOS". En el papel son renglones tipo "17 CAFE  $ 95.000,00" (cantidad + nombre en MAYÚSCULAS + monto). Debajo van productos indentados que NO son categorías.
+const PROMPT_TICKET = `Del ticket térmico de un POS de Argentina extraé:
+1. Las CATEGORÍAS en negrita de "DETALLE DE PRODUCTOS DESPACHADOS". Son renglones tipo "17 CAFE  $ 95.000,00" (cantidad + nombre en MAYÚSCULAS + monto). Debajo van productos indentados que NO son categorías.
 2. El "Total vendido".
 
 NO incluyas productos individuales, OTROS MOVIMIENTOS, retiros, depósitos, IVA, subtotales ni el "Total:" de cabecera.
 
-La suma de los montos de las categorías TIENE que ser igual al Total vendido. Si un dígito del total está mal leído, preferí la suma de las categorías que cierran con sus productos.
+La suma de los montos de las categorías TIENE que ser igual al Total vendido. Si un dígito del total está mal leído, preferí la suma de las categorías.
 
 Montos en pesos enteros, sin centavos ni puntos de miles.
 
-Texto OCR:
-${texto}
+Respondé SOLO un JSON, sin markdown:
+{"totalVendido":296400,"categorias":[{"nombre":"CAFE","cantidad":17,"monto":95000}]}`;
 
-Formato exacto:
-{"totalVendido":296400,"categorias":[{"nombre":"CAFE","cantidad":17,"monto":95000}]}`,
-          },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const detalle = await res.text().catch(() => '');
-      console.error('IA ticket OpenRouter: HTTP', res.status, detalle.slice(0, 300));
-      return local;
-    }
-    const data = await res.json();
-    const crudo = data && data.choices && data.choices[0] && data.choices[0].message
-      ? (data.choices[0].message.content || '')
-      : '';
-    const match = String(crudo).match(/\{[\s\S]*\}/);
-    if (!match) return local;
+function headersOpenRouter() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + config.OPENROUTER_API_KEY,
+    'HTTP-Referer': config.SITIO_URL || config.PUBLIC_URL || '',
+    'X-Title': 'LON Philosophy cierre de caja',
+  };
+}
+
+function parsearRespuestaTicketIA(crudo) {
+  const match = String(crudo || '').match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
     const parsed = JSON.parse(match[0]);
     const categorias = ticketCierre.sanitizarCategorias(parsed.categorias);
     const totalIA = Number.isFinite(Number(parsed.totalVendido)) ? Math.round(Number(parsed.totalVendido)) : null;
     const sumaIA = ticketCierre.sumaCategorias(categorias);
-    const iaCuadra = categorias.length >= 2 && totalIA !== null && sumaIA === totalIA;
-    const localCuadra = local.sumaConfiable && local.categorias.length >= 2
-      && (local.totalVendido === null || local.sumaCategorias === local.totalVendido);
+    if (!categorias.length) return null;
+    return {
+      origen: 'ia',
+      totalVendido: totalIA !== null ? totalIA : (sumaIA || null),
+      categorias,
+      sumaCategorias: sumaIA,
+      sumaConfiable: categorias.length >= 2 && totalIA !== null && sumaIA === totalIA,
+    };
+  } catch (err) {
+    return null;
+  }
+}
 
-    // Números correctos primero: si el OCR local cierra con sus productos
-    // y la IA no cuadra, nos quedamos con el local. Si la IA cuadra (suma
-    // = total), gana: repara dígitos mal leídos que el regex no ve.
-    if (iaCuadra && (!localCuadra || categorias.length >= local.categorias.length)) {
-      return {
-        origen: 'ia',
-        totalVendido: totalIA,
-        categorias,
-        sumaCategorias: sumaIA,
-        sumaConfiable: true,
-      };
+async function llamarOpenRouter(modelo, messages) {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: headersOpenRouter(),
+    body: JSON.stringify({
+      model: modelo,
+      temperature: 0,
+      max_tokens: 1500,
+      messages,
+    }),
+    signal: AbortSignal.timeout(25000),
+  });
+  const cuerpo = await res.text();
+  if (!res.ok) {
+    console.error('OpenRouter', modelo, res.status, cuerpo.slice(0, 400));
+    return null;
+  }
+  try {
+    const data = JSON.parse(cuerpo);
+    return data && data.choices && data.choices[0] && data.choices[0].message
+      ? (data.choices[0].message.content || '')
+      : '';
+  } catch (err) {
+    return null;
+  }
+}
+
+function normalizarImagenDataUrl(crudo) {
+  const s = String(crudo || '').trim();
+  const m = s.match(/^data:(image\/(jpeg|jpg|png|webp));base64,([A-Za-z0-9+/=\s]+)$/i);
+  if (!m) return null;
+  const b64 = m[3].replace(/\s/g, '');
+  if (b64.length < 1000 || b64.length > 5_500_000) return null;
+  const mime = m[1].toLowerCase() === 'image/jpg' ? 'image/jpeg' : m[1].toLowerCase();
+  return 'data:' + mime + ';base64,' + b64;
+}
+
+async function interpretarTicketConVision(imagenDataUrl) {
+  const modelos = [];
+  const agregar = (m) => { if (m && !modelos.includes(m)) modelos.push(m); };
+  agregar(config.OPENROUTER_VISION_MODEL);
+  agregar('google/gemma-4-31b-it:free');
+  agregar('nvidia/nemotron-nano-12b-2-vl:free');
+  agregar('google/gemma-4-26b-a4b-it:free');
+
+  const messages = [
+    { role: 'system', content: 'Sos un extractor de tickets térmicos. Respondé SOLO JSON válido.' },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: PROMPT_TICKET },
+        { type: 'image_url', image_url: { url: imagenDataUrl } },
+      ],
+    },
+  ];
+
+  for (const modelo of modelos) {
+    const crudo = await llamarOpenRouter(modelo, messages);
+    const parsed = parsearRespuestaTicketIA(crudo);
+    if (parsed) {
+      parsed.origen = 'vision';
+      parsed.modelo = modelo;
+      if (parsed.sumaConfiable || parsed.categorias.length >= 3) return parsed;
     }
-    if (local.categorias.length) return local;
-    if (categorias.length) {
-      return {
-        origen: 'ia',
-        totalVendido: totalIA !== null ? totalIA : (sumaIA || null),
-        categorias,
-        sumaCategorias: sumaIA,
-        sumaConfiable: iaCuadra,
-      };
+  }
+  return null;
+}
+
+async function interpretarTicketConTexto(textoOcr) {
+  if (!textoOcr || !textoOcr.trim()) return null;
+  const crudo = await llamarOpenRouter(config.OPENROUTER_MODEL, [
+    { role: 'system', content: 'Sos un extractor de tickets térmicos de un POS de Argentina. Respondé SOLO un JSON válido, sin markdown ni texto extra.' },
+    { role: 'user', content: PROMPT_TICKET + '\n\nTexto OCR:\n' + textoOcr },
+  ]);
+  return parsearRespuestaTicketIA(crudo);
+}
+
+async function interpretarTicketConIA(textoOcr, imagenDataUrl) {
+  const local = interpretarTicketLocal(textoOcr);
+  if (!config.OPENROUTER_API_KEY) return local;
+
+  const candidatas = [local];
+  try {
+    if (imagenDataUrl) {
+      const vision = await interpretarTicketConVision(imagenDataUrl);
+      if (vision) candidatas.push(vision);
     }
-    return local;
+    const yaCierra = candidatas.some((c) => ticketCierre.puntuarInterpretacion(c) >= 100);
+    if (!yaCierra) {
+      const porTexto = await interpretarTicketConTexto(textoOcr);
+      if (porTexto) candidatas.push(porTexto);
+    }
   } catch (err) {
     console.error('Error interpretando ticket con IA:', err.message);
-    return local;
   }
+
+  let mejor = local;
+  let mejorPuntaje = ticketCierre.puntuarInterpretacion(local);
+  for (const cand of candidatas) {
+    const p = ticketCierre.puntuarInterpretacion(cand);
+    if (p > mejorPuntaje) {
+      mejorPuntaje = p;
+      mejor = cand;
+    }
+  }
+  return mejor;
 }
 
 /* Total que la app tiene escaneado HOY, para cruzar contra el ticket. */
@@ -2962,19 +3019,20 @@ app.get('/admin/total-ventas-hoy', limiteAdmin, async (req, res) => {
   }
 });
 
-/* Recibe el TEXTO que Tesseract leyó en el celular (la foto no viaja)
-   y devuelve categorías en negrita + total. Usa un modelo :free de
-   OpenRouter si hay OPENROUTER_API_KEY; si no, el parser local. */
+/* Recibe el texto OCR y, si vino, una foto chica del ticket. La visión
+   (modelo :free de OpenRouter) es lo que permite leer un ticket real
+   cuando Tesseract entrega basura. */
 app.post('/admin/cierre-caja/interpretar-ticket', limiteAdmin, async (req, res) => {
   try {
     const sesion = requiereNivel2(req, res);
     if (!sesion) return;
 
     const texto = String((req.body && req.body.texto) || '');
-    if (!texto.trim()) {
-      return res.status(400).json({ error: 'No llegó texto del ticket.' });
+    const imagen = normalizarImagenDataUrl(req.body && req.body.imagen);
+    if (!texto.trim() && !imagen) {
+      return res.status(400).json({ error: 'No llegó texto ni foto del ticket.' });
     }
-    const interpretacion = await interpretarTicketConIA(texto);
+    const interpretacion = await interpretarTicketConIA(texto, imagen);
     res.json(interpretacion);
   } catch (err) {
     console.error('Error interpretando el ticket de cierre:', err.message);

@@ -36,8 +36,9 @@
   - **Cierre de caja** (nivel 2 exclusivo): foto del ticket del POS del
     local → OCR en el navegador (Tesseract.js; la foto nunca se sube) →
     parser de las **categorías en negrita** + total vendido → si hay
-    `OPENROUTER_API_KEY`, un modelo **gratis** (`:free`) revisa el
-    *texto* OCR (no la foto; no usa Anthropic) → se
+    `OPENROUTER_API_KEY`, un modelo **gratis con visión** lee la foto
+    chica del ticket (Tesseract solo no alcanza contra un ticket real)
+    → se
     muestran las categorías editables, se exige que sumen el total, se
     comparan contra lo escaneado hoy (VENTAS) y se guarda en
     `CIERRE_CAJA` (totales A-F + desglose G-I). La comparación contra
@@ -76,11 +77,11 @@ Detalle JSON** — la app nunca escribe encabezados).
   MOLIDO / LIBROS JULITA) y pidió (1) guardar lo vendido por día en
   cada categoría en negrita, (2) que el análisis tenga siempre
   números correctos, (3) usar IA si hace falta. El parser local, con
-  esa transcripción, cierra exacto ($296.400). Sigue haciendo falta
-  una prueba con foto real desde el celular. Si Tesseract entrega
-  texto sucio, un modelo gratis de OpenRouter (si hay
-  `OPENROUTER_API_KEY`) revisa ese texto — la foto no sale del
-  navegador. Sin esa key, igual funciona el parser local.
+  esa transcripción, cierra exacto ($296.400). Contra la **foto** real
+  Tesseract+texto solo encontró CAFE ($95.000). Ahora, si hay
+  `OPENROUTER_API_KEY`, se manda una foto chica a un modelo :free con
+  visión y se elige la lectura que cierra (suma de categorías = total).
+  Sin esa key, sigue el parser local.
 - **`README.md` desactualizado**: todavía describe la v1 (solo escáner
   QR → Sheets). No se tocó esta sesión — si se necesita para onboarding
   de alguien nuevo, reescribir.
@@ -160,14 +161,11 @@ un dígito). En ese caso el total se corrige a la suma. Si después de
 editar a mano las categorías no cierran con el total, al guardar
 pregunta; no se silencia.
 
-**IA.** Opcional y **gratis**: OpenRouter con un modelo `:free`
-(default `z-ai/glm-5.2:free`, se cambia con `OPENROUTER_MODEL`).
-No usa `ANTHROPIC_API_KEY` (esa cobra tokens y queda solo para el
-chatbot de WhatsApp). Recibe el texto OCR, nunca la foto. Si el
-parser local ya cierra y la IA no, se descarta la IA. Si la IA
-cuadra (suma = total) y el local no, gana la IA. Siempre se muestra
-para que el admin mire el papel. Sin `OPENROUTER_API_KEY` el cierre
-funciona igual, solo con el parser.
+**IA.** Opcional y **gratis**: OpenRouter. Default de visión
+`google/gemma-4-31b-it:free` (`OPENROUTER_VISION_MODEL`); si no
+cierra, se prueba el modelo de texto `OPENROUTER_MODEL`. No usa
+Anthropic. Se elige la lectura de mayor puntaje (gana la que suma
+exacto el total). Siempre se muestra para que el admin mire el papel.
 
 **Hoja.** G = texto `17 CAFE $95.000 | 5 COMIDA $27.600 | ...`, H =
 suma, I = JSON para el historial del panel. Encabezados los pone el
