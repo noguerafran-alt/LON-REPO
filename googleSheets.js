@@ -2259,6 +2259,205 @@ async function getHistorialCierreCaja(sheetsClient, spreadsheetId, sheetName, li
   return cierres.reverse().slice(0, limite);
 }
 
+
+/* ============================================================
+ *  LANDING CMS (clave/valor en pestaña Landing)
+ *  Espejo de PROA: ensure / get / set. Solo toca la hoja Landing;
+ *  nunca Productos ni Ventas.
+ * ============================================================ */
+
+const LANDING_DEFAULTS = {
+  logo: '',
+  ig_handle: 'lonphilosophy',
+  hero_tagline: 'Making community',
+  hero_ubicacion: 'Libros, objetos y café — para estar presente',
+  cta_primary_label: 'Ver piezas',
+  cta_secondary_label: 'Seguinos en Instagram',
+  cta_secondary_href: 'https://www.instagram.com/lonphilosophy/',
+  hero_imagen: '',
+  sobre_titulo: 'Quiénes somos',
+  sobre_lead: 'Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.',
+  sobre_cuerpo: 'LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.',
+  sobre_foto_a: '',
+  sobre_foto_b: '',
+  pilares_titulo: 'Qué vas a encontrar',
+  pilar_1_titulo: 'Libros',
+  pilar_1_texto: 'Lecturas para demorarse — club, novedades y anaqueles con criterio.',
+  pilar_2_titulo: 'Objetos',
+  pilar_2_texto: 'Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.',
+  pilar_3_titulo: 'Café & comunidad',
+  pilar_3_texto: 'Un espacio para encontrarse. Fidelidad en taza, conversación en el local.',
+  espacio_imagen: '',
+  espacio_caption: 'El local — luz, textura y anaquel.',
+  espacio_quote: 'Ver y apreciar lo que uno está obteniendo es elegir estar presente.',
+  catalogo_cta_texto: 'Explorá el catálogo y armá tu pedido online.',
+  catalogo_cta_label: 'Ir al catálogo',
+  destacados_titulo: 'Piezas que miramos dos veces',
+  footer_texto: '© 2026 FLN Data Analysis — LON Philosophy',
+};
+
+/**
+ * Asegura que exista la pestaña Landing con encabezado clave/valor y,
+ * si falta alguna clave conocida, la siembra con el default (sin
+ * pisar valores que ya estén cargados).
+ */
+async function ensureLandingSheet(sheetsClient, spreadsheetId, sheetName) {
+  const metadata = await sheetsClient.spreadsheets.get({
+    spreadsheetId,
+    fields: 'sheets(properties(sheetId,title))',
+  });
+  const hojas = metadata.data.sheets || [];
+  let hoja = hojas.find((s) => s.properties.title === sheetName);
+
+  if (!hoja) {
+    const creada = await sheetsClient.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{
+          addSheet: {
+            properties: {
+              title: sheetName,
+              gridProperties: { rowCount: 100, columnCount: 2 },
+            },
+          },
+        }],
+      },
+    });
+    hoja = creada.data.replies[0].addSheet;
+  }
+
+  const response = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:B`,
+  });
+  const rows = response.data.values || [];
+
+  const tieneHeader = rows.length > 0
+    && String(rows[0][0] || '').trim().toLowerCase() === 'clave'
+    && String(rows[0][1] || '').trim().toLowerCase() === 'valor';
+
+  if (!tieneHeader) {
+    // Hoja vacía o sin header: escribimos header + todos los defaults.
+    const filas = [['clave', 'valor']];
+    for (const [clave, valor] of Object.entries(LANDING_DEFAULTS)) {
+      filas.push([clave, valor]);
+    }
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!A1:B${filas.length}`,
+      valueInputOption: 'RAW',
+      requestBody: { values: filas },
+    });
+    return;
+  }
+
+  // Header OK: completar solo las claves que falten (no pisar existentes).
+  const existentes = new Set();
+  for (let i = 1; i < rows.length; i++) {
+    const clave = rows[i][0] ? String(rows[i][0]).trim() : '';
+    if (clave) existentes.add(clave);
+  }
+
+  const faltantes = [];
+  for (const [clave, valor] of Object.entries(LANDING_DEFAULTS)) {
+    if (!existentes.has(clave)) faltantes.push([clave, valor]);
+  }
+  if (faltantes.length) {
+    await appendRows(sheetsClient, spreadsheetId, sheetName, faltantes);
+  }
+}
+
+/**
+ * Lee la pestaña Landing y devuelve un objeto plano { clave: valor }.
+ * No crea la hoja — el caller suele llamar ensureLandingSheet antes.
+ */
+async function getLandingContenido(sheetsClient, spreadsheetId, sheetName) {
+  const response = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:B`,
+  });
+  const rows = response.data.values || [];
+  const contenido = {};
+  for (let i = 1; i < rows.length; i++) {
+    const clave = rows[i][0] ? String(rows[i][0]).trim() : '';
+    if (!clave) continue;
+    contenido[clave] = rows[i][1] !== undefined && rows[i][1] !== null
+      ? String(rows[i][1])
+      : '';
+  }
+  return contenido;
+}
+
+/**
+ * Upsert por clave: actualiza filas existentes o agrega nuevas.
+ * `updates` es un objeto { clave: valor, ... }. Devuelve el contenido
+ * completo luego del merge.
+ */
+async function setLandingContenido(sheetsClient, spreadsheetId, sheetName, updates) {
+  if (!updates || typeof updates !== 'object') {
+    throw new Error('updates debe ser un objeto { clave: valor }');
+  }
+
+  const response = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:B`,
+  });
+  const rows = response.data.values || [];
+
+  // Mapa clave -> numero de fila (1-based en Sheets).
+  const filaPorClave = new Map();
+  for (let i = 1; i < rows.length; i++) {
+    const clave = rows[i][0] ? String(rows[i][0]).trim() : '';
+    if (clave && !filaPorClave.has(clave)) filaPorClave.set(clave, i + 1);
+  }
+
+  const dataUpdates = [];
+  const nuevas = [];
+
+  for (const [claveCruda, valorCrudo] of Object.entries(updates)) {
+    const clave = String(claveCruda || '').trim();
+    if (!clave) continue;
+    const valor = valorCrudo === undefined || valorCrudo === null ? '' : String(valorCrudo);
+    const numeroFila = filaPorClave.get(clave);
+    if (numeroFila && numeroFila > 0) {
+      dataUpdates.push({
+        range: `${sheetName}!A${numeroFila}:B${numeroFila}`,
+        values: [[clave, valor]],
+      });
+    } else if (!filaPorClave.has(clave)) {
+      nuevas.push([clave, valor]);
+      filaPorClave.set(clave, 0); // ya encolada como fila nueva
+    } else {
+      // Misma clave repetida en este batch (no debería pasar con un
+      // objeto plano): actualizamos el valor pendiente de append.
+      const idx = nuevas.findIndex((f) => f[0] === clave);
+      if (idx >= 0) nuevas[idx][1] = valor;
+    }
+  }
+
+  if (dataUpdates.length) {
+    // Asegurar filas suficientes para la fila más baja que vamos a tocar.
+    const maxFila = Math.max(...dataUpdates.map((u) => {
+      const m = u.range.match(/A(\d+):/);
+      return m ? Number(m[1]) : 1;
+    }));
+    await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetName, maxFila);
+    await sheetsClient.spreadsheets.values.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        valueInputOption: 'RAW',
+        data: dataUpdates,
+      },
+    });
+  }
+
+  if (nuevas.length) {
+    await appendRows(sheetsClient, spreadsheetId, sheetName, nuevas);
+  }
+
+  return getLandingContenido(sheetsClient, spreadsheetId, sheetName);
+}
+
 module.exports = {
   appendRow,
   appendRows,
@@ -2323,5 +2522,8 @@ module.exports = {
   getPedidosPorTelefono,
   actualizarPedido,
 
+  ensureLandingSheet,
+  getLandingContenido,
+  setLandingContenido,
   columnaALetra,
 };

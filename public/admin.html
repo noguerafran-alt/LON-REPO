@@ -291,19 +291,22 @@
   .btn-generar-desde-escaneo{ border-color:var(--accent); color:var(--accent); }
   .btn-generar-desde-escaneo:hover{ background:var(--accent-soft); }
 
-  #panelGenerarUnidades, #panelCatalogo{ padding:16px 24px 40px; overflow-y:auto; flex:1; }
-  #panelGenerarUnidades .campo, #panelCatalogo .campo{ margin-bottom:14px; }
-  #panelGenerarUnidades label, #panelCatalogo label{
+  #panelGenerarUnidades, #panelCatalogo, #panelLanding{ padding:16px 24px 40px; overflow-y:auto; flex:1; }
+  #panelGenerarUnidades .campo, #panelCatalogo .campo, #panelLanding .campo{ margin-bottom:14px; }
+  #panelGenerarUnidades label, #panelCatalogo label, #panelLanding label{
     display:block; font-family:'IBM Plex Mono', monospace; font-size:15px; letter-spacing:0.08em;
     text-transform:uppercase; color:var(--ink-muted); margin:0 0 6px 1px; font-weight:700;
   }
   #panelGenerarUnidades select, #panelGenerarUnidades input[type="text"], #panelGenerarUnidades input[type="number"],
-  #panelCatalogo select, #panelCatalogo input[type="text"], #panelCatalogo input[type="number"]{
+  #panelCatalogo select, #panelCatalogo input[type="text"], #panelCatalogo input[type="number"],
+  #panelLanding input[type="text"], #panelLanding textarea{
     width:100%; padding:12px 14px; font-size:16px; font-family:'Archivo', sans-serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
   }
   #panelGenerarUnidades select:focus, #panelGenerarUnidades input:focus,
-  #panelCatalogo select:focus, #panelCatalogo input:focus{ outline:none; border-color:var(--accent); }
+  #panelCatalogo select:focus, #panelCatalogo input:focus,
+  #panelLanding input:focus, #panelLanding textarea:focus{ outline:none; border-color:var(--accent); }
+  #panelLanding textarea{ resize:vertical; min-height:72px; line-height:1.45; }
 
   .lista-productos{
     max-height:220px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--radius);
@@ -622,6 +625,7 @@
     <button class="activo" id="tabEscanear" type="button">Escanear</button>
     <button id="tabGenerarUnidades" type="button">Productos</button>
     <button id="tabCatalogo" type="button">Catálogo</button>
+    <button id="tabLanding" type="button">Landing</button>
     <button id="tabPedidos" type="button">Pedidos</button>
     <button id="tabCierreCaja" type="button">Cierre de caja</button>
     <button id="tabUsuarios" type="button">Usuarios</button>
@@ -803,6 +807,129 @@
       <label>Tarifas de envío (estimado por provincia)</label>
       <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 8px;">Costo estimado que ve el cliente en el checkout al elegir "Envío a domicilio". Es una tabla fija a mano, todavía no es una cotización real.</p>
       <div id="listaTarifasEnvio">Cargando provincias...</div>
+    </div>
+  </div>
+
+
+  <div id="panelLanding" style="display:none; padding:16px 24px 40px;">
+    <div class="campo">
+      <label>Editor de la landing (/)</label>
+      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 12px;">Textos y fotos de la página de inicio (nivel 2). Subí las fotos con el botón; no hace falta editar rutas. Después tocá Guardar.</p>
+      <div id="mensajeLanding" style="font-size:13px; margin:0 0 12px; min-height:1.2em;"></div>
+    </div>
+
+    <div class="campo">
+      <label>Marca</label>
+      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Logo</label>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <img id="preview_logo" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:50%; border:1px solid var(--line); background:var(--bg-alt);">
+        <button type="button" class="btn-generar" data-landing-upload="logo" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
+        <input type="hidden" id="landing_logo" data-landing-field="logo">
+      </div>
+      <label for="landing_ig_handle" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Instagram (sin @)</label>
+      <input type="text" id="landing_ig_handle" data-landing-field="ig_handle" autocomplete="off" placeholder="lonphilosophy">
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Hero</label>
+      <label for="landing_hero_tagline" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Tagline</label>
+      <input type="text" id="landing_hero_tagline" data-landing-field="hero_tagline" autocomplete="off">
+      <label for="landing_hero_ubicacion" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Ubicación / subtítulo</label>
+      <input type="text" id="landing_hero_ubicacion" data-landing-field="hero_ubicacion" autocomplete="off">
+      <label for="landing_cta_primary_label" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA primario</label>
+      <input type="text" id="landing_cta_primary_label" data-landing-field="cta_primary_label" autocomplete="off">
+      <label for="landing_cta_secondary_label" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA secundario</label>
+      <input type="text" id="landing_cta_secondary_label" data-landing-field="cta_secondary_label" autocomplete="off">
+      <label for="landing_cta_secondary_href" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA secundario (URL)</label>
+      <input type="text" id="landing_cta_secondary_href" data-landing-field="cta_secondary_href" autocomplete="off" placeholder="https://www.instagram.com/lonphilosophy/">
+      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto del hero</label>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <img id="preview_hero_imagen" alt="" style="width:96px; height:64px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
+        <button type="button" class="btn-generar" data-landing-upload="hero_imagen" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
+        <input type="hidden" id="landing_hero_imagen" data-landing-field="hero_imagen">
+      </div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Sobre / Quiénes somos</label>
+      <label for="landing_sobre_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Título</label>
+      <input type="text" id="landing_sobre_titulo" data-landing-field="sobre_titulo" autocomplete="off">
+      <label for="landing_sobre_lead" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Lead</label>
+      <textarea id="landing_sobre_lead" data-landing-field="sobre_lead" rows="3"></textarea>
+      <label for="landing_sobre_cuerpo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Cuerpo</label>
+      <textarea id="landing_sobre_cuerpo" data-landing-field="sobre_cuerpo" rows="3"></textarea>
+      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto A</label>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <img id="preview_sobre_foto_a" alt="" style="width:72px; height:72px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
+        <button type="button" class="btn-generar" data-landing-upload="sobre_foto_a" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
+        <input type="hidden" id="landing_sobre_foto_a" data-landing-field="sobre_foto_a">
+      </div>
+      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto B (opcional)</label>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <img id="preview_sobre_foto_b" alt="" style="width:72px; height:72px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
+        <button type="button" class="btn-generar" data-landing-upload="sobre_foto_b" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
+        <input type="hidden" id="landing_sobre_foto_b" data-landing-field="sobre_foto_b">
+      </div>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Pilares</label>
+      <label for="landing_pilares_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Título sección</label>
+      <input type="text" id="landing_pilares_titulo" data-landing-field="pilares_titulo" autocomplete="off">
+      <label for="landing_pilar_1_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 1 — título</label>
+      <input type="text" id="landing_pilar_1_titulo" data-landing-field="pilar_1_titulo" autocomplete="off">
+      <label for="landing_pilar_1_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 1 — texto</label>
+      <textarea id="landing_pilar_1_texto" data-landing-field="pilar_1_texto" rows="2"></textarea>
+      <label for="landing_pilar_2_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 2 — título</label>
+      <input type="text" id="landing_pilar_2_titulo" data-landing-field="pilar_2_titulo" autocomplete="off">
+      <label for="landing_pilar_2_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 2 — texto</label>
+      <textarea id="landing_pilar_2_texto" data-landing-field="pilar_2_texto" rows="2"></textarea>
+      <label for="landing_pilar_3_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 3 — título</label>
+      <input type="text" id="landing_pilar_3_titulo" data-landing-field="pilar_3_titulo" autocomplete="off">
+      <label for="landing_pilar_3_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 3 — texto</label>
+      <textarea id="landing_pilar_3_texto" data-landing-field="pilar_3_texto" rows="2"></textarea>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>El espacio</label>
+      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto</label>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <img id="preview_espacio_imagen" alt="" style="width:96px; height:64px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
+        <button type="button" class="btn-generar" data-landing-upload="espacio_imagen" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
+        <input type="hidden" id="landing_espacio_imagen" data-landing-field="espacio_imagen">
+      </div>
+      <label for="landing_espacio_caption" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Caption</label>
+      <input type="text" id="landing_espacio_caption" data-landing-field="espacio_caption" autocomplete="off">
+      <label for="landing_espacio_quote" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Quote (opcional)</label>
+      <textarea id="landing_espacio_quote" data-landing-field="espacio_quote" rows="2"></textarea>
+    </div>
+
+    <hr class="separador-panel">
+
+    <div class="campo">
+      <label>Franja CTA + Destacados + Footer</label>
+      <label for="landing_catalogo_cta_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA catálogo (texto)</label>
+      <input type="text" id="landing_catalogo_cta_texto" data-landing-field="catalogo_cta_texto" autocomplete="off">
+      <label for="landing_catalogo_cta_label" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA catálogo (botón)</label>
+      <input type="text" id="landing_catalogo_cta_label" data-landing-field="catalogo_cta_label" autocomplete="off">
+      <label for="landing_destacados_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Título destacados</label>
+      <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" autocomplete="off">
+      <label for="landing_footer_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Texto legal / pie</label>
+      <textarea id="landing_footer_texto" data-landing-field="footer_texto" rows="2"></textarea>
+      <input type="file" id="inputLandingFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
+    </div>
+
+    <div class="campo" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+      <button type="button" class="btn-generar" id="btnGuardarLanding">Guardar</button>
+      <button type="button" class="btn-generar" id="btnRecargarLanding" style="background:none; color:var(--ink-muted);">Recargar</button>
     </div>
   </div>
 
@@ -1022,6 +1149,8 @@
     const el = evento.target;
     const esTextoLibre = el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text');
     if (!esTextoLibre) return;
+    // Landing editorial: conservar mayúsculas/minúsculas del copy.
+    if (el.closest('#panelLanding') || el.hasAttribute('data-landing-field')) return;
     const mayusculas = el.value.toUpperCase();
     if (mayusculas === el.value) return;
     const inicio = el.selectionStart;
@@ -1044,12 +1173,14 @@
   const tabEscanear = document.getElementById('tabEscanear');
   const tabGenerarUnidades = document.getElementById('tabGenerarUnidades');
   const tabCatalogo = document.getElementById('tabCatalogo');
+  const tabLanding = document.getElementById('tabLanding');
   const tabPedidos = document.getElementById('tabPedidos');
   const tabCierreCaja = document.getElementById('tabCierreCaja');
   const tabUsuarios = document.getElementById('tabUsuarios');
   const seccionEscanear = document.getElementById('seccionEscanear');
   const panelGenerarUnidades = document.getElementById('panelGenerarUnidades');
   const panelCatalogo = document.getElementById('panelCatalogo');
+  const panelLanding = document.getElementById('panelLanding');
   const panelPedidos = document.getElementById('panelPedidos');
   const panelCierreCaja = document.getElementById('panelCierreCaja');
   const panelUsuarios = document.getElementById('panelUsuarios');
@@ -1186,6 +1317,7 @@
     // llamarlas directo, esto es solo la interfaz).
     tabGenerarUnidades.style.display = esNivel2() ? '' : 'none';
     tabCatalogo.style.display = esNivel2() ? '' : 'none';
+    tabLanding.style.display = esNivel2() ? '' : 'none';
     tabCierreCaja.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
@@ -1201,7 +1333,7 @@
     let seccionGuardada = 'escanear';
     try {
       const guardada = localStorage.getItem('admin_seccion_activa');
-      if (['escanear', 'generar', 'catalogo', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
+      if (['escanear', 'generar', 'catalogo', 'landing', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
     } catch (e) {}
     mostrarSeccionAdmin(seccionGuardada);
   }
@@ -1209,24 +1341,27 @@
   function mostrarSeccionAdmin(seccion){
     // Nivel 1 no puede quedar parado en una seccion que no le corresponde
     // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
-    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
+    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'landing' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
     try { localStorage.setItem('admin_seccion_activa', seccion); } catch (e) {}
 
     const esEscanear = seccion === 'escanear';
     const esPedidos = seccion === 'pedidos';
     const esGenerar = seccion === 'generar';
     const esCatalogo = seccion === 'catalogo';
+    const esLanding = seccion === 'landing';
     const esCierreCaja = seccion === 'cierrecaja';
     const esUsuarios = seccion === 'usuarios';
     tabEscanear.classList.toggle('activo', esEscanear);
     tabGenerarUnidades.classList.toggle('activo', esGenerar);
     tabCatalogo.classList.toggle('activo', esCatalogo);
+    tabLanding.classList.toggle('activo', esLanding);
     tabPedidos.classList.toggle('activo', esPedidos);
     tabCierreCaja.classList.toggle('activo', esCierreCaja);
     tabUsuarios.classList.toggle('activo', esUsuarios);
     seccionEscanear.style.display = esEscanear ? 'block' : 'none';
     panelGenerarUnidades.style.display = esGenerar ? 'block' : 'none';
     panelCatalogo.style.display = esCatalogo ? 'block' : 'none';
+    panelLanding.style.display = esLanding ? 'block' : 'none';
     panelPedidos.style.display = esPedidos ? 'block' : 'none';
     panelCierreCaja.style.display = esCierreCaja ? 'block' : 'none';
     panelUsuarios.style.display = esUsuarios ? 'block' : 'none';
@@ -1241,6 +1376,9 @@
       cargarCatalogoCompletoAdmin();
       cargarTarifasEnvio();
     }
+    if (esLanding) {
+      cargarLandingContenidoAdmin();
+    }
     if (esPedidos) {
       cargarPedidos();
     }
@@ -1254,9 +1392,130 @@
   tabEscanear.addEventListener('click', () => mostrarSeccionAdmin('escanear'));
   tabGenerarUnidades.addEventListener('click', () => mostrarSeccionAdmin('generar'));
   tabCatalogo.addEventListener('click', () => mostrarSeccionAdmin('catalogo'));
+  tabLanding.addEventListener('click', () => mostrarSeccionAdmin('landing'));
   tabPedidos.addEventListener('click', () => mostrarSeccionAdmin('pedidos'));
   tabCierreCaja.addEventListener('click', () => mostrarSeccionAdmin('cierrecaja'));
   tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
+
+
+  /* ------------------------------------------------------------
+   * LANDING — editor de textos/fotos (nivel 2)
+   * Endpoints: GET/PUT /admin/landing, POST /admin/landing/foto
+   * Claves snake_case del sheet Landing (ver googleSheets LANDING_DEFAULTS).
+   * Paths ocultos: solo preview + Subir archivo.
+   * ------------------------------------------------------------ */
+  const LANDING_CAMPOS_IMG = ['logo', 'hero_imagen', 'sobre_foto_a', 'sobre_foto_b', 'espacio_imagen'];
+  let landingUploadTarget = null;
+
+  function mensajeLanding(texto, tipo) {
+    const el = document.getElementById('mensajeLanding');
+    if (!el) return;
+    el.textContent = texto || '';
+    el.style.color = tipo === 'ok' ? 'var(--stamp-green)' : (tipo === 'error' ? 'var(--stamp-red)' : 'var(--ink-muted)');
+  }
+
+  function actualizarPreviewsLanding() {
+    LANDING_CAMPOS_IMG.forEach((campo) => {
+      const input = document.getElementById('landing_' + campo);
+      const preview = document.getElementById('preview_' + campo);
+      if (!input || !preview) return;
+      const url = (input.value || '').trim();
+      preview.src = url || '';
+      preview.style.visibility = url ? 'visible' : 'hidden';
+    });
+  }
+
+  function rellenarFormLanding(data) {
+    const src = data || {};
+    document.querySelectorAll('[data-landing-field]').forEach((el) => {
+      const key = el.getAttribute('data-landing-field');
+      el.value = src[key] != null ? String(src[key]) : '';
+    });
+    actualizarPreviewsLanding();
+  }
+
+  function leerFormLanding() {
+    const data = {};
+    document.querySelectorAll('[data-landing-field]').forEach((el) => {
+      const key = el.getAttribute('data-landing-field');
+      data[key] = el.value;
+    });
+    return data;
+  }
+
+  async function cargarLandingContenidoAdmin() {
+    mensajeLanding('Cargando…', '');
+    try {
+      const res = await fetch(`/admin/landing?token=${encodeURIComponent(adminToken)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo cargar');
+      rellenarFormLanding(data.contenido || data);
+      mensajeLanding('Contenido cargado.', 'ok');
+    } catch (err) {
+      mensajeLanding(err.message || 'Error al cargar', 'error');
+    }
+  }
+
+  async function guardarLandingContenidoAdmin() {
+    mensajeLanding('Guardando…', '');
+    try {
+      const contenido = leerFormLanding();
+      const res = await fetch('/admin/landing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken, contenido }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
+      if (data.contenido) rellenarFormLanding(data.contenido);
+      mensajeLanding('Guardado.', 'ok');
+    } catch (err) {
+      mensajeLanding(err.message || 'Error al guardar', 'error');
+    }
+  }
+
+  async function subirFotoLanding(archivo) {
+    const formData = new FormData();
+    formData.append('token', adminToken);
+    formData.append('foto', archivo);
+    const res = await fetch('/admin/landing/foto', { method: 'POST', body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'No se pudo subir');
+    if (!data.url) throw new Error('El servidor no devolvió url');
+    return data.url;
+  }
+
+  const inputLandingFotoFile = document.getElementById('inputLandingFotoFile');
+  document.querySelectorAll('[data-landing-upload]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      landingUploadTarget = btn.getAttribute('data-landing-upload');
+      if (inputLandingFotoFile) inputLandingFotoFile.click();
+    });
+  });
+  if (inputLandingFotoFile) {
+    inputLandingFotoFile.addEventListener('change', async () => {
+      const archivo = inputLandingFotoFile.files && inputLandingFotoFile.files[0];
+      inputLandingFotoFile.value = '';
+      if (!archivo || !landingUploadTarget) return;
+      const target = landingUploadTarget;
+      landingUploadTarget = null;
+      mensajeLanding('Subiendo foto…', '');
+      try {
+        const url = await subirFotoLanding(archivo);
+        const input = document.getElementById('landing_' + target);
+        if (input) input.value = url;
+        actualizarPreviewsLanding();
+        mensajeLanding('Foto lista. Tocá Guardar para publicar.', 'ok');
+      } catch (err) {
+        mensajeLanding(err.message || 'Error al subir', 'error');
+      }
+    });
+  }
+  const btnGuardarLanding = document.getElementById('btnGuardarLanding');
+  if (btnGuardarLanding) btnGuardarLanding.addEventListener('click', guardarLandingContenidoAdmin);
+  const btnRecargarLanding = document.getElementById('btnRecargarLanding');
+  if (btnRecargarLanding) btnRecargarLanding.addEventListener('click', cargarLandingContenidoAdmin);
+
 
   document.getElementById('btnActivarCamara').addEventListener('click', () => {
     if (escanerIniciado) {
