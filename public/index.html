@@ -661,12 +661,12 @@
     <div class="metodo-pago-opciones">
       <label id="opcionPayway"><input type="radio" name="metodoPago" value="payway"> Tarjeta (Payway)</label>
       <label id="opcionMercadoPago"><input type="radio" name="metodoPago" value="mercadopago" checked> Mercado Pago</label>
-      <label id="opcionTransferencia" style="display:none;"><input type="radio" name="metodoPago" value="transferencia"> Transferencia bancaria</label>
+      <label id="opcionTransferencia"><input type="radio" name="metodoPago" value="transferencia"> Transferencia bancaria</label>
     </div>
 
     <div id="avisoRecargoMP" class="aviso-recargo-mp oculto"></div>
 
-    <div id="panelTransferencia" class="panel-transferencia oculto" style="display:none !important;" aria-hidden="true">
+    <div id="panelTransferencia" class="panel-transferencia oculto">
       <p>Transferí el total de la compra a:</p>
       <div class="transferencia-datos" id="transferenciaDatos">Cargando datos...</div>
       <p>Usá tu nombre como referencia. Apenas confirmemos que llegó el pago, coordinamos la entrega.</p>
@@ -1881,9 +1881,8 @@
   function metodoPagoSeleccionado(){
     const el = document.querySelector('input[name="metodoPago"]:checked');
     let valor = el ? el.value : 'mercadopago';
-    // Payway off → MP. Transferencia fuera del flujo público.
+    // Payway off → MP.
     if (valor === 'payway' && !PAYWAY_HABILITADO) return 'mercadopago';
-    if (valor === 'transferencia') return 'mercadopago';
     return valor;
   }
 
@@ -1921,9 +1920,9 @@
       avisoRecargoMP.classList.add('oculto');
     }
 
-    btnPagarCheckout.textContent = esMercadoPago
-      ? 'Pagar con Mercado Pago'
-      : (esTransferencia ? 'Pagar con Mercado Pago' : 'Pagar con Payway');
+    btnPagarCheckout.textContent = esTransferencia
+      ? 'Confirmar pedido (transferencia)'
+      : (esMercadoPago ? 'Pagar con Mercado Pago' : 'Pagar con Payway');
 
     if (!esTransferencia) return;
 
@@ -2215,8 +2214,9 @@
         return;
       }
 
+      const tr = data.transferencia || {};
       mensajeCheckout.className = 'checkout-mensaje ok';
-      mensajeCheckout.textContent = `¡Listo! Pedido ${data.pedidoIds.join(', ')}.`;
+      mensajeCheckout.textContent = `¡Listo! Tu pedido es ${data.pedidoIds.join(', ')}. Transferí $${tr.monto} a ${tr.titular || 'la cuenta indicada'} y guardá esos números como referencia.`;
       btnPagarCheckout.textContent = 'Pedido creado ✓';
       btnPagarCheckout.disabled = true;
       guardarCarrito([]);
@@ -2224,7 +2224,9 @@
       mensajeCheckout.className = 'checkout-mensaje error';
       mensajeCheckout.textContent = `No se pudo confirmar el pedido: ${err.message}`;
       btnPagarCheckout.disabled = false;
-      btnPagarCheckout.textContent = 'Pagar con Mercado Pago';
+      btnPagarCheckout.textContent = metodoPago === 'mercadopago'
+        ? 'Pagar con Mercado Pago'
+        : 'Confirmar pedido (transferencia)';
     }
   }
 </script>
