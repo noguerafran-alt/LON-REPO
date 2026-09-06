@@ -1567,12 +1567,10 @@ app.post('/admin/borrar-producto', limiteAdmin, async (req, res) => {
 app.get('/config-publico', limiteLecturaPublica, (req, res) => {
   res.json({
     whatsappNumero: config.WHATSAPP_NUMERO_CONTACTO || '',
-    transferencia: {
-      alias: config.TRANSFERENCIA_ALIAS || '',
-      titular: config.TRANSFERENCIA_TITULAR || '',
-      cbu: config.TRANSFERENCIA_CBU || '',
-      banco: config.TRANSFERENCIA_BANCO || '',
-    },
+    // Transferencia bancaria ya no se ofrece en el checkout público:
+    // no exponemos alias/CBU/titular/banco (campos vacíos para no romper
+    // clientes que todavía lean `transferencia`).
+    transferencia: { alias: '', titular: '', cbu: '', banco: '' },
     googleClientId: config.GOOGLE_OAUTH_CLIENT_ID || '',
   });
 });
@@ -2001,29 +1999,20 @@ app.post('/admin/producto/descripcion', limiteAdmin, async (req, res) => {
 });
 
 /* ============================================================
- *  SECCION PAGOS: PAYWAY (checkout hospedado) + TRANSFERENCIA BANCARIA
+ *  SECCION PAGOS: MERCADO PAGO (Checkout Pro) + Payway (opcional)
  * ============================================================
- * El catalogo publico ofrece DOS metodos de pago (metodoPago en el
- * body): 'payway' o 'transferencia'. En ambos casos primero creamos el
- * Pedido en la hoja PEDIDOS con estado "Pendiente de pago".
+ * El catalogo publico ofrece Mercado Pago (y Payway si está configurado)
+ * en /crear-pago; el carrito (/crear-pago-carrito) solo Mercado Pago.
+ * Transferencia bancaria YA NO se admite en el flujo público (se rechaza
+ * en ambos endpoints y /config-publico no expone CBU/alias).
  *
- * - payway: creamos un link de pago hospedado en Payway (el comprador
- *   carga la tarjeta en una pagina de Payway, nunca en la nuestra) y
- *   redirigimos ahi. El identificador que devuelve Payway se guarda
- *   como pagoExternoId ANTES de que el comprador pague (es la unica
- *   forma de rastrear el pedido despues). Cuando el pago se resuelve,
- *   Payway llama a /webhook/payway -> buscamos el pedido por ese
- *   pagoExternoId y actualizamos el estado. Como respaldo (por si el
- *   webhook no esta bien configurado todavia, o tarda),
- *   /verificar-pago-payway/:pedidoId permite reconciliar a demanda —
- *   la pagina de exito la llama automaticamente al volver de Payway.
+ * En ambos casos primero creamos el Pedido en PEDIDOS con estado
+ * "Pendiente de pago", creamos la preferencia/link, guardamos
+ * pagoExternoId y devolvemos redirectUrl (init_point / URL Payway).
  *
- * - transferencia: no hay nada que crear del lado del proveedor de
- *   pago. Le mostramos al comprador el alias/CBU del local para que
- *   transfiera por su cuenta, con el numero de pedido como referencia.
- *   El pedido queda "Pendiente de pago" hasta que un admin confirma a
- *   mano (desde el panel, igual que cualquier otro pedido) que la plata
- *   llego.
+ * - mercadopago: preferencia Checkout Pro (uno o varios items).
+ * - payway: link hospedado (solo producto único; el código queda, no
+ *   es obligatorio usarlo).
  * ============================================================ */
 
 /* ------------------------------------------------------------
@@ -2127,8 +2116,11 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
     }
-    if (metodoPago !== 'payway' && metodoPago !== 'transferencia' && metodoPago !== 'mercadopago') {
-      return res.status(400).json({ error: 'Elegi un metodo de pago valido (Payway, Mercado Pago o transferencia).' });
+    if (metodoPago === 'transferencia') {
+      return res.status(400).json({ error: 'La transferencia bancaria ya no está disponible en el checkout online. Usá Mercado Pago.' });
+    }
+    if (metodoPago !== 'payway' && metodoPago !== 'mercadopago') {
+      return res.status(400).json({ error: 'Elegí un método de pago válido (Mercado Pago o Payway).' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
@@ -2191,7 +2183,7 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       numeroSeguimiento: '',
       pagoExternoId: '',
       notas: sanitizarTexto(notas, 500),
-      metodoPago: metodoPago === 'payway' ? 'Payway' : (metodoPago === 'mercadopago' ? 'Mercado Pago' : 'Transferencia'),
+      metodoPago: metodoPago === 'payway' ? 'Payway' : 'Mercado Pago',
       // El stock se reserva recien cuando el pago se confirma, no al
       // iniciar el checkout (si no, un carrito abandonado congelaria
       // unidades para siempre).
@@ -2236,31 +2228,8 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       return res.json({ ok: true, pedidoId, redirectUrl: preferencia.initPoint });
     }
 
-    // metodoPago === 'transferencia': no hay redirect, el front muestra
-    // los datos para transferir. Ademas mandamos un mail con esos mismos
-    // datos + el numero de pedido, para que el comprador lo tenga a mano
-    // aunque cierre la pestaña. No esperamos (await) el envio ni
-    // interrumpimos la respuesta si falla — el pedido ya esta creado y
-    // el front igual muestra los datos en pantalla.
-    const datosTransferencia = {
-      alias: config.TRANSFERENCIA_ALIAS,
-      titular: config.TRANSFERENCIA_TITULAR,
-      cbu: config.TRANSFERENCIA_CBU,
-      banco: config.TRANSFERENCIA_BANCO,
-      monto: total,
-    };
-
-    emailService.enviarEmailTransferencia({
-      destinatario: email,
-      nombreCliente: nombre,
-      pedidoId,
-      producto: producto.nombre,
-      cantidad: cantidadNum,
-      monto: total,
-      transferencia: datosTransferencia,
-    }).catch((err) => console.error('Error en el envío de mail (no bloquea el pedido):', err.message));
-
-    res.json({ ok: true, pedidoId, transferencia: datosTransferencia });
+    // Transferencia ya no se admite en el flujo público (rechazada arriba).
+    return res.status(400).json({ error: 'Método de pago no soportado.' });
   } catch (err) {
     console.error('Error creando el pago:', err.message);
     res.status(500).json({ error: err.message || 'No se pudo iniciar el pago.' });
@@ -2272,10 +2241,10 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
    una fila = un producto = un pedidoId propio), pero valida TODOS los
    items antes de crear ninguno (si uno falla, no se crea nada) y las
    agrupa con una referencia de carrito compartida en las notas, para
-   que el admin las vea relacionadas. El monto a transferir es la suma
-   de todos los items. Por ahora solo admite transferencia (Payway con
-   un solo link de pago no tiene forma limpia de cobrar varios pedidos
-   a la vez, y todavía ni está habilitado). */
+   que el admin las vea relacionadas. Solo admite Mercado Pago Checkout
+   Pro (preferencia multi-item con recargos por categoría; preference id
+   en pagoExternoId de todos; redirectUrl = init_point). Transferencia
+   y Payway no se admiten en carrito. */
 app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
   try {
     const {
@@ -2302,12 +2271,18 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
     }
-    if (metodoPago !== 'transferencia') {
-      return res.status(400).json({ error: 'Por ahora el carrito solo admite pago por transferencia.' });
+    if (metodoPago === 'transferencia') {
+      return res.status(400).json({ error: 'La transferencia bancaria ya no está disponible en el checkout online. Usá Mercado Pago.' });
+    }
+    if (metodoPago !== 'mercadopago') {
+      return res.status(400).json({ error: 'El carrito solo admite pago con Mercado Pago.' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const catalogo = await construirCatalogoConStock(sheetsClient, { soloConStock: false });
+
+    // Recargos por categoría (mismo criterio que /crear-pago).
+    const recargos = await getRecargosMercadoPago(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG);
 
     const itemsValidados = [];
     for (const item of (items || [])) {
@@ -2326,8 +2301,8 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
         return res.status(404).json({ error: `No se encontró el producto ${skuGeneral}.` });
       }
 
-      const precioNum = Number(producto.precio);
-      if (!precioNum || precioNum <= 0) {
+      const precioCatalogo = Number(producto.precio);
+      if (!precioCatalogo || precioCatalogo <= 0) {
         return res.status(400).json({ error: `"${producto.nombre}" todavía no tiene precio cargado, no se puede comprar online.` });
       }
       if (cantidadNum > producto.cantidad) {
@@ -2338,10 +2313,13 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
         });
       }
 
-      itemsValidados.push({ producto, cantidad: cantidadNum, precio: precioNum });
+      let precioNum = precioCatalogo;
+      const recargoPct = recargos[String(producto.categoria || '').trim().toUpperCase()] || 0;
+      if (recargoPct > 0) precioNum = Math.round(precioCatalogo * (1 + recargoPct / 100));
+
+      itemsValidados.push({ producto, cantidad: cantidadNum, precio: precioNum, recargoPct });
     }
 
-    const totalCarrito = itemsValidados.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
     const grupoCarritoId = `CARR-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const { fecha, hora } = fechaYHoraActual();
     const pedidoIds = [];
@@ -2375,33 +2353,35 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
         numeroSeguimiento: '',
         pagoExternoId: '',
         notas: sanitizarTexto(notasCompletas, 500),
-        metodoPago: 'Transferencia',
+        metodoPago: 'Mercado Pago',
         stockReservado: '',
         skuUnidad: '',
+        recargoMercadoPago: it.recargoPct > 0 ? it.recargoPct : '',
       });
     }
 
-    const datosTransferencia = {
-      alias: config.TRANSFERENCIA_ALIAS,
-      titular: config.TRANSFERENCIA_TITULAR,
-      cbu: config.TRANSFERENCIA_CBU,
-      banco: config.TRANSFERENCIA_BANCO,
-      monto: totalCarrito,
-    };
-
-    emailService.enviarEmailTransferenciaCarrito({
-      destinatario: email,
-      nombreCliente: nombre,
-      pedidoIds,
-      items: itemsValidados.map((it) => ({ producto: it.producto.nombre, cantidad: it.cantidad })),
-      monto: totalCarrito,
-      transferencia: datosTransferencia,
-    }).catch((err) => console.error('Error en el envío de mail de carrito (no bloquea el pedido):', err.message));
-
-    res.json({ ok: true, pedidoIds, transferencia: datosTransferencia });
+    // Preferencia única multi-item; external_reference/back_urls = primer
+    // pedidoId (mismo patrón que /crear-pago). Guardamos el id de
+    // preferencia en TODOS los pedidos del carrito.
+    const preferencia = await mercadopago.crearPreferencia({
+      pedidoId: pedidoIds[0],
+      nombreComprador: nombre,
+      emailComprador: email,
+      items: itemsValidados.map((it) => ({
+        titulo: it.producto.nombre,
+        cantidad: it.cantidad,
+        precioUnitario: it.precio,
+      })),
+    });
+    for (const pedidoId of pedidoIds) {
+      await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoId, {
+        pagoExternoId: preferencia.id,
+      });
+    }
+    return res.json({ ok: true, pedidoIds, redirectUrl: preferencia.initPoint });
   } catch (err) {
     console.error('Error creando pedido de carrito:', err.message);
-    res.status(500).json({ error: 'No se pudo procesar el pedido.' });
+    res.status(500).json({ error: err.message || 'No se pudo procesar el pedido.' });
   }
 });
 
@@ -2491,15 +2471,36 @@ async function reconciliarPagoMercadoPago(pagoId) {
   const { pedido } = await getPedidoPorId(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoIdReferenciado);
   if (!pedido) return null;
 
-  const { campos } = await sincronizarStockPedido(sheetsClient, pedido, nuevoEstado);
+  // Si el pedido pertenece a un carrito (notas con "Carrito CARR-..."),
+  // actualizamos también los hermanos para marcarlos con el mismo estado.
+  const pedidosAActualizar = [pedido];
+  const matchGrupo = String(pedido.notas || '').match(/Carrito\s+(CARR-[A-Z0-9-]+)/i);
+  if (matchGrupo) {
+    try {
+      const todos = await getPedidos(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS);
+      const grupo = matchGrupo[1];
+      for (const p of (todos || [])) {
+        if (p && p.pedidoId && p.pedidoId !== pedido.pedidoId && String(p.notas || '').includes(grupo)) {
+          pedidosAActualizar.push(p);
+        }
+      }
+    } catch (err) {
+      console.error('No se pudieron cargar pedidos hermanos del carrito MP:', err.message);
+    }
+  }
 
-  await actualizarPedido(
-    sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedido.pedidoId,
-    // Actualizamos pagoExternoId al id REAL del pago (hasta ahora tenía
-    // el id de la preferencia) — queda como referencia de auditoría.
-    { estado: nuevoEstado, pagoExternoId: String(pagoId), ...campos },
-  );
-  return { pedidoId: pedido.pedidoId, estado: nuevoEstado };
+  let ultimo = null;
+  for (const ped of pedidosAActualizar) {
+    const { campos } = await sincronizarStockPedido(sheetsClient, ped, nuevoEstado);
+    await actualizarPedido(
+      sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, ped.pedidoId,
+      // Actualizamos pagoExternoId al id REAL del pago (hasta ahora tenía
+      // el id de la preferencia) — queda como referencia de auditoría.
+      { estado: nuevoEstado, pagoExternoId: String(pagoId), ...campos },
+    );
+    ultimo = { pedidoId: ped.pedidoId, estado: nuevoEstado };
+  }
+  return ultimo;
 }
 
 /* Notificacion asincronica de Mercado Pago. Siempre respondemos 200

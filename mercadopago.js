@@ -23,13 +23,14 @@ function verificarConfigurado() {
 }
 
 /**
- * Crea una preferencia de pago (Checkout Pro) para un solo item y devuelve
- * la respuesta completa de Mercado Pago (incluye `id` e `init_point`, que
- * es la URL a la que hay que redirigir a la persona para que pague).
+ * Crea una preferencia de pago (Checkout Pro) y devuelve `id` + `initPoint`
+ * (URL de redirección). Acepta un solo item (compat /crear-pago) o varios
+ * vía `items` (carrito /crear-pago-carrito).
  *
  * datos = {
- *   pedidoId, titulo, precioUnitario, cantidad,
- *   nombreComprador, emailComprador,
+ *   pedidoId, nombreComprador, emailComprador,
+ *   titulo, precioUnitario, cantidad,          // single-item
+ *   items: [{ titulo|title, cantidad|quantity, precioUnitario|unit_price }],
  * }
  */
 async function crearPreferencia(datos) {
@@ -37,20 +38,29 @@ async function crearPreferencia(datos) {
 
   const {
     pedidoId, titulo, precioUnitario, cantidad,
-    nombreComprador, emailComprador,
+    nombreComprador, emailComprador, items,
   } = datos;
 
   if (!config.PUBLIC_URL) {
     throw new Error('Falta configurar PUBLIC_URL para poder armar las URLs de retorno y notificación de Mercado Pago.');
   }
 
+  const itemsPreferencia = Array.isArray(items) && items.length > 0
+    ? items.map((it) => ({
+        title: it.titulo || it.title || 'Producto',
+        quantity: Number(it.cantidad || it.quantity) || 1,
+        currency_id: config.MP_CURRENCY_ID,
+        unit_price: Number(it.precioUnitario != null ? it.precioUnitario : it.unit_price) || 0,
+      }))
+    : [{
+        title: titulo || 'Producto',
+        quantity: Number(cantidad) || 1,
+        currency_id: config.MP_CURRENCY_ID,
+        unit_price: Number(precioUnitario) || 0,
+      }];
+
   const body = {
-    items: [{
-      title: titulo || 'Producto',
-      quantity: Number(cantidad) || 1,
-      currency_id: config.MP_CURRENCY_ID,
-      unit_price: Number(precioUnitario) || 0,
-    }],
+    items: itemsPreferencia,
     payer: {
       name: nombreComprador || undefined,
       email: emailComprador || undefined,

@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-08-23 (noche)**
+> Última actualización: **2026-09-06**
 
 ## Qué hace la app hoy
 
@@ -14,13 +14,15 @@
   deep-link (`?producto=SKU`), carrito, checkout de un producto o del
   carrito, login de cliente con Google ("Mi cuenta"), programa de
   fidelidad de café.
-- **Checkout**: Transferencia bancaria (siempre disponible), Mercado
-  Pago (con recargo % configurable por categoría del ticket, avisa el
-  aumento antes de pagar) y Payway (integrado pero con el radio oculto
-  en el frontend — `PAYWAY_HABILITADO = false` en `index.html`, falta
-  confirmar el endpoint de checkout hospedado con soporte de Payway
-  antes de habilitarlo). **Todo esto es solo para comprar UN producto a
-  la vez** — el carrito solo admite transferencia.
+- **Checkout**: Mercado Pago Checkout Pro (producto único y carrito
+  multi-item, con recargo % configurable por categoría) y Payway
+  (código en `/crear-pago`, radio oculto en el frontend —
+  `PAYWAY_HABILITADO = false`). **Transferencia bancaria ya no se
+  admite** en el flujo público: `/crear-pago` y `/crear-pago-carrito`
+  la rechazan; `/config-publico` no expone CBU/alias. El carrito crea
+  una preferencia multi-item, aplica recargos por categoría, guarda
+  `pagoExternoId` en todos los pedidos del grupo y devuelve
+  `{ok, pedidoIds, redirectUrl}`.
 - **Panel admin** (`public/admin.html`), pestañas:
   - **Escanear** (nivel 1+2): venta por cámara (QR/código de barras),
     "Vender por lector" (sin cámara, para lector de mano o búsqueda con
@@ -68,9 +70,13 @@ Detalle JSON** — la app nunca escribe encabezados).
   deshabilitado en el frontend. Falta confirmar con soporte de Payway
   el endpoint real de checkout hospedado antes de poner
   `PAYWAY_HABILITADO = true`.
-- **Mercado Pago / Payway en el carrito**: no implementado, solo
-  transferencia. Si se pide, hay que resolver el recargo MP cuando el
-  carrito tiene productos de categorías distintas (cada una con su %).
+- **Payway en el carrito**: no implementado (solo Mercado Pago). El
+  recargo MP por categoría distinta en el carrito ya se aplica item a
+  item en `/crear-pago-carrito`.
+- **Webhook MP multi-pedido**: la preferencia del carrito usa
+  `external_reference` = primer `pedidoId`; el webhook actualiza ese
+  pedido. Los demás del grupo quedan con el mismo `pagoExternoId`
+  (id de preferencia) hasta reconciliación manual/mejoras futuras.
 - **Cierre de caja / OCR**: el 2026-08-23 a la noche el usuario mandó
   un ticket real de ejemplo (total vendido $296.400, categorías
   LIBROS PERIPLO / ADICIONALES / CAFE / GENERICO / COMIDA / CAFE
