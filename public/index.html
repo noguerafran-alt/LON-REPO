@@ -548,6 +548,11 @@
   }
 
 
+  .titulo-seccion-destacados{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
+    font-size:clamp(22px, 2.5vw, 28px); color:var(--ink); margin:8px 0 14px; letter-spacing:0.01em;
+  }
+
   /* ---- Hero editorial (base desktop) ---- */
   .hero-editorial{
     position:relative;
@@ -772,6 +777,7 @@
       <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <div class="acciones-header-catalogo">
+      <button type="button" class="btn-icono-simetrico" id="btnBuscarHeader" title="Buscar" aria-label="Buscar">🔍</button>
       <button class="btn-icono-simetrico btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito">
         🛒<span class="badge-carrito oculto" id="badgeCarrito">0</span>
       </button>
@@ -780,21 +786,21 @@
   </div>
 
   <div id="catalogoListaView">
-    <section class="hero-editorial" aria-label="LON Philosophy">
-      <img class="hero-editorial-media" src="/hero-editorial.webp" alt="Pieza editorial LON Philosophy" width="1280" height="1600">
+    <section class="hero-editorial" aria-label="Presentación LON Philosophy">
+      <img class="hero-editorial-media" src="/hero-editorial.webp" alt="" width="1280" height="1600">
       <div class="hero-editorial-overlay" aria-hidden="true"></div>
       <div class="hero-editorial-copy">
-        <p class="eyebrow">LON Philosophy</p>
+        <p class="eyebrow">LON PHILOSOPHY</p>
         <h2>Objetos con aire de librería</h2>
         <a class="hero-editorial-cta" href="#catalogo">Ver piezas</a>
       </div>
     </section>
-    <div id="catalogoDestacados"></div>
     <div id="catalogo" class="fila-buscador-categorias">
       <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 Buscar</button>
       <div id="catalogoTabsCategoria"></div>
     </div>
     <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
+    <div id="catalogoDestacados"></div>
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
@@ -957,7 +963,7 @@
         <div class="info-item">
           <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
           ${metaProductoHtml(p)}
-          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
+          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
         </div>
       </div>
     `;
@@ -1032,6 +1038,7 @@
         : tarjetasHtml.join('');
 
       catalogoDestacados.innerHTML = `
+        <h2 class="titulo-seccion-destacados">Destacados</h2>
         <div class="carrusel-destacados">
           <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
           <div class="carrusel-pista">${htmlPista}</div>
@@ -1179,7 +1186,7 @@
               <div class="info-item">
                 <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
                 ${metaProductoHtml(p)}
-                <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
+                <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
               </div>
             </div>
           `).join('')}
@@ -1264,7 +1271,7 @@
             <div class="info-item">
               <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
               ${metaProductoHtml(p)}
-              <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
+              <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
             </div>
           </div>
         `).join('')}
@@ -1495,7 +1502,7 @@
               <div class="info-item">
                 <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
                 ${metaProductoHtml(p)}
-                <button type="button" data-relacionado-indice="${indice}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar al carrito</button>
+                <button type="button" data-relacionado-indice="${indice}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
               </div>
             </div>
           `).join('')}
@@ -1522,12 +1529,29 @@
   const inputBuscarCatalogo = document.getElementById('inputBuscarCatalogo');
   let debounceBusquedaCatalogo = null;
 
+  function abrirBuscadorCatalogo(){
+    inputBuscarCatalogo.style.display = 'block';
+    btnMostrarBuscadorCatalogo.classList.add('activo');
+    const ancla = document.getElementById('catalogo');
+    if (ancla) ancla.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => inputBuscarCatalogo.focus(), 280);
+  }
   btnMostrarBuscadorCatalogo.addEventListener('click', () => {
     const mostrando = inputBuscarCatalogo.style.display !== 'none';
-    inputBuscarCatalogo.style.display = mostrando ? 'none' : 'block';
-    btnMostrarBuscadorCatalogo.classList.toggle('activo', !mostrando);
-    if (!mostrando) inputBuscarCatalogo.focus();
+    if (mostrando) {
+      inputBuscarCatalogo.style.display = 'none';
+      btnMostrarBuscadorCatalogo.classList.remove('activo');
+    } else {
+      abrirBuscadorCatalogo();
+    }
   });
+  const btnBuscarHeader = document.getElementById('btnBuscarHeader');
+  if (btnBuscarHeader) {
+    btnBuscarHeader.addEventListener('click', () => {
+      if (typeof mostrarListaCatalogo === 'function') mostrarListaCatalogo();
+      abrirBuscadorCatalogo();
+    });
+  }
 
   // Este buscador se escribe en MAYÚSCULAS (a diferencia del resto de
   // los campos públicos, que quedan tal cual los tipea el cliente).
