@@ -118,7 +118,19 @@
     font-size:11px; color:var(--ink-muted); max-width:280px; margin:14px 0 0; line-height:1.4;
   }
 
-  #vistaCatalogo{ padding:16px 24px 40px; flex:1; max-width:1280px; width:100%; margin:0 auto; }
+  /* Catálogo full-bleed: sin tope 1280px; gutter lateral chico en desktop
+     (header/hero usan el mismo --catalogo-gutter para bleed negativo). */
+  #vistaCatalogo{
+    --catalogo-gutter:20px;
+    padding:16px var(--catalogo-gutter) 40px;
+    flex:1; width:100%; max-width:none; margin:0; box-sizing:border-box;
+  }
+  @media (min-width:900px){
+    #vistaCatalogo{ --catalogo-gutter:28px; }
+  }
+  @media (min-width:1400px){
+    #vistaCatalogo{ --catalogo-gutter:36px; }
+  }
   #vistaCatalogo.con-hero{ padding-top:0; }
   #vistaCatalogo .volver{
     background:none; border:none; color:var(--ink-muted); font-family:'Fraunces', serif;
@@ -139,7 +151,8 @@
   }
   .barra-superior-catalogo{
     display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px;
-    margin:-16px -24px 20px; padding:14px 24px; background:var(--bg-header); border-bottom:1px solid var(--header-line);
+    margin:-16px calc(-1 * var(--catalogo-gutter, 24px)) 20px;
+    padding:14px var(--catalogo-gutter, 24px); background:var(--bg-header); border-bottom:1px solid var(--header-line);
     position:sticky; top:0; z-index:100; min-height:64px;
   }
   .barra-superior-catalogo .volver{ justify-self:center; color:var(--header-text); }
@@ -298,6 +311,12 @@
   .carrusel-pista::-webkit-scrollbar{ display:none; }
   .carrusel-pista .item-catalogo-publico{
     flex:0 0 200px; width:200px; scroll-snap-align:start;
+  }
+  @media (min-width:1100px){
+    .carrusel-pista .item-catalogo-publico{ flex:0 0 240px; width:240px; }
+  }
+  @media (min-width:1500px){
+    .carrusel-pista .item-catalogo-publico{ flex:0 0 260px; width:260px; }
   }
   .btn-carrusel{
     position:absolute; top:calc(50% - 14px); transform:translateY(-50%); z-index:2;
@@ -563,7 +582,7 @@
   /* ---- Hero editorial (base desktop) ---- */
   .hero-editorial{
     position:relative;
-    margin:0 -24px 32px;
+    margin:0 calc(-1 * var(--catalogo-gutter, 24px)) 32px;
     min-height:64vh;
     max-height:72vh;
     display:flex;
