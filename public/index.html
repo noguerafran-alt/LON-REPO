@@ -1189,7 +1189,7 @@
 
       const tituloDest = (catalogoDestacados.getAttribute('data-destacados-titulo') || 'Piezas que miramos dos veces').trim();
       catalogoDestacados.innerHTML = `
-        <h2 class="titulo-seccion-destacados">${tituloDest}</h2>
+        <h2 class="titulo-seccion-destacados" data-landing="destacados_titulo">${tituloDest}</h2>
         <div class="carrusel-destacados">
           <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
           <div class="carrusel-pista">${htmlPista}</div>
