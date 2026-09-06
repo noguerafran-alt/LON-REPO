@@ -1569,7 +1569,7 @@ app.post('/admin/borrar-producto', limiteAdmin, async (req, res) => {
  * ============================================================
  * Contenido de la landing publica en la pestaña Landing
  * (SHEET_ID_PRODUCTOS). Lectura pública; escritura solo nivel 2.
- * La UI que bindea estos campos la arma otro PR (IMPLEMENTADOR).
+ * La UI vive en public/index.html (hidratacion) y public/admin.html (panel Landing).
  * ============================================================ */
 
 const CARPETA_UPLOADS_LANDING = path.join(__dirname, 'public', 'uploads', 'landing');

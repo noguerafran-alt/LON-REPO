@@ -624,6 +624,105 @@
     color:var(--bg-header);
     border-color:var(--header-text);
   }
+
+  /* ---- Bloques negocio (CMS) ---- */
+  .lon-negocio{ margin:0 0 40px; }
+  .lon-sobre{
+    display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center;
+    margin:48px 0 56px; padding:0 4px;
+  }
+  .lon-sobre-copy .eyebrow{ margin:0 0 10px; color:var(--ink-muted); }
+  .lon-sobre-copy h2{
+    font-family:'Fraunces', serif; font-weight:500; font-style:italic;
+    font-size:clamp(26px, 3.2vw, 36px); line-height:1.2; margin:0 0 16px; color:var(--ink);
+  }
+  .lon-sobre-lead{
+    font-family:'Fraunces', serif; font-style:italic; font-size:clamp(16px, 1.8vw, 19px);
+    line-height:1.45; color:var(--ink); margin:0 0 14px;
+  }
+  .lon-sobre-cuerpo{
+    font-family:'Archivo', sans-serif; font-size:14.5px; line-height:1.6;
+    color:var(--ink-muted); margin:0;
+  }
+  .lon-sobre-fotos{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .lon-sobre-fotos img{
+    width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:var(--radius);
+    background:var(--bg-alt); display:block;
+  }
+  .lon-sobre-fotos img:only-child{ grid-column:1 / -1; aspect-ratio:4/5; }
+  .lon-pilares{ margin:56px 0; padding:0 4px; }
+  .lon-pilares > h2{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
+    font-size:clamp(24px, 2.8vw, 32px); text-align:center; margin:0 0 28px; color:var(--ink);
+  }
+  .lon-pilares-grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:28px;
+  }
+  .lon-pilar{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px 20px; text-align:center;
+  }
+  .lon-pilar h3{
+    font-family:'Fraunces', serif; font-weight:500; font-size:18px; margin:0 0 10px; color:var(--ink);
+  }
+  .lon-pilar p{
+    font-family:'Archivo', sans-serif; font-size:13.5px; line-height:1.55;
+    color:var(--ink-muted); margin:0;
+  }
+  .lon-espacio{ margin:56px 0; }
+  .lon-espacio figure{ margin:0; }
+  .lon-espacio img{
+    width:100%; max-height:520px; object-fit:cover; border-radius:var(--radius);
+    background:var(--bg-alt); display:block;
+  }
+  .lon-espacio figcaption{
+    font-family:'Archivo', sans-serif; font-size:13px; color:var(--ink-muted);
+    margin-top:12px; letter-spacing:0.02em;
+  }
+  .lon-espacio-quote{
+    font-family:'Fraunces', serif; font-style:italic; font-size:clamp(18px, 2.2vw, 24px);
+    color:var(--ink); margin:20px 0 0; max-width:720px; line-height:1.35;
+  }
+  .lon-cta-franja{
+    margin:48px -24px 40px; padding:36px 24px; text-align:center;
+    background:var(--bg-alt); border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  }
+  .lon-cta-franja p{
+    font-family:'Fraunces', serif; font-style:italic; font-size:clamp(18px, 2.2vw, 24px);
+    color:var(--ink); margin:0 0 18px;
+  }
+  .lon-cta-franja a{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:12px 26px; border-radius:999px; text-decoration:none;
+    font-family:'Archivo', sans-serif; font-size:12px; font-weight:600;
+    letter-spacing:0.14em; text-transform:uppercase;
+    background:var(--bg-header); color:var(--header-text); border:1px solid var(--bg-header);
+  }
+  .lon-cta-franja a:hover{ background:var(--ink); border-color:var(--ink); }
+  .hero-editorial-copy .hero-sub{
+    font-family:'Archivo', sans-serif; font-size:14px; line-height:1.45;
+    color:rgba(255,243,229,0.9); margin:0 0 22px; max-width:420px; margin-left:auto; margin-right:auto;
+  }
+  .hero-ctas{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; }
+  .hero-editorial-cta.secundario{
+    border-color:rgba(255,243,229,0.55); color:rgba(255,243,229,0.95); background:transparent;
+  }
+  .hero-editorial-cta.secundario:hover{
+    background:rgba(255,243,229,0.12); color:var(--header-text); border-color:var(--header-text);
+  }
+  .lon-foto-oculta{ display:none !important; }
+  @media (max-width: 900px){
+    .lon-sobre{ grid-template-columns:1fr; gap:24px; margin:36px 0 44px; }
+    .lon-sobre-fotos{ order:-1; }
+    .lon-pilares-grid{ grid-template-columns:1fr; gap:14px; }
+    .lon-cta-franja{ margin:40px -16px 32px; padding:28px 16px; }
+  }
+  @media (max-width: 600px){
+    .lon-pilares{ margin:40px 0; }
+    .lon-espacio{ margin:40px 0; }
+    .lon-espacio img{ max-height:360px; }
+  }
+
   #catalogo{ scroll-margin-top:80px; }
 
   @media (max-width: 900px){
@@ -787,20 +886,70 @@
 
   <div id="catalogoListaView">
     <section class="hero-editorial" aria-label="Presentación LON Philosophy">
-      <img class="hero-editorial-media" src="/hero-editorial.webp" alt="" width="1280" height="1600">
+      <img class="hero-editorial-media" id="lonHeroImg" src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen">
       <div class="hero-editorial-overlay" aria-hidden="true"></div>
       <div class="hero-editorial-copy">
         <p class="eyebrow">LON PHILOSOPHY</p>
-        <h2>Objetos con aire de librería</h2>
-        <a class="hero-editorial-cta" href="#catalogo">Ver piezas</a>
+        <h2 data-landing="hero_tagline">Making community</h2>
+        <p class="hero-sub" data-landing="hero_ubicacion">Libros, objetos y café — para estar presente</p>
+        <div class="hero-ctas">
+          <a class="hero-editorial-cta" href="#catalogo" data-landing="cta_primary_label">Ver piezas</a>
+          <a class="hero-editorial-cta secundario" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label" data-landing-href="cta_secondary_href" data-landing-ig-href>Seguinos en Instagram</a>
+        </div>
       </div>
     </section>
+
+    <section class="lon-negocio lon-sobre" id="sobre" aria-label="Quiénes somos">
+      <div class="lon-sobre-copy">
+        <p class="eyebrow">LON</p>
+        <h2 data-landing="sobre_titulo">Quiénes somos</h2>
+        <p class="lon-sobre-lead" data-landing="sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
+        <p class="lon-sobre-cuerpo" data-landing="sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
+      </div>
+      <div class="lon-sobre-fotos">
+        <img src="" alt="LON — el local" data-landing="sobre_foto_a" class="lon-foto-oculta" width="600" height="800">
+        <img src="" alt="LON — detalle" data-landing="sobre_foto_b" class="lon-foto-oculta" width="600" height="800">
+      </div>
+    </section>
+
+    <section class="lon-negocio lon-pilares" aria-label="Propuesta">
+      <h2 data-landing="pilares_titulo">Qué vas a encontrar</h2>
+      <div class="lon-pilares-grid">
+        <article class="lon-pilar">
+          <h3 data-landing="pilar_1_titulo">Libros</h3>
+          <p data-landing="pilar_1_texto">Lecturas para demorarse — club, novedades y anaqueles con criterio.</p>
+        </article>
+        <article class="lon-pilar">
+          <h3 data-landing="pilar_2_titulo">Objetos</h3>
+          <p data-landing="pilar_2_texto">Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.</p>
+        </article>
+        <article class="lon-pilar">
+          <h3 data-landing="pilar_3_titulo">Café &amp; comunidad</h3>
+          <p data-landing="pilar_3_texto">Un espacio para encontrarse. Fidelidad en taza, conversación en el local.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="lon-negocio lon-espacio" aria-label="El espacio">
+      <figure>
+        <img src="/hero-editorial.webp" alt="El espacio LON" data-landing="espacio_imagen" width="1280" height="720">
+        <figcaption data-landing="espacio_caption">El local — luz, textura y anaquel.</figcaption>
+      </figure>
+      <blockquote class="lon-espacio-quote" data-landing="espacio_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
+    </section>
+
+    <section class="lon-cta-franja" aria-label="Ir al catálogo">
+      <p data-landing="catalogo_cta_texto">Explorá el catálogo y armá tu pedido online.</p>
+      <a href="#catalogo" data-landing="catalogo_cta_label">Ir al catálogo</a>
+    </section>
+
+    <div id="catalogoDestacados" data-destacados-titulo="Piezas que miramos dos veces"></div>
+
     <div id="catalogo" class="fila-buscador-categorias">
       <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 Buscar</button>
       <div id="catalogoTabsCategoria"></div>
     </div>
     <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
-    <div id="catalogoDestacados"></div>
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
@@ -809,11 +958,12 @@
 </div>
 
 <div class="footer-legal">
-  © 2026 FLN Data Analysis — Todos los derechos reservados · Software licenciado para uso exclusivo de LON Philosophy
+  <span data-landing="footer_texto">© 2026 FLN Data Analysis — LON Philosophy</span>
   · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a>
-  <br><a class="footer-ig" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer">Instagram @lonphilosophy</a>
+  <br><a class="footer-ig" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing-ig-href>Instagram <span data-landing-ig-text>@lonphilosophy</span></a>
   <br><a class="acceso-admin-link" href="/admin.html" style="margin-top:8px; display:inline-block;">Acceso admin →</a>
 </div>
+<img id="lonLogoCms" src="" alt="" data-landing="logo" class="lon-foto-oculta" width="1" height="1">
 
 <script>
   /* El logo de LON del header no siempre va al mismo lado: si hay una
@@ -1037,8 +1187,9 @@
         ? tarjetasHtml.join('') + tarjetasHtml.join('') + tarjetasHtml.join('')
         : tarjetasHtml.join('');
 
+      const tituloDest = (catalogoDestacados.getAttribute('data-destacados-titulo') || 'Piezas que miramos dos veces').trim();
       catalogoDestacados.innerHTML = `
-        <h2 class="titulo-seccion-destacados">Destacados</h2>
+        <h2 class="titulo-seccion-destacados">${tituloDest}</h2>
         <div class="carrusel-destacados">
           <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
           <div class="carrusel-pista">${htmlPista}</div>
@@ -2356,5 +2507,110 @@
     </svg>
   </a>
 </div>
+
+<script>
+  /* Hidrata bloques de negocio desde GET /landing-contenido.
+     Si falla o falta una clave, se dejan los defaults hardcodeados del HTML. */
+  (function () {
+    function mostrarSiTieneSrc(img) {
+      if (!img) return;
+      var url = (img.getAttribute('src') || '').trim();
+      if (url) img.classList.remove('lon-foto-oculta');
+      else img.classList.add('lon-foto-oculta');
+    }
+
+    function aplicarContenido(contenido) {
+      if (!contenido || typeof contenido !== 'object') return;
+
+      document.querySelectorAll('[data-landing]').forEach(function (el) {
+        var key = el.getAttribute('data-landing');
+        if (!key) return;
+        var valor = contenido[key];
+        if (valor == null || String(valor).trim() === '') return;
+        valor = String(valor);
+        if (el.tagName === 'IMG') {
+          el.src = valor;
+          if (key === 'logo') {
+            // Logo CMS opcional: actualizar logos del header si hay URL.
+            document.querySelectorAll('.logo-barra-catalogo').forEach(function (logo) {
+              logo.src = valor;
+            });
+            el.classList.add('lon-foto-oculta');
+          } else {
+            mostrarSiTieneSrc(el);
+          }
+        } else if (el.tagName === 'A' && key.indexOf('cta_') === 0 && key.indexOf('_label') !== -1) {
+          el.textContent = valor;
+        } else {
+          el.textContent = valor;
+        }
+      });
+
+      document.querySelectorAll('[data-landing-href]').forEach(function (el) {
+        var key = el.getAttribute('data-landing-href');
+        var valor = contenido[key];
+        if (valor == null || String(valor).trim() === '') return;
+        el.href = String(valor).trim();
+      });
+
+      var handle = contenido.ig_handle;
+      if (handle != null && String(handle).trim() !== '') {
+        var h = String(handle).trim().replace(/^@/, '');
+        var url = 'https://www.instagram.com/' + encodeURIComponent(h) + '/';
+        document.querySelectorAll('[data-landing-ig-href]').forEach(function (el) {
+          // No pisar cta_secondary_href si ya vino del CMS y no es el IG genérico.
+          if (el.hasAttribute('data-landing-href') && contenido.cta_secondary_href) {
+            /* href ya aplicado arriba */
+          } else {
+            el.href = url;
+          }
+        });
+        document.querySelectorAll('[data-landing-ig-text]').forEach(function (el) {
+          el.textContent = '@' + h;
+        });
+      }
+
+      if (contenido.destacados_titulo && String(contenido.destacados_titulo).trim()) {
+        var box = document.getElementById('catalogoDestacados');
+        if (box) {
+          box.setAttribute('data-destacados-titulo', String(contenido.destacados_titulo).trim());
+          var h2 = box.querySelector('.titulo-seccion-destacados');
+          if (h2) h2.textContent = String(contenido.destacados_titulo).trim();
+        }
+      }
+
+      // Mostrar slots de foto solo si tienen src real (no vacío).
+      ['sobre_foto_a', 'sobre_foto_b', 'espacio_imagen', 'hero_imagen'].forEach(function (k) {
+        document.querySelectorAll('[data-landing="' + k + '"]').forEach(mostrarSiTieneSrc);
+      });
+
+      // Ocultar bloque de fotos Sobre si ninguna foto cargó.
+      var fotosSobre = document.querySelector('.lon-sobre-fotos');
+      if (fotosSobre) {
+        var visibles = Array.prototype.filter.call(fotosSobre.querySelectorAll('img'), function (img) {
+          return !img.classList.contains('lon-foto-oculta');
+        });
+        fotosSobre.style.display = visibles.length ? '' : 'none';
+      }
+    }
+
+    function hidratar() {
+      fetch('/landing-contenido')
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (!data || !data.ok || !data.contenido) return;
+          aplicarContenido(data.contenido);
+        })
+        .catch(function () { /* fallback hardcodeado */ });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hidratar);
+    } else {
+      hidratar();
+    }
+  })();
+</script>
+
 </body>
 </html>
