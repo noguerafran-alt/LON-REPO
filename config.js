@@ -58,6 +58,11 @@ module.exports = {
   // NO las categorias internas de LON — son taxonomias distintas).
   HOJA_CIERRE_CAJA: process.env.GOOGLE_CIERRE_CAJA_SHEET_NAME || 'CIERRE_CAJA',
 
+  // Textos y fotos editables de la landing publica (clave/valor).
+  // Vive en la planilla de PRODUCTOS. A=clave, B=valor. Si la hoja falta
+  // o esta vacia, se siembra con los defaults de LON (handoff negocio).
+  HOJA_LANDING: process.env.GOOGLE_LANDING_SHEET_NAME || 'Landing',
+
   /* ------------------------------------------------------------
    * 3) COLUMNAS — en que columna (0 = A, 1 = B, ...) esta cada dato.
    *    Cambialo aca si en tu Sheet el orden de columnas es distinto.

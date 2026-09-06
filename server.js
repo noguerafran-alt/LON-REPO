@@ -62,6 +62,9 @@ const {
   getPedidoPorId,
   getPedidoPorPagoExternoId,
   actualizarPedido,
+  ensureLandingSheet,
+  getLandingContenido,
+  setLandingContenido,
 } = require('./googleSheets');
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
 const QRCode = require('qrcode');
@@ -1558,6 +1561,123 @@ app.post('/admin/borrar-producto', limiteAdmin, async (req, res) => {
     console.error('Error borrando el producto:', err.message);
     res.status(500).json({ error: 'No se pudo borrar el producto.' });
   }
+});
+
+
+/* ============================================================
+ *  LANDING EDITABLE (textos + fotos)
+ * ============================================================
+ * Contenido de la landing publica en la pestaña Landing
+ * (SHEET_ID_PRODUCTOS). Lectura pública; escritura solo nivel 2.
+ * La UI que bindea estos campos la arma otro PR (IMPLEMENTADOR).
+ * ============================================================ */
+
+const CARPETA_UPLOADS_LANDING = path.join(__dirname, 'public', 'uploads', 'landing');
+fs.mkdirSync(CARPETA_UPLOADS_LANDING, { recursive: true });
+
+const storageFotosLanding = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, CARPETA_UPLOADS_LANDING),
+  filename: (req, file, cb) => {
+    const extension = (path.extname(file.originalname) || '.jpg').toLowerCase();
+    const base = path.basename(file.originalname, path.extname(file.originalname))
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 40) || 'foto';
+    cb(null, `${base}-${Date.now()}${extension}`);
+  },
+});
+
+const uploadFotoLanding = multer({
+  storage: storageFotosLanding,
+  limits: { fileSize: config.FOTO_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.mimetype)) {
+      return cb(new Error('Formato de imagen no soportado. Usá JPG, PNG o WEBP.'));
+    }
+    cb(null, true);
+  },
+});
+
+async function leerLandingContenidoAsegurado() {
+  const sheetsClient = google.sheets({ version: 'v4', auth });
+  await ensureLandingSheet(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_LANDING);
+  const contenido = await getLandingContenido(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_LANDING);
+  return { sheetsClient, contenido };
+}
+
+/* Público: textos/fotos actuales de la landing (rate-limited). */
+app.get('/landing-contenido', limiteLecturaPublica, async (req, res) => {
+  try {
+    const { contenido } = await leerLandingContenidoAsegurado();
+    res.json({ ok: true, contenido });
+  } catch (err) {
+    console.error('Error leyendo contenido de landing:', err.message);
+    res.status(500).json({ error: 'No se pudo cargar el contenido de la landing.' });
+  }
+});
+
+/* Admin (cualquier nivel): misma lectura, para el editor del panel. */
+app.get('/admin/landing', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereSesion(req, res);
+    if (!sesion) return;
+
+    const { contenido } = await leerLandingContenidoAsegurado();
+    res.json({ ok: true, contenido });
+  } catch (err) {
+    console.error('Error leyendo landing (admin):', err.message);
+    res.status(500).json({ error: 'No se pudo cargar el contenido de la landing.' });
+  }
+});
+
+/* Admin nivel 2: merge/upsert de claves. Body: { contenido: { clave: valor, ... }, token }. */
+app.put('/admin/landing', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+
+    const updates = req.body && req.body.contenido;
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Mandá { contenido: { clave: valor, ... } }.' });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    await ensureLandingSheet(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_LANDING);
+    const contenido = await setLandingContenido(
+      sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_LANDING, updates,
+    );
+    res.json({ ok: true, contenido });
+  } catch (err) {
+    console.error('Error guardando landing (admin):', err.message);
+    res.status(500).json({ error: 'No se pudo guardar el contenido de la landing.' });
+  }
+});
+
+/* Admin nivel 2: sube una foto a public/uploads/landing/ y devuelve la
+   URL relativa para pegarla en hero_imagen / sobre_foto_* / espacio_imagen. */
+app.post('/admin/landing/foto', limiteAdmin, (req, res) => {
+  uploadFotoLanding.single('foto')(req, res, async (errorSubida) => {
+    try {
+      const sesion = requiereNivel2(req, res);
+      if (!sesion) {
+        if (req.file) fs.unlink(req.file.path, () => {});
+        return;
+      }
+      if (errorSubida) {
+        return res.status(400).json({ error: errorSubida.message || 'No se pudo subir la imagen.' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
+      }
+
+      const url = `/uploads/landing/${req.file.filename}`;
+      res.json({ ok: true, url });
+    } catch (err) {
+      console.error('Error subiendo foto de landing:', err.message);
+      if (req.file) fs.unlink(req.file.path, () => {});
+      res.status(500).json({ error: 'No se pudo guardar la foto.' });
+    }
+  });
 });
 
 /* Config publica minima que necesita el frontend (nada sensible): el
