@@ -1567,10 +1567,12 @@ app.post('/admin/borrar-producto', limiteAdmin, async (req, res) => {
 app.get('/config-publico', limiteLecturaPublica, (req, res) => {
   res.json({
     whatsappNumero: config.WHATSAPP_NUMERO_CONTACTO || '',
-    // Transferencia bancaria ya no se ofrece en el checkout público:
-    // no exponemos alias/CBU/titular/banco (campos vacíos para no romper
-    // clientes que todavía lean `transferencia`).
-    transferencia: { alias: '', titular: '', cbu: '', banco: '' },
+    transferencia: {
+      alias: config.TRANSFERENCIA_ALIAS || '',
+      titular: config.TRANSFERENCIA_TITULAR || '',
+      cbu: config.TRANSFERENCIA_CBU || '',
+      banco: config.TRANSFERENCIA_BANCO || '',
+    },
     googleClientId: config.GOOGLE_OAUTH_CLIENT_ID || '',
   });
 });
@@ -1999,20 +2001,21 @@ app.post('/admin/producto/descripcion', limiteAdmin, async (req, res) => {
 });
 
 /* ============================================================
- *  SECCION PAGOS: MERCADO PAGO (Checkout Pro) + Payway (opcional)
+ *  SECCION PAGOS: MERCADO PAGO + TRANSFERENCIA (+ Payway opcional)
  * ============================================================
- * El catalogo publico ofrece Mercado Pago (y Payway si está configurado)
- * en /crear-pago; el carrito (/crear-pago-carrito) solo Mercado Pago.
- * Transferencia bancaria YA NO se admite en el flujo público (se rechaza
- * en ambos endpoints y /config-publico no expone CBU/alias).
+ * El catalogo publico ofrece Mercado Pago y transferencia bancaria.
+ * Payway sigue disponible solo en /crear-pago (producto único), si está
+ * configurado; el carrito (/crear-pago-carrito) admite mercadopago o
+ * transferencia.
  *
- * En ambos casos primero creamos el Pedido en PEDIDOS con estado
- * "Pendiente de pago", creamos la preferencia/link, guardamos
- * pagoExternoId y devolvemos redirectUrl (init_point / URL Payway).
+ * En todos los casos primero creamos el Pedido en PEDIDOS con estado
+ * "Pendiente de pago".
  *
- * - mercadopago: preferencia Checkout Pro (uno o varios items).
- * - payway: link hospedado (solo producto único; el código queda, no
- *   es obligatorio usarlo).
+ * - mercadopago: preferencia Checkout Pro (uno o varios items) +
+ *   redirectUrl (init_point); recargos por categoría si aplica.
+ * - transferencia: devolvemos alias/CBU/titular/banco + monto; el
+ *   comprador paga afuera y un admin confirma. Sin recargo MP.
+ * - payway: link hospedado (solo producto único; opcional).
  * ============================================================ */
 
 /* ------------------------------------------------------------
@@ -2116,11 +2119,8 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
     }
-    if (metodoPago === 'transferencia') {
-      return res.status(400).json({ error: 'La transferencia bancaria ya no está disponible en el checkout online. Usá Mercado Pago.' });
-    }
-    if (metodoPago !== 'payway' && metodoPago !== 'mercadopago') {
-      return res.status(400).json({ error: 'Elegí un método de pago válido (Mercado Pago o Payway).' });
+    if (metodoPago !== 'payway' && metodoPago !== 'transferencia' && metodoPago !== 'mercadopago') {
+      return res.status(400).json({ error: 'Elegi un metodo de pago valido (Payway, Mercado Pago o transferencia).' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
@@ -2183,7 +2183,7 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       numeroSeguimiento: '',
       pagoExternoId: '',
       notas: sanitizarTexto(notas, 500),
-      metodoPago: metodoPago === 'payway' ? 'Payway' : 'Mercado Pago',
+      metodoPago: metodoPago === 'payway' ? 'Payway' : (metodoPago === 'mercadopago' ? 'Mercado Pago' : 'Transferencia'),
       // El stock se reserva recien cuando el pago se confirma, no al
       // iniciar el checkout (si no, un carrito abandonado congelaria
       // unidades para siempre).
@@ -2228,8 +2228,31 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
       return res.json({ ok: true, pedidoId, redirectUrl: preferencia.initPoint });
     }
 
-    // Transferencia ya no se admite en el flujo público (rechazada arriba).
-    return res.status(400).json({ error: 'Método de pago no soportado.' });
+    // metodoPago === 'transferencia': no hay redirect, el front muestra
+    // los datos para transferir. Ademas mandamos un mail con esos mismos
+    // datos + el numero de pedido, para que el comprador lo tenga a mano
+    // aunque cierre la pestaña. No esperamos (await) el envio ni
+    // interrumpimos la respuesta si falla — el pedido ya esta creado y
+    // el front igual muestra los datos en pantalla.
+    const datosTransferencia = {
+      alias: config.TRANSFERENCIA_ALIAS,
+      titular: config.TRANSFERENCIA_TITULAR,
+      cbu: config.TRANSFERENCIA_CBU,
+      banco: config.TRANSFERENCIA_BANCO,
+      monto: total,
+    };
+
+    emailService.enviarEmailTransferencia({
+      destinatario: email,
+      nombreCliente: nombre,
+      pedidoId,
+      producto: producto.nombre,
+      cantidad: cantidadNum,
+      monto: total,
+      transferencia: datosTransferencia,
+    }).catch((err) => console.error('Error en el envío de mail (no bloquea el pedido):', err.message));
+
+    res.json({ ok: true, pedidoId, transferencia: datosTransferencia });
   } catch (err) {
     console.error('Error creando el pago:', err.message);
     res.status(500).json({ error: err.message || 'No se pudo iniciar el pago.' });
@@ -2241,10 +2264,10 @@ app.post('/crear-pago', limiteEscrituraPublica, async (req, res) => {
    una fila = un producto = un pedidoId propio), pero valida TODOS los
    items antes de crear ninguno (si uno falla, no se crea nada) y las
    agrupa con una referencia de carrito compartida en las notas, para
-   que el admin las vea relacionadas. Solo admite Mercado Pago Checkout
-   Pro (preferencia multi-item con recargos por categoría; preference id
-   en pagoExternoId de todos; redirectUrl = init_point). Transferencia
-   y Payway no se admiten en carrito. */
+   que el admin las vea relacionadas. Admite Mercado Pago (Checkout Pro
+   multi-item con recargos por categoría) o transferencia (precio de
+   catálogo, sin recargo MP; datos bancarios + mail). Payway no se
+   admite en carrito. */
 app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
   try {
     const {
@@ -2271,19 +2294,15 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       return res.status(400).json({ error: 'Para envio a domicilio hace falta al menos direccion y ciudad.' });
     }
-    if (metodoPago === 'transferencia') {
-      return res.status(400).json({ error: 'La transferencia bancaria ya no está disponible en el checkout online. Usá Mercado Pago.' });
-    }
-    if (metodoPago !== 'mercadopago') {
-      return res.status(400).json({ error: 'El carrito solo admite pago con Mercado Pago.' });
+    if (metodoPago !== 'mercadopago' && metodoPago !== 'transferencia') {
+      return res.status(400).json({ error: 'El carrito admite Mercado Pago o transferencia.' });
     }
 
     const sheetsClient = google.sheets({ version: 'v4', auth });
     const catalogo = await construirCatalogoConStock(sheetsClient, { soloConStock: false });
 
-    // Recargos por categoría (mismo criterio que /crear-pago).
-    const recargos = await getRecargosMercadoPago(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG);
-
+    // Validamos items una sola vez con precio de catálogo; el recargo MP
+    // (si aplica) se calcula recién al armar los pedidos de Mercado Pago.
     const itemsValidados = [];
     for (const item of (items || [])) {
       const skuGeneral = item && item.skuGeneral ? String(item.skuGeneral).trim() : '';
@@ -2313,19 +2332,85 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
         });
       }
 
-      let precioNum = precioCatalogo;
-      const recargoPct = recargos[String(producto.categoria || '').trim().toUpperCase()] || 0;
-      if (recargoPct > 0) precioNum = Math.round(precioCatalogo * (1 + recargoPct / 100));
-
-      itemsValidados.push({ producto, cantidad: cantidadNum, precio: precioNum, recargoPct });
+      itemsValidados.push({ producto, cantidad: cantidadNum, precioCatalogo });
     }
 
     const grupoCarritoId = `CARR-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const { fecha, hora } = fechaYHoraActual();
     const pedidoIds = [];
 
+    if (metodoPago === 'mercadopago') {
+      const recargos = await getRecargosMercadoPago(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CONFIG);
+      const itemsConPrecio = itemsValidados.map((it) => {
+        const recargoPct = recargos[String(it.producto.categoria || '').trim().toUpperCase()] || 0;
+        let precioNum = it.precioCatalogo;
+        if (recargoPct > 0) precioNum = Math.round(it.precioCatalogo * (1 + recargoPct / 100));
+        return { ...it, precio: precioNum, recargoPct };
+      });
+
+      for (let i = 0; i < itemsConPrecio.length; i++) {
+        const it = itemsConPrecio[i];
+        const pedidoId = generarPedidoId();
+        pedidoIds.push(pedidoId);
+
+        const notaCarrito = `Carrito ${grupoCarritoId} (${i + 1}/${itemsConPrecio.length})`;
+        const notasCompletas = notas && String(notas).trim() ? `${String(notas).trim()} — ${notaCarrito}` : notaCarrito;
+
+        await crearPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, {
+          pedidoId,
+          fecha: `${fecha} ${hora}`,
+          skuGeneral: it.producto.skuGeneral,
+          producto: it.producto.nombre,
+          precio: it.precio,
+          cantidad: it.cantidad,
+          total: it.precio * it.cantidad,
+          nombreCliente: sanitizarTexto(nombre, 150),
+          emailCliente: sanitizarTexto(email, 254),
+          telefonoCliente: sanitizarTelefono(telefono),
+          direccion: sanitizarTexto(direccion, 250),
+          ciudad: sanitizarTexto(ciudad, 100),
+          provincia: sanitizarTexto(provincia, 100),
+          codigoPostal: sanitizarCodigoPostal(codigoPostal),
+          metodoEnvio: metodoEnvio || 'Retiro en el local',
+          estado: 'Pendiente de pago',
+          transportista: '',
+          numeroSeguimiento: '',
+          pagoExternoId: '',
+          notas: sanitizarTexto(notasCompletas, 500),
+          metodoPago: 'Mercado Pago',
+          stockReservado: '',
+          skuUnidad: '',
+          recargoMercadoPago: it.recargoPct > 0 ? it.recargoPct : '',
+        });
+      }
+
+      // Preferencia única multi-item; external_reference/back_urls = primer
+      // pedidoId (mismo patrón que /crear-pago). Guardamos el id de
+      // preferencia en TODOS los pedidos del carrito.
+      const preferencia = await mercadopago.crearPreferencia({
+        pedidoId: pedidoIds[0],
+        nombreComprador: nombre,
+        emailComprador: email,
+        items: itemsConPrecio.map((it) => ({
+          titulo: it.producto.nombre,
+          cantidad: it.cantidad,
+          precioUnitario: it.precio,
+        })),
+      });
+      for (const pedidoId of pedidoIds) {
+        await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoId, {
+          pagoExternoId: preferencia.id,
+        });
+      }
+      return res.json({ ok: true, pedidoIds, redirectUrl: preferencia.initPoint });
+    }
+
+    // metodoPago === 'transferencia': precio de catálogo, sin recargo MP.
+    let totalCarrito = 0;
     for (let i = 0; i < itemsValidados.length; i++) {
       const it = itemsValidados[i];
+      const precioNum = it.precioCatalogo;
+      totalCarrito += precioNum * it.cantidad;
       const pedidoId = generarPedidoId();
       pedidoIds.push(pedidoId);
 
@@ -2337,9 +2422,9 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
         fecha: `${fecha} ${hora}`,
         skuGeneral: it.producto.skuGeneral,
         producto: it.producto.nombre,
-        precio: it.precio,
+        precio: precioNum,
         cantidad: it.cantidad,
-        total: it.precio * it.cantidad,
+        total: precioNum * it.cantidad,
         nombreCliente: sanitizarTexto(nombre, 150),
         emailCliente: sanitizarTexto(email, 254),
         telefonoCliente: sanitizarTelefono(telefono),
@@ -2353,32 +2438,31 @@ app.post('/crear-pago-carrito', limiteEscrituraPublica, async (req, res) => {
         numeroSeguimiento: '',
         pagoExternoId: '',
         notas: sanitizarTexto(notasCompletas, 500),
-        metodoPago: 'Mercado Pago',
+        metodoPago: 'Transferencia',
         stockReservado: '',
         skuUnidad: '',
-        recargoMercadoPago: it.recargoPct > 0 ? it.recargoPct : '',
+        recargoMercadoPago: '',
       });
     }
 
-    // Preferencia única multi-item; external_reference/back_urls = primer
-    // pedidoId (mismo patrón que /crear-pago). Guardamos el id de
-    // preferencia en TODOS los pedidos del carrito.
-    const preferencia = await mercadopago.crearPreferencia({
-      pedidoId: pedidoIds[0],
-      nombreComprador: nombre,
-      emailComprador: email,
-      items: itemsValidados.map((it) => ({
-        titulo: it.producto.nombre,
-        cantidad: it.cantidad,
-        precioUnitario: it.precio,
-      })),
-    });
-    for (const pedidoId of pedidoIds) {
-      await actualizarPedido(sheetsClient, config.SHEET_ID_VENTAS, config.HOJA_PEDIDOS, pedidoId, {
-        pagoExternoId: preferencia.id,
-      });
-    }
-    return res.json({ ok: true, pedidoIds, redirectUrl: preferencia.initPoint });
+    const datosTransferencia = {
+      alias: config.TRANSFERENCIA_ALIAS,
+      titular: config.TRANSFERENCIA_TITULAR,
+      cbu: config.TRANSFERENCIA_CBU,
+      banco: config.TRANSFERENCIA_BANCO,
+      monto: totalCarrito,
+    };
+
+    emailService.enviarEmailTransferenciaCarrito({
+      destinatario: email,
+      nombreCliente: nombre,
+      pedidoIds,
+      items: itemsValidados.map((it) => ({ producto: it.producto.nombre, cantidad: it.cantidad })),
+      monto: totalCarrito,
+      transferencia: datosTransferencia,
+    }).catch((err) => console.error('Error en el envío de mail de carrito (no bloquea el pedido):', err.message));
+
+    res.json({ ok: true, pedidoIds, transferencia: datosTransferencia });
   } catch (err) {
     console.error('Error creando pedido de carrito:', err.message);
     res.status(500).json({ error: err.message || 'No se pudo procesar el pedido.' });
