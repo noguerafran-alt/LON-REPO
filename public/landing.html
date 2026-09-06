@@ -33,7 +33,7 @@ body{margin:0;font-family:Archivo,sans-serif;background:var(--bg);color:var(--in
 a{color:inherit;text-decoration:none}
 .header{background:var(--bg-header);color:var(--header-text);position:sticky;top:0;z-index:40}
 .header-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:64px;padding:0 20px;max-width:1280px;margin:0 auto}
-.header-row .left{justify-self:start;display:flex;gap:4px}
+.header-row .left{justify-self:start;display:flex;gap:4px;align-items:center}
 .header-row .right{justify-self:end;display:flex;gap:4px;align-items:center}
 .icon-btn{background:none;border:none;color:var(--header-text);width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
@@ -103,12 +103,12 @@ footer a:hover{color:var(--accent-terracota)}
       <a class="icon-btn" href="/cliente.html" aria-label="Escanear" title="Escanear">
         <svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
       </a>
+      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" title="Menú">
+        <svg viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
+      </button>
     </div>
     <a href="/" aria-label="LON Philosophy"><img class="logo" src="/logo-catalogo-white.png" alt="LON" width="120" height="28"></a>
     <div class="right">
-      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú" aria-expanded="false">
-        <svg viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
-      </button>
       <a class="icon-btn" href="/tienda" aria-label="Catálogo" title="Catálogo">
         <svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
       </a>
