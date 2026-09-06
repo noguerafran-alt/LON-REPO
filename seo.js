@@ -10,12 +10,12 @@
  * puede rankear por su nombre, y el canonical llega a pedirle a Google
  * que ignore todas las URLs de producto.
  *
- * Este modulo resuelve eso sin tocar el frontend: intercepta la home
- * ANTES de express.static y, si la URL trae ?producto=, reemplaza el
- * bloque de meta tags del HTML (delimitado por los comentarios
- * SEO:INICIO / SEO:FIN) por uno especifico de ese producto, con su
- * titulo, descripcion, canonical, imagen para compartir y el schema
- * Product (precio y stock) que Google usa para los resultados ricos.
+ * Este modulo resuelve eso sin tocar el frontend: intercepta / y /tienda
+ * ANTES de express.static. La landing de negocio vive en / (landing.html);
+ * el catalogo sigue en index.html y se sirve en /tienda (y en / cuando
+ * llega ?producto= de links viejos). Si la URL trae ?producto=, reemplaza
+ * el bloque de meta tags del HTML (SEO:INICIO / SEO:FIN) por uno
+ * especifico de ese producto.
  *
  * El JavaScript del catalogo sigue funcionando igual: lee ?producto=
  * y abre el detalle como siempre. Lo unico que cambia es lo que ve un
@@ -167,7 +167,7 @@ function leerIndex() {
    busqueda. */
 function metaTagsProducto(producto, urlBase) {
   const nombre = producto.nombre || '';
-  const url = `${urlBase}/?producto=${encodeURIComponent(slugProducto(producto))}`;
+  const url = `${urlBase}/tienda?producto=${encodeURIComponent(slugProducto(producto))}`;
   const titulo = `${nombre} | ${NOMBRE_NEGOCIO}`;
 
   // Preferimos la descripcion real cargada en la planilla; si no hay,
@@ -244,7 +244,7 @@ ${jsonSeguro(schema)}
 function metaTagsProductoInexistente(urlBase) {
   return `<title>Catálogo de LON Philosophy</title>
 <meta name="description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online y coordiná la entrega por WhatsApp.">
-<link rel="canonical" href="${escaparAtributo(`${urlBase}/`)}">
+<link rel="canonical" href="${escaparAtributo(`${urlBase}/tienda`)}">
 <meta name="robots" content="noindex, follow">`;
 }
 
@@ -252,70 +252,105 @@ function metaTagsProductoInexistente(urlBase) {
  * Rutas
  * ------------------------------------------------------------ */
 
-/* Monta las rutas de SEO. Tiene que llamarse ANTES de
-   app.use(express.static(...)) — si no, express.static contesta la home
-   con el index.html crudo y nunca llegamos a inyectar nada.
+/* Monta las rutas de SEO + landing. Tiene que llamarse ANTES de
+   app.use(express.static(...)) — si no, express.static contesta "/" con
+   index.html (catalogo) y la landing nunca se ve.
 
    deps.cargarProductos: funcion async que devuelve el catalogo publico
    (los mismos productos que /catalogo-publico).
    deps.urlBase: URL publica del sitio, sin barra final. */
+const RUTA_LANDING = path.join(__dirname, 'public', 'landing.html');
+
+let landingCache = null;
+let landingMtime = 0;
+
+function leerLanding() {
+  const stat = fs.statSync(RUTA_LANDING);
+  if (!landingCache || stat.mtimeMs !== landingMtime) {
+    landingCache = fs.readFileSync(RUTA_LANDING, 'utf8');
+    landingMtime = stat.mtimeMs;
+  }
+  return landingCache;
+}
+
+/* Sirve el catalogo (index.html), inyectando SEO de producto si
+   ?producto= esta presente. Usado por /tienda y por /?producto=... */
+async function servirCatalogoConSeo(req, res, next, obtenerProductos, base) {
+  let html;
+  try {
+    html = leerIndex();
+  } catch (err) {
+    console.error('SEO: no se pudo leer index.html:', err.message);
+    return next();
+  }
+
+  const valorProducto = req.query.producto;
+
+  if (!valorProducto || typeof valorProducto !== 'string') {
+    return res.type('html').send(html);
+  }
+
+  const productos = await obtenerProductos();
+  const producto = buscarProductoPorValorUrl(productos, valorProducto);
+
+  const inicio = html.indexOf(MARCA_INICIO);
+  const fin = html.indexOf(MARCA_FIN);
+  if (inicio === -1 || fin === -1 || fin < inicio) {
+    console.warn('SEO: no encontré las marcas SEO:INICIO / SEO:FIN en index.html.');
+    return res.type('html').send(html);
+  }
+
+  const bloque = producto
+    ? metaTagsProducto(producto, base)
+    : metaTagsProductoInexistente(base);
+
+  const htmlFinal = html.slice(0, inicio + MARCA_INICIO.length)
+    + '\n' + bloque + '\n'
+    + html.slice(fin);
+
+  return res.type('html').send(htmlFinal);
+}
+
 function montarRutasSeo(app, { cargarProductos, urlBase }) {
   const base = String(urlBase || '').replace(/\/+$/, '');
   const obtenerProductos = crearCargadorCacheado(cargarProductos);
 
-  /* Home + detalle de producto. */
+  /* / = landing de negocio. Si llega ?producto= (links viejos compartidos),
+     seguimos sirviendo el catalogo con SEO inyectado para no romperlos. */
   app.get('/', async (req, res, next) => {
-    let html;
-    try {
-      html = leerIndex();
-    } catch (err) {
-      console.error('SEO: no se pudo leer index.html:', err.message);
-      return next(); // que lo resuelva express.static como antes
-    }
-
     const valorProducto = req.query.producto;
-
-    // Sin ?producto= es la home: el HTML ya trae sus propios meta tags
-    // (los de la home) entre las marcas, no hay nada que reemplazar.
-    if (!valorProducto || typeof valorProducto !== 'string') {
-      return res.type('html').send(html);
+    if (valorProducto && typeof valorProducto === 'string') {
+      return servirCatalogoConSeo(req, res, next, obtenerProductos, base);
     }
 
-    const productos = await obtenerProductos();
-    const producto = buscarProductoPorValorUrl(productos, valorProducto);
-
-    const inicio = html.indexOf(MARCA_INICIO);
-    const fin = html.indexOf(MARCA_FIN);
-    if (inicio === -1 || fin === -1 || fin < inicio) {
-      // Alguien saco las marcas del HTML. No es fatal: servimos la
-      // pagina tal cual (funciona igual para el usuario) y dejamos
-      // constancia para poder arreglarlo.
-      console.warn('SEO: no encontré las marcas SEO:INICIO / SEO:FIN en index.html.');
+    try {
+      const html = leerLanding();
       return res.type('html').send(html);
+    } catch (err) {
+      console.error('SEO: no se pudo leer landing.html:', err.message);
+      return next();
     }
-
-    const bloque = producto
-      ? metaTagsProducto(producto, base)
-      : metaTagsProductoInexistente(base);
-
-    const htmlFinal = html.slice(0, inicio + MARCA_INICIO.length)
-      + '\n' + bloque + '\n'
-      + html.slice(fin);
-
-    return res.type('html').send(htmlFinal);
   });
 
-  /* Sitemap generado en el momento: la home, las paginas legales y una
-     entrada por cada producto con stock. Se regenera solo a medida que
-     entran y salen productos del catalogo, sin que nadie tenga que
-     acordarse de editar un XML a mano. */
+  /* Catalogo de tienda (misma pagina index.html + SEO de producto). */
+  app.get('/tienda', async (req, res, next) => {
+    return servirCatalogoConSeo(req, res, next, obtenerProductos, base);
+  });
+
+  /* Alias estatico conveniente: /tienda.html -> mismo catalogo. */
+  app.get('/tienda.html', async (req, res, next) => {
+    return servirCatalogoConSeo(req, res, next, obtenerProductos, base);
+  });
+
+  /* Sitemap: landing, tienda, productos y legales. */
   app.get('/sitemap.xml', async (req, res) => {
     const productos = await obtenerProductos();
 
     const urls = [
-      { loc: `${base}/`, priority: '1.0', changefreq: 'daily' },
+      { loc: `${base}/`, priority: '1.0', changefreq: 'weekly' },
+      { loc: `${base}/tienda`, priority: '0.9', changefreq: 'daily' },
       ...productos.map((p) => ({
-        loc: `${base}/?producto=${encodeURIComponent(slugProducto(p))}`,
+        loc: `${base}/tienda?producto=${encodeURIComponent(slugProducto(p))}`,
         priority: '0.8',
         changefreq: 'weekly',
       })),

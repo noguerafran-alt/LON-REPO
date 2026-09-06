@@ -3,29 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Todo lo que está entre SEO:INICIO y SEO:FIN son los meta tags de la
-     HOME. Cuando la URL trae ?producto=algo, el servidor (seo.js)
+<!-- Todo lo que está entre SEO:INICIO y SEO:FIN son los meta tags del
+     CATÁLOGO (/tienda). Cuando la URL trae ?producto=algo, el servidor (seo.js)
      reemplaza este bloque entero por los meta tags de ese producto
      (título, descripción, imagen y schema con precio/stock), así cada
      producto puede rankear por su nombre en Google y el link se ve bien
      al compartirlo. Si movés o renombrás estas marcas, actualizá seo.js. -->
 <!-- SEO:INICIO -->
-<title>Libros, Velas y Objetos de Diseño | LON Philosophy</title>
-<meta name="description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online en LON Philosophy y coordiná la entrega por WhatsApp.">
-<link rel="canonical" href="https://lonphilosophy.onrender.com/">
+<title>Catálogo | LON Philosophy</title>
+<meta name="description" content="Catálogo de libros, velas y objetos artesanales. Pedí online en LON Philosophy y coordiná la entrega por WhatsApp.">
+<link rel="canonical" href="https://lonphilosophy.onrender.com/tienda">
 <meta name="robots" content="index, follow">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LON Philosophy">
-<meta property="og:title" content="Libros, Velas y Objetos de Diseño | LON Philosophy">
-<meta property="og:description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online en LON Philosophy y coordiná la entrega por WhatsApp.">
-<meta property="og:url" content="https://lonphilosophy.onrender.com/">
+<meta property="og:title" content="Catálogo | LON Philosophy">
+<meta property="og:description" content="Catálogo de libros, velas y objetos artesanales. Pedí online en LON Philosophy y coordiná la entrega por WhatsApp.">
+<meta property="og:url" content="https://lonphilosophy.onrender.com/tienda">
 <meta property="og:image" content="https://lonphilosophy.onrender.com/logo.png">
 <meta property="og:locale" content="es_AR">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Libros, Velas y Objetos de Diseño | LON Philosophy">
-<meta name="twitter:description" content="Libros, velas y objetos artesanales en fieltro y lata. Hacé tu pedido online en LON Philosophy y coordiná la entrega por WhatsApp.">
+<meta name="twitter:title" content="Catálogo | LON Philosophy">
+<meta name="twitter:description" content="Catálogo de libros, velas y objetos artesanales. Pedí online en LON Philosophy y coordiná la entrega por WhatsApp.">
 <meta name="twitter:image" content="https://lonphilosophy.onrender.com/logo.png">
 
 <script type="application/ld+json">
@@ -33,10 +33,10 @@
   "@context": "https://schema.org",
   "@type": "Store",
   "name": "LON Philosophy",
-  "url": "https://lonphilosophy.onrender.com/",
+  "url": "https://lonphilosophy.onrender.com/tienda",
   "image": "https://lonphilosophy.onrender.com/logo.png",
   "logo": "https://lonphilosophy.onrender.com/logo.png",
-  "description": "Libros, velas y objetos artesanales en fieltro y lata, con pedido online y entrega coordinada por WhatsApp.",
+  "description": "Catálogo de libros, velas y objetos artesanales, con pedido online y entrega coordinada por WhatsApp.",
   "priceRange": "$$",
   "areaServed": "AR"
 }
@@ -144,8 +144,15 @@
   }
   .barra-superior-catalogo .volver{ justify-self:center; color:var(--header-text); }
   .logo-barra-catalogo{
-    height:44px; width:auto; object-fit:contain; justify-self:center;
-    filter:brightness(0) invert(1); opacity:.95;
+    height:36px; width:auto; object-fit:contain; justify-self:center;
+  }
+  .btn-icono-header{
+    background:none; border:none; color:var(--header-text); width:40px; height:40px;
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
+  }
+  .btn-icono-header svg{
+    width:20px; height:20px; stroke:currentColor; fill:none;
+    stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round;
   }
   .btn-icono-simetrico{
     background:none; border:none; color:var(--ink-muted); cursor:pointer; padding:0;
@@ -750,7 +757,7 @@
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
-      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+      <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
   </div>
@@ -767,7 +774,7 @@
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverLoginCliente" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
-      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+      <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
   </div>
@@ -796,7 +803,7 @@
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver">←</button>
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
-      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+      <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <span></span>
   </div>
@@ -866,82 +873,32 @@
   </div>
 </div>
 
-<div id="vistaCatalogo" class="con-hero">
-  <div class="barra-superior-catalogo">
-    <div style="justify-self:center;">
-      <a class="volver" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">📷</a>
+<div id="vistaCatalogo">
+    <div class="barra-superior-catalogo">
+    <div style="justify-self:start; display:flex; align-items:center; gap:4px;">
+      <a class="btn-icono-header" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
+      </a>
       <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" style="display:none;">←</button>
     </div>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
-      <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
+    <a href="/" class="enlace-logo-header" title="LON Philosophy" aria-label="LON Philosophy" style="justify-self:center;">
+      <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <div class="acciones-header-catalogo">
-      <button type="button" class="btn-icono-simetrico" id="btnBuscarHeader" title="Buscar" aria-label="Buscar">🔍</button>
-      <button class="btn-icono-simetrico btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito">
-        🛒<span class="badge-carrito oculto" id="badgeCarrito">0</span>
+      <button type="button" class="btn-icono-header" id="btnBuscarHeader" title="Menú / Buscar" aria-label="Menú">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
-      <button class="btn-icono-simetrico btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar">👤</button>
+      <button type="button" class="btn-icono-header btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
+        <span class="badge-carrito oculto" id="badgeCarrito">0</span>
+      </button>
+      <button type="button" class="btn-icono-header btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
+      </button>
     </div>
   </div>
 
   <div id="catalogoListaView">
-    <section class="hero-editorial" aria-label="Presentación LON Philosophy">
-      <img class="hero-editorial-media" id="lonHeroImg" src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen">
-      <div class="hero-editorial-overlay" aria-hidden="true"></div>
-      <div class="hero-editorial-copy">
-        <p class="eyebrow">LON PHILOSOPHY</p>
-        <h2 data-landing="hero_tagline">Making community</h2>
-        <p class="hero-sub" data-landing="hero_ubicacion">Libros, objetos y café — para estar presente</p>
-        <div class="hero-ctas">
-          <a class="hero-editorial-cta" href="#catalogo" data-landing="cta_primary_label">Ver piezas</a>
-          <a class="hero-editorial-cta secundario" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label" data-landing-href="cta_secondary_href" data-landing-ig-href>Seguinos en Instagram</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="lon-negocio lon-sobre" id="sobre" aria-label="Quiénes somos">
-      <div class="lon-sobre-copy">
-        <p class="eyebrow">LON</p>
-        <h2 data-landing="sobre_titulo">Quiénes somos</h2>
-        <p class="lon-sobre-lead" data-landing="sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
-        <p class="lon-sobre-cuerpo" data-landing="sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
-      </div>
-      <div class="lon-sobre-fotos">
-        <img src="" alt="LON — el local" data-landing="sobre_foto_a" class="lon-foto-oculta" width="600" height="800">
-        <img src="" alt="LON — detalle" data-landing="sobre_foto_b" class="lon-foto-oculta" width="600" height="800">
-      </div>
-    </section>
-
-    <section class="lon-negocio lon-pilares" aria-label="Propuesta">
-      <h2 data-landing="pilares_titulo">Qué vas a encontrar</h2>
-      <div class="lon-pilares-grid">
-        <article class="lon-pilar">
-          <h3 data-landing="pilar_1_titulo">Libros</h3>
-          <p data-landing="pilar_1_texto">Lecturas para demorarse — club, novedades y anaqueles con criterio.</p>
-        </article>
-        <article class="lon-pilar">
-          <h3 data-landing="pilar_2_titulo">Objetos</h3>
-          <p data-landing="pilar_2_texto">Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.</p>
-        </article>
-        <article class="lon-pilar">
-          <h3 data-landing="pilar_3_titulo">Café &amp; comunidad</h3>
-          <p data-landing="pilar_3_texto">Un espacio para encontrarse. Fidelidad en taza, conversación en el local.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="lon-negocio lon-espacio" aria-label="El espacio">
-      <figure>
-        <img src="/hero-editorial.webp" alt="El espacio LON" data-landing="espacio_imagen" width="1280" height="720">
-        <figcaption data-landing="espacio_caption">El local — luz, textura y anaquel.</figcaption>
-      </figure>
-      <blockquote class="lon-espacio-quote" data-landing="espacio_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
-    </section>
-
-    <section class="lon-cta-franja" aria-label="Ir al catálogo">
-      <p data-landing="catalogo_cta_texto">Explorá el catálogo y armá tu pedido online.</p>
-      <a href="#catalogo" data-landing="catalogo_cta_label">Ir al catálogo</a>
-    </section>
 
     <div id="catalogoDestacados" data-destacados-titulo="Piezas que miramos dos veces"></div>
 
@@ -1376,7 +1333,12 @@
     const categoriasOrdenadas = Array.from(porCategoria.keys()).sort();
 
     if (!categoriaCatalogoActiva || !categoriasOrdenadas.includes(categoriaCatalogoActiva)) {
-      categoriaCatalogoActiva = categoriasOrdenadas.includes('LIBROS') ? 'LIBROS' : categoriasOrdenadas[0];
+      const catUrl = (new URLSearchParams(window.location.search).get('cat') || '').trim().toUpperCase();
+      if (catUrl && categoriasOrdenadas.includes(catUrl)) {
+        categoriaCatalogoActiva = catUrl;
+      } else {
+        categoriaCatalogoActiva = categoriasOrdenadas.includes('LIBROS') ? 'LIBROS' : categoriasOrdenadas[0];
+      }
       subcategoriaCatalogoActiva = null;
       mostrarDesplegableSubcategorias = false;
     }
@@ -1500,6 +1462,12 @@
         } else {
           categoriaCatalogoActiva = categoria;
           subcategoriaCatalogoActiva = null;
+          try {
+            const u = new URL(window.location);
+            u.searchParams.set('cat', categoria);
+            u.searchParams.delete('producto');
+            history.replaceState({}, '', u);
+          } catch (e) {}
           mostrarDesplegableSubcategorias = false;
         }
         renderizarCatalogoPublico();
@@ -1535,6 +1503,7 @@
     // del navegador), para no pushear un estado duplicado.
     if (actualizarUrl && producto.skuGeneral) {
       const url = new URL(window.location);
+      if (url.pathname === '/' || url.pathname === '/index.html') url.pathname = '/tienda';
       const slug = slugProducto(producto);
       if (url.searchParams.get('producto') !== slug) {
         url.searchParams.set('producto', slug);
@@ -2531,10 +2500,7 @@
         if (el.tagName === 'IMG') {
           el.src = valor;
           if (key === 'logo') {
-            // Logo CMS opcional: actualizar logos del header si hay URL.
-            document.querySelectorAll('.logo-barra-catalogo').forEach(function (logo) {
-              logo.src = valor;
-            });
+            // Header usa wordmark blanco fijo (v3); CMS logo no pisa burgundy.
             el.classList.add('lon-foto-oculta');
           } else {
             mostrarSiTieneSrc(el);

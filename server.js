@@ -118,11 +118,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
   maxAge: '365d',
   immutable: true,
 }));
-// SEO: la home y el sitemap se arman en el servidor, asi que tienen que
-// registrarse ANTES de express.static — si no, express contesta "/" con
-// el index.html crudo (mismo <title> y mismo canonical para todos los
-// productos) y nunca llegamos a inyectar los meta tags del producto que
-// pide la URL. Ver seo.js.
+// SEO + landing: / (landing), /tienda (catalogo) y el sitemap se arman
+// en el servidor, asi que tienen que registrarse ANTES de express.static
+// — si no, express contesta "/" con index.html (catalogo) y la landing
+// nunca se ve. Ver seo.js.
 montarRutasSeo(app, {
   cargarProductos: () => construirCatalogoConStock(
     google.sheets({ version: 'v4', auth }),
@@ -1569,7 +1568,7 @@ app.post('/admin/borrar-producto', limiteAdmin, async (req, res) => {
  * ============================================================
  * Contenido de la landing publica en la pestaña Landing
  * (SHEET_ID_PRODUCTOS). Lectura pública; escritura solo nivel 2.
- * La UI vive en public/index.html (hidratacion) y public/admin.html (panel Landing).
+ * La UI vive en public/landing.html (/) e index.html (/tienda); admin.html panel Landing.
  * ============================================================ */
 
 const CARPETA_UPLOADS_LANDING = path.join(__dirname, 'public', 'uploads', 'landing');

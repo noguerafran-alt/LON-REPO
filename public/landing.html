@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LON Philosophy — Making community</title>
+<meta name="description" content="Concept store: libros, objetos y café. LON Philosophy making community — pedí online y coordiná por WhatsApp.">
+<link rel="canonical" href="https://lonphilosophy.onrender.com/">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LON Philosophy">
+<meta property="og:title" content="LON Philosophy — Making community">
+<meta property="og:description" content="Concept store: libros, objetos y café. LON Philosophy making community.">
+<meta property="og:url" content="https://lonphilosophy.onrender.com/">
+<meta property="og:image" content="https://lonphilosophy.onrender.com/logo.png">
+<meta property="og:locale" content="es_AR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LON Philosophy — Making community">
+<meta name="twitter:description" content="Concept store: libros, objetos y café. LON Philosophy making community.">
+<meta name="twitter:image" content="https://lonphilosophy.onrender.com/logo.png">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400;1,9..144,500&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6EFE4; --bg-alt:#EDE3D0; --bg-card:#FFFBF5; --ink:#3B1220; --ink-muted:#6B3A45;
+  --line:rgba(59,18,32,.14); --accent:#A9762A; --accent-terracota:#A8471F;
+  --bg-header:#5E1E2B; --header-text:#FFF3E5; --radius:2px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Archivo,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.header{background:var(--bg-header);color:var(--header-text);position:sticky;top:0;z-index:40}
+.header-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:64px;padding:0 20px;max-width:1280px;margin:0 auto}
+.header-row .left{justify-self:start;display:flex;gap:4px}
+.header-row .right{justify-self:end;display:flex;gap:4px;align-items:center}
+.icon-btn{background:none;border:none;color:var(--header-text);width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.logo{height:28px;width:auto;display:block}
+.cats{background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cats-inner{display:flex;gap:28px;padding:14px 20px;max-width:1280px;margin:0 auto;white-space:nowrap}
+.cats a{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted);font-weight:500}
+.cats a:hover,.cats a:focus{color:var(--ink)}
+.cats a.activo{color:var(--accent-terracota);box-shadow:inset 0 -2px 0 var(--accent-terracota);padding-bottom:2px}
+.hero{position:relative;min-height:68vh;display:flex;align-items:flex-end;background:#2a1518;overflow:hidden}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(94,30,43,.2) 0%,rgba(59,18,32,.45) 55%,rgba(59,18,32,.72) 100%);pointer-events:none}
+.hero-copy{position:relative;z-index:1;padding:48px 24px 56px;max-width:720px;color:#FFFBF5}
+.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.9;margin:0 0 12px;font-weight:500}
+.hero h1{font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(36px,6vw,64px);margin:0 0 12px;line-height:1.1}
+.hero p{margin:0 0 28px;font-weight:300;opacity:.92;font-size:16px}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:20px}
+.btn-solid{background:var(--bg);color:var(--ink);padding:14px 28px;font-size:13px;letter-spacing:.06em;border:none;display:inline-block;font-weight:500}
+.btn-link{color:#FFFBF5;font-size:13px;font-weight:300;border-bottom:1px solid transparent}
+.btn-link:hover{border-bottom-color:rgba(255,251,245,.4)}
+.section{max-width:1280px;margin:0 auto;padding:72px 24px}
+.section h2{font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px);margin:0 0 20px}
+.muted{color:var(--ink-muted);font-weight:300;line-height:1.65}
+.lon-sobre{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;max-width:1280px;margin:0 auto;padding:56px 24px}
+.lon-sobre-lead{font-size:17px;margin:0 0 16px;line-height:1.55}
+.lon-sobre-cuerpo{margin:0;font-size:15px}
+.lon-sobre-fotos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lon-sobre-fotos img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:var(--radius);display:block;background:var(--bg-alt)}
+.lon-sobre-fotos img:only-child{grid-column:1 / -1;aspect-ratio:4/5}
+.lon-foto-oculta{display:none !important}
+.pillars{display:grid;gap:40px;grid-template-columns:1fr;padding:56px 24px;background:var(--bg-alt)}
+@media(min-width:800px){.pillars{grid-template-columns:repeat(3,1fr);max-width:1280px;margin:0 auto;width:100%}}
+.pillars-wrap{background:var(--bg-alt)}
+.pillars-wrap > h2{max-width:1280px;margin:0 auto;padding:56px 24px 0;font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px)}
+.pillars h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 10px;font-weight:600}
+.espacio{max-width:1280px;margin:0 auto;padding:56px 24px}
+.espacio figure{margin:0}
+.espacio img{width:100%;max-height:480px;object-fit:cover;display:block;border-radius:var(--radius);background:var(--bg-alt)}
+.espacio figcaption{margin-top:12px;font-size:13px;color:var(--ink-muted);font-weight:300}
+.espacio-quote{font-family:Fraunces,serif;font-style:italic;font-weight:300;font-size:clamp(18px,2.5vw,22px);color:var(--ink-muted);margin:20px 0 0;max-width:640px;line-height:1.45}
+.band{text-align:center;padding:64px 24px;background:var(--bg)}
+.band p{font-family:Fraunces,serif;font-style:italic;font-size:clamp(20px,3vw,26px);margin:0 0 24px;font-weight:300}
+.btn-ink{background:var(--ink);color:var(--bg);padding:14px 28px;display:inline-block;font-size:13px;letter-spacing:.06em;border:none;font-weight:500}
+footer{padding:40px 24px;text-align:center;font-size:12px;color:var(--ink-muted);line-height:1.7}
+footer a{color:var(--ink-muted)}
+footer a:hover{color:var(--accent-terracota)}
+.panel-menu{position:fixed;inset:0;z-index:50;display:none}
+.panel-menu.abierto{display:block}
+.panel-menu-backdrop{position:absolute;inset:0;background:rgba(59,18,32,.35)}
+.panel-menu-sheet{position:absolute;top:0;right:0;width:min(320px,88vw);height:100%;background:var(--bg);padding:24px 20px;box-shadow:-8px 0 24px rgba(59,18,32,.12);display:flex;flex-direction:column;gap:8px}
+.panel-menu-sheet h2{font-family:Fraunces,serif;font-style:italic;font-weight:400;font-size:22px;margin:8px 0 16px}
+.panel-menu-sheet a{display:block;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
+.panel-menu-cerrar{align-self:flex-end;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:4px}
+@media(max-width:799px){
+  .lon-sobre{grid-template-columns:1fr;gap:24px;padding:40px 20px}
+  .lon-sobre-fotos{order:-1}
+  .hero{min-height:56vh}
+  .hero-copy{padding:36px 20px 44px}
+  .section{padding:48px 20px}
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-row">
+    <div class="left">
+      <a class="icon-btn" href="/cliente.html" aria-label="Escanear" title="Escanear">
+        <svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
+      </a>
+    </div>
+    <a href="/" aria-label="LON Philosophy"><img class="logo" src="/logo-catalogo-white.png" alt="LON" width="120" height="28"></a>
+    <div class="right">
+      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
+      </button>
+      <a class="icon-btn" href="/tienda" aria-label="Catálogo" title="Catálogo">
+        <svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
+      </a>
+      <a class="icon-btn" href="/tienda" aria-label="Cuenta" title="Cuenta">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<nav class="cats" aria-label="Categorías">
+  <div class="cats-inner">
+    <a href="/tienda?cat=ANTIGUEDADES">Antigüedades</a>
+    <a href="/tienda?cat=CERAMICA">Cerámica</a>
+    <a href="/tienda?cat=JOYAS">Joyas</a>
+    <a href="/tienda?cat=LIBROS">Libros</a>
+    <a href="/tienda?cat=MADERA">Madera</a>
+    <a href="/tienda?cat=VELAS">Velas</a>
+  </div>
+</nav>
+
+<div class="panel-menu" id="panelMenuLanding" hidden>
+  <div class="panel-menu-backdrop" data-cerrar-menu></div>
+  <div class="panel-menu-sheet" role="dialog" aria-label="Menú">
+    <button type="button" class="panel-menu-cerrar" data-cerrar-menu aria-label="Cerrar">×</button>
+    <h2>Categorías</h2>
+    <a href="/tienda?cat=ANTIGUEDADES">Antigüedades</a>
+    <a href="/tienda?cat=CERAMICA">Cerámica</a>
+    <a href="/tienda?cat=JOYAS">Joyas</a>
+    <a href="/tienda?cat=LIBROS">Libros</a>
+    <a href="/tienda?cat=MADERA">Madera</a>
+    <a href="/tienda?cat=VELAS">Velas</a>
+    <a href="/tienda" style="margin-top:12px;border:none;font-weight:600;">Ver catálogo completo →</a>
+  </div>
+</div>
+
+<main>
+  <section class="hero" aria-label="Presentación LON Philosophy">
+    <img src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen">
+    <div class="hero-overlay" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">LON Philosophy</p>
+      <h1 data-landing="hero_tagline">Making community</h1>
+      <p data-landing="hero_ubicacion">Libros, objetos y café — para estar presente</p>
+      <div class="cta-row">
+        <a class="btn-solid" href="/tienda" data-landing="cta_primary_label">Ver piezas</a>
+        <a class="btn-link" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label" data-landing-href="cta_secondary_href" data-landing-ig-href>Seguinos en Instagram</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lon-sobre" id="sobre" aria-label="Quiénes somos">
+    <div>
+      <h2 data-landing="sobre_titulo">Quiénes somos</h2>
+      <p class="lon-sobre-lead muted" data-landing="sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
+      <p class="lon-sobre-cuerpo muted" data-landing="sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
+    </div>
+    <div class="lon-sobre-fotos">
+      <img src="" alt="LON — el local" data-landing="sobre_foto_a" class="lon-foto-oculta" width="600" height="800">
+      <img src="" alt="LON — detalle" data-landing="sobre_foto_b" class="lon-foto-oculta" width="600" height="800">
+    </div>
+  </section>
+
+  <div class="pillars-wrap">
+    <h2 data-landing="pilares_titulo">Qué vas a encontrar</h2>
+    <div class="pillars">
+      <div>
+        <h3 data-landing="pilar_1_titulo">Libros</h3>
+        <p class="muted" data-landing="pilar_1_texto">Lecturas para demorarse — club, novedades y anaqueles con criterio.</p>
+      </div>
+      <div>
+        <h3 data-landing="pilar_2_titulo">Objetos</h3>
+        <p class="muted" data-landing="pilar_2_texto">Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.</p>
+      </div>
+      <div>
+        <h3 data-landing="pilar_3_titulo">Café &amp; comunidad</h3>
+        <p class="muted" data-landing="pilar_3_texto">Un espacio para encontrarse. Fidelidad en taza, conversación en el local.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="espacio" aria-label="El espacio">
+    <figure>
+      <img src="/hero-editorial.webp" alt="El espacio LON" data-landing="espacio_imagen" width="1280" height="720">
+      <figcaption data-landing="espacio_caption">El local — luz, textura y anaquel.</figcaption>
+    </figure>
+    <blockquote class="espacio-quote" data-landing="espacio_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
+  </section>
+
+  <section class="band" aria-label="Ir al catálogo">
+    <p data-landing="catalogo_cta_texto">Explorá el catálogo y armá tu pedido online.</p>
+    <a class="btn-ink" href="/tienda" data-landing="catalogo_cta_label">Ir al catálogo</a>
+  </section>
+</main>
+
+<footer>
+  <p><a href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing-ig-href>Instagram <span data-landing-ig-text>@lonphilosophy</span></a></p>
+  <p><span data-landing="footer_texto">© 2026 FLN Data Analysis — LON Philosophy</span></p>
+  <p><a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a> · <a href="/admin.html">Acceso admin →</a></p>
+</footer>
+<img id="lonLogoCms" src="" alt="" data-landing="logo" class="lon-foto-oculta" width="1" height="1">
+
+<script>
+(function () {
+  var panel = document.getElementById('panelMenuLanding');
+  var btn = document.getElementById('btnMenuLanding');
+  function abrir() {
+    panel.hidden = false;
+    panel.classList.add('abierto');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  function cerrar() {
+    panel.classList.remove('abierto');
+    panel.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  btn.addEventListener('click', function () {
+    if (panel.classList.contains('abierto')) cerrar(); else abrir();
+  });
+  panel.querySelectorAll('[data-cerrar-menu]').forEach(function (el) {
+    el.addEventListener('click', cerrar);
+  });
+})();
+
+(function () {
+  function mostrarSiTieneSrc(img) {
+    if (!img) return;
+    var url = (img.getAttribute('src') || '').trim();
+    if (url) img.classList.remove('lon-foto-oculta');
+    else img.classList.add('lon-foto-oculta');
+  }
+
+  function aplicarContenido(contenido) {
+    if (!contenido || typeof contenido !== 'object') return;
+
+    document.querySelectorAll('[data-landing]').forEach(function (el) {
+      var key = el.getAttribute('data-landing');
+      if (!key) return;
+      var valor = contenido[key];
+      if (valor == null || String(valor).trim() === '') return;
+      valor = String(valor);
+      if (el.tagName === 'IMG') {
+        el.src = valor;
+        if (key === 'logo') {
+          el.classList.add('lon-foto-oculta');
+        } else {
+          mostrarSiTieneSrc(el);
+        }
+      } else if (el.tagName === 'A' && key.indexOf('cta_') === 0 && key.indexOf('_label') !== -1) {
+        el.textContent = valor;
+      } else {
+        el.textContent = valor;
+      }
+    });
+
+    document.querySelectorAll('[data-landing-href]').forEach(function (el) {
+      var key = el.getAttribute('data-landing-href');
+      var valor = contenido[key];
+      if (valor == null || String(valor).trim() === '') return;
+      el.href = String(valor).trim();
+    });
+
+    // CTAs primarios siempre a /tienda (no ancla de catálogo en landing)
+    document.querySelectorAll('a[data-landing="cta_primary_label"], a[data-landing="catalogo_cta_label"]').forEach(function (el) {
+      el.href = '/tienda';
+    });
+
+    var handle = contenido.ig_handle;
+    if (handle != null && String(handle).trim() !== '') {
+      var h = String(handle).trim().replace(/^@/, '');
+      var url = 'https://www.instagram.com/' + encodeURIComponent(h) + '/';
+      document.querySelectorAll('[data-landing-ig-href]').forEach(function (el) {
+        if (el.hasAttribute('data-landing-href') && contenido.cta_secondary_href) {
+          /* keep */
+        } else {
+          el.href = url;
+        }
+      });
+      document.querySelectorAll('[data-landing-ig-text]').forEach(function (el) {
+        el.textContent = '@' + h;
+      });
+    }
+
+    ['sobre_foto_a', 'sobre_foto_b', 'espacio_imagen', 'hero_imagen'].forEach(function (k) {
+      document.querySelectorAll('[data-landing="' + k + '"]').forEach(mostrarSiTieneSrc);
+    });
+
+    var fotosSobre = document.querySelector('.lon-sobre-fotos');
+    if (fotosSobre) {
+      var visibles = Array.prototype.filter.call(fotosSobre.querySelectorAll('img'), function (img) {
+        return !img.classList.contains('lon-foto-oculta');
+      });
+      fotosSobre.style.display = visibles.length ? '' : 'none';
+    }
+  }
+
+  fetch('/landing-contenido')
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (data) {
+      if (!data || !data.ok || !data.contenido) return;
+      aplicarContenido(data.contenido);
+    })
+    .catch(function () { /* fallback hardcodeado */ });
+})();
+</script>
+</body>
+</html>
