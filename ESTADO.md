@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-09-06**
+> Última actualización: **2026-10-08**
 
 ## Qué hace la app hoy
 
@@ -47,6 +47,9 @@
     el escáner sigue siendo solo por el total: las categorías del POS
     no se cruzan con las internas de LON.
   - **Usuarios** (nivel 2 exclusivo): alta/baja/nivel de cuentas admin.
+  - **Contenido** (nivel 2; antes «Landing»): editor de la portada (/)
+    con el mismo modelo que el «Contenido» de PROA. Ver sección
+    «Admin › Contenido» más abajo.
 - **Bots/integraciones**: chatbot de WhatsApp (Cloud API), mail de
   confirmación de transferencia (Gmail SMTP), SEO dinámico por producto
   (`seo.js`) + sitemap.
@@ -208,6 +211,42 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   escaneados" iba a `innerHTML` sin escapar — el contenido de un
   QR/código de barras es texto arbitrario y no confiable. Corregido con
   `textContent`.
+
+## Admin › Contenido (landing editable, 2026-10-08)
+
+- Hoja `Landing` (clave/valor, `SHEET_ID_PRODUCTOS`). `LANDING_DEFAULTS`
+  (googleSheets.js) siembra **solo las claves que faltan**; nunca se
+  reescriben valores guardados. Guardar manda solo los campos del
+  formulario.
+- Editable: textos de cada sección (hero, quiénes somos, pilares, el
+  espacio, franja catálogo, footer, título de destacados de /tienda),
+  fotos + alt, video de fondo opcional del hero (`hero_video`,
+  `POST /admin/landing/video`, hasta `VIDEO_MAX_BYTES` = 40 MB, sin
+  transcodificar), fuente general (`landing_fuente`) y de títulos
+  (`landing_titulos_fuente`), y por cada bloque de texto
+  `<bloque>_fuente` / `_alineacion` / `_tamano` (px 6–120) / `_estilo`
+  (normal|bold|italic|bolditalic). Vacío = como se veía antes.
+- Render: `public/lon-contenido.js` (`LONContenido.aplicar`) valida todo
+  con lista blanca y lo escribe en un `<style>` propio con `!important`.
+  Las fuentes se sanean al renderizar (comillas rotas → se re-arma la
+  lista; inválida → la de la página), igual que el fix de PROA: un valor
+  como `Fraunces', Georgia, serif` dentro de `var()` hacía caer a Times.
+  Los bloques de texto (`BLOQUES_TEXTO` en landing.html) y los
+  `data-lc-ajustes` de admin.html tienen que usar los mismos nombres.
+- Subir foto/video **no publica**: solo deja la URL en el formulario
+  hasta tocar Guardar (barra Guardar/Recargar pegada abajo; Recargar
+  pide confirmación si hay cambios sin guardar).
+- **Fijo en código a propósito** (no son campos): links de los CTA
+  (/tienda e Instagram), link de Instagram del footer, menú/categorías,
+  header y logo, carrito, Privacidad/Términos/Acceso admin, orden de
+  secciones. Las claves viejas `ig_handle`, `cta_secondary_href` y
+  `logo` siguen en la hoja pero ya no se editan ni las usa la landing
+  (`ig_handle` sí lo sigue leyendo /tienda, y la landing lo usa solo
+  como texto de respaldo del @ del footer si `footer_ig_texto` está
+  vacío).
+- Video del hero con el fix de autoplay de iOS de PROA (#53): muted /
+  playsinline como propiedades **y** atributos antes de `src`, invisible
+  hasta que reproduce, reintento en el primer gesto.
 
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 

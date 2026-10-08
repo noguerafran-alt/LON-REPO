@@ -1597,6 +1597,23 @@ const uploadFotoLanding = multer({
   },
 });
 
+/* Windows suele mandar el mime vacío: se acepta también por extensión. */
+function videoLandingPermitido(req, file, cb) {
+  const tiposPermitidos = ['video/mp4', 'video/webm', 'video/quicktime'];
+  const extension = path.extname(file.originalname).toLowerCase();
+  if (!tiposPermitidos.includes(file.mimetype) && !['.mp4', '.webm', '.mov'].includes(extension)) {
+    return cb(new Error('Formato de video no soportado. Usá MP4, WebM o MOV.'));
+  }
+  cb(null, true);
+}
+
+// A disco (streaming): un video no entra en la memoria del servicio.
+const uploadVideoLanding = multer({
+  storage: storageFotosLanding,
+  limits: { fileSize: config.VIDEO_MAX_BYTES },
+  fileFilter: videoLandingPermitido,
+});
+
 async function leerLandingContenidoAsegurado() {
   const sheetsClient = google.sheets({ version: 'v4', auth });
   await ensureLandingSheet(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_LANDING);
@@ -1675,6 +1692,34 @@ app.post('/admin/landing/foto', limiteAdmin, (req, res) => {
       console.error('Error subiendo foto de landing:', err.message);
       if (req.file) fs.unlink(req.file.path, () => {});
       res.status(500).json({ error: 'No se pudo guardar la foto.' });
+    }
+  });
+});
+
+/* Admin nivel 2: sube el video del hero a public/uploads/landing/ y devuelve la
+   URL relativa. No se publica hasta que el admin toca Guardar (PUT /admin/landing). */
+app.post('/admin/landing/video', limiteAdmin, (req, res) => {
+  uploadVideoLanding.single('video')(req, res, (errorSubida) => {
+    try {
+      const sesion = requiereNivel2(req, res);
+      if (!sesion) {
+        if (req.file) fs.unlink(req.file.path, () => {});
+        return;
+      }
+      if (errorSubida) {
+        const mensaje = errorSubida.code === 'LIMIT_FILE_SIZE'
+          ? `El video pesa más de ${Math.round(config.VIDEO_MAX_BYTES / (1024 * 1024))} MB. Probá comprimirlo o recortarlo.`
+          : (errorSubida.message || 'No se pudo subir el video.');
+        return res.status(400).json({ error: mensaje });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No se recibió ningún video.' });
+      }
+      res.json({ ok: true, url: `/uploads/landing/${req.file.filename}` });
+    } catch (err) {
+      console.error('Error subiendo video de landing:', err.message);
+      if (req.file) fs.unlink(req.file.path, () => {});
+      res.status(500).json({ error: 'No se pudo guardar el video.' });
     }
   });
 });

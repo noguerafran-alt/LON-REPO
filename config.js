@@ -495,6 +495,8 @@ module.exports = {
    * ------------------------------------------------------------ */
   // Tamaño máximo por foto, en bytes (por defecto 5MB).
   FOTO_MAX_BYTES: Number(process.env.FOTO_MAX_BYTES || 5 * 1024 * 1024),
+  // Video de fondo del hero (Admin › Contenido): se guarda a disco, no en memoria.
+  VIDEO_MAX_BYTES: Number(process.env.VIDEO_MAX_BYTES || 40 * 1024 * 1024),
 
   /* ------------------------------------------------------------
    * 7) CHATBOT DE WHATSAPP — WhatsApp Cloud API (Meta)
