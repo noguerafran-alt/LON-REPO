@@ -8,8 +8,8 @@
 
 ## Qué hace la app hoy
 
-- **Catálogo público** (`public/index.html`): grilla de productos con
-  destacados (carrusel infinito con swipe), filtro por categoría/
+- **Catálogo público** (`public/index.html`): grilla de productos (sin
+  sección «Destacados» desde 2026-10-08: va directo a los productos), filtro por categoría/
   subcategoría con scroll infinito, buscador, detalle de producto con
   deep-link (`?producto=SKU`), carrito, checkout de un producto o del
   carrito, login de cliente con Google ("Mi cuenta"), programa de
@@ -219,7 +219,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   reescriben valores guardados. Guardar manda solo los campos del
   formulario.
 - Editable: textos de cada sección (hero, quiénes somos, pilares, el
-  espacio, franja catálogo, footer, título de destacados de /tienda),
+  espacio, franja catálogo, footer),
   fotos + alt, video de fondo opcional del hero (`hero_video`,
   `POST /admin/landing/video`, hasta `VIDEO_MAX_BYTES` = 40 MB, sin
   transcodificar), fuente general (`landing_fuente`) y de títulos
@@ -249,6 +249,20 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   hasta que reproduce, reintento en el primer gesto. **Sin botón de
   play/pausa** ni nada tocable (2026-10-08): siempre en bucle y sin
   controles; si iOS lo bloquea, queda solo la foto.
+
+## /tienda sin «Destacados» (2026-10-08)
+
+- Pedido de Francisco: que el catálogo vaya directo a los productos. Se
+  quitó el carrusel «Destacados» de `index.html` (HTML, CSS `.carrusel-*`
+  / `.titulo-seccion-destacados`, JS `cargarDestacados` y el fetch a
+  `/catalogo-destacados`) y el campo `destacados_titulo` de Admin ›
+  Contenido y de `LANDING_DEFAULTS` (la fila que ya exista en la hoja
+  Landing queda intacta). `recentrarCarrusel` se conserva: lo usan los
+  tabs de categoría.
+- Quedan sin tocar a propósito: el endpoint `GET /catalogo-destacados`
+  (ya sin uso en el frontend), `POST /producto-visita` + hoja `VISITAS`
+  (se siguen contando visitas) y la hoja de consultas. Si se quiere
+  volver a mostrar destacados, el backend sigue listo.
 
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 

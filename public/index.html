@@ -298,38 +298,6 @@
   #catalogoTabsCategoria{ flex:1; min-width:0; }
   #catalogoTabsCategoria .tabs-categorias-catalogo{ margin-bottom:0; }
 
-  .carrusel-destacados{ position:relative; margin:16px 0 26px; }
-  .carrusel-pista{
-    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x proximity;
-    padding-bottom:4px; scrollbar-width:none;
-    /* Sin esto, al deslizar hacia la izquierda estando en el principio, el
-       navegador del celular se queda con el gesto y dispara su "volver
-       atrás" (o el rebote elástico) en vez de scrollear el carrusel. */
-    overscroll-behavior-x:contain;
-    -webkit-overflow-scrolling:touch;
-  }
-  .carrusel-pista::-webkit-scrollbar{ display:none; }
-  .carrusel-pista .item-catalogo-publico{
-    flex:0 0 200px; width:200px; scroll-snap-align:start;
-  }
-  @media (min-width:1100px){
-    .carrusel-pista .item-catalogo-publico{ flex:0 0 240px; width:240px; }
-  }
-  @media (min-width:1500px){
-    .carrusel-pista .item-catalogo-publico{ flex:0 0 260px; width:260px; }
-  }
-  .btn-carrusel{
-    position:absolute; top:calc(50% - 14px); transform:translateY(-50%); z-index:2;
-    width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
-    background:var(--field-bg); color:var(--ink); cursor:pointer; display:flex;
-    align-items:center; justify-content:center; font-size:18px; line-height:1;
-    box-shadow:0 2px 8px rgba(59,18,32,0.15);
-  }
-  .btn-carrusel.izquierda{ left:-14px; }
-  .btn-carrusel.derecha{ right:-14px; }
-  @media (max-width:600px){
-    .carrusel-pista .item-catalogo-publico{ flex-basis:150px; width:150px; }
-  }
   .buscador-catalogo{
     width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Fraunces', serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
@@ -350,7 +318,7 @@
   .fila-tabs-categorias-scroll{
     display:flex; flex-wrap:nowrap; align-items:flex-start; gap:8px; flex:1; min-width:0;
     overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
-    /* Igual que el carrusel de destacados: sin esto, al deslizar hacia
+    /* Sin esto, al deslizar hacia
        atrás estando en el principio, el navegador del celular se queda
        con el gesto (volver atrás / rebote) en vez de scrollear. */
     overscroll-behavior-x:contain;
@@ -573,11 +541,6 @@
     font-size:13px; text-decoration:underline; cursor:pointer; padding:0; margin-top:4px;
   }
 
-
-  .titulo-seccion-destacados{
-    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
-    font-size:clamp(22px, 2.5vw, 28px); color:var(--ink); margin:8px 0 14px; letter-spacing:0.01em;
-  }
 
   /* ---- Hero editorial (base desktop) ---- */
   .hero-editorial{
@@ -919,8 +882,6 @@
 
   <div id="catalogoListaView">
 
-    <div id="catalogoDestacados" data-destacados-titulo="Piezas que miramos dos veces"></div>
-
     <div id="catalogo" class="fila-buscador-categorias">
       <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 Buscar</button>
       <div id="catalogoTabsCategoria"></div>
@@ -959,7 +920,6 @@
   const catalogoListaView = document.getElementById('catalogoListaView');
   const catalogoDetalleView = document.getElementById('catalogoDetalleView');
   const catalogoTabsCategoria = document.getElementById('catalogoTabsCategoria');
-  const catalogoDestacados = document.getElementById('catalogoDestacados');
   const catalogoPublicoLista = document.getElementById('catalogoPublicoLista');
   const catalogoDetalleContenido = document.getElementById('catalogoDetalleContenido');
   const btnVolverDeDetalle = document.getElementById('btnVolverDeDetalle');
@@ -1074,41 +1034,7 @@
     }
   }
 
-  /* "Destacados": une más consultados (hoja Consultas) y más visitados
-     (aperturas del detalle de producto) en UN solo carrusel, sin
-     etiquetar de cuál lista viene cada uno — son las mismas tarjetas
-     que en la grilla del catálogo (mismo recuadro y tamaño), con
-     flechas para pasar de a una y avance automático. */
-  let productosDestacadosPorSku = new Map();
-  let intervaloCarruselDestacados = null;
-
-  function tarjetaDestacadoHtml(p){
-    return `
-      <div class="item-catalogo-publico">
-        <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
-        <div class="info-item">
-          <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
-          ${metaProductoHtml(p)}
-          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function iniciarAutoavanceCarrusel(pista){
-    clearInterval(intervaloCarruselDestacados);
-    intervaloCarruselDestacados = setInterval(() => {
-      const tarjeta = pista.querySelector('.item-catalogo-publico');
-      const paso = tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
-      // No hace falta revisar si estamos al final: la pista tiene tres
-      // copias de la lista (ver cargarDestacados) y se recentra sola,
-      // así que siempre hay para dónde seguir — funcione con flechas,
-      // con el auto-avance o deslizando con el dedo.
-      pista.scrollBy({ left: paso, behavior: 'smooth' });
-    }, 4000);
-  }
-
-  /* Recentra la pista en la copia del medio cuando el scroll se aleja
+  /* Recentra una fila con tres copias (tabs de categorías) en la del medio cuando el scroll se aleja
      demasiado. Como las tres copias son idénticas, saltar exactamente un
      "ancho de copia" deja EXACTAMENTE los mismos píxeles en pantalla: el
      salto es invisible pase donde pase, y el carrusel nunca llega a un
@@ -1123,124 +1049,6 @@
     while (destino < anchoCopia * 0.5 && vueltas++ < 5) destino += anchoCopia;
     while (destino > anchoCopia * 1.5 && vueltas++ < 5) destino -= anchoCopia;
     if (destino !== pista.scrollLeft) pista.scrollLeft = destino;
-  }
-
-  async function cargarDestacados(){
-    try {
-      const res = await fetch('/catalogo-destacados');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al cargar destacados');
-
-      // Unimos los dos rankings, sin repetir un mismo producto dos veces
-      // (si es de los más consultados Y de los más visitados, aparece
-      // una sola vez).
-      const combinados = [...(data.masConsultados || []), ...(data.masVisitados || [])];
-      const vistos = new Set();
-      const productos = combinados.filter((p) => {
-        if (vistos.has(p.skuGeneral)) return false;
-        vistos.add(p.skuGeneral);
-        return true;
-      });
-
-      if (productos.length === 0) {
-        catalogoDestacados.innerHTML = '';
-        return;
-      }
-
-      productosDestacadosPorSku = new Map(productos.map((p) => [p.skuGeneral, p]));
-
-      // Carrusel infinito: se pintan TRES copias seguidas de la lista y se
-      // arranca posicionado en la del medio. Antes había un solo clon por
-      // punta y en el celular no alcanzaba — una sola tarjeta clonada es
-      // más angosta que la pantalla, así que un deslizón con impulso se
-      // comía el clon y llegaba al borde real de una. Con una copia entera
-      // de colchón a cada lado el dedo nunca toca el borde, y recentrar
-      // (saltar un ancho de copia) es invisible porque las tres copias
-      // muestran exactamente lo mismo.
-      const tarjetasHtml = productos.map(tarjetaDestacadoHtml);
-      const hayLoop = productos.length > 1;
-      const htmlPista = hayLoop
-        ? tarjetasHtml.join('') + tarjetasHtml.join('') + tarjetasHtml.join('')
-        : tarjetasHtml.join('');
-
-      const tituloDest = (catalogoDestacados.getAttribute('data-destacados-titulo') || 'Piezas que miramos dos veces').trim();
-      catalogoDestacados.innerHTML = `
-        <h2 class="titulo-seccion-destacados" data-landing="destacados_titulo">${tituloDest}</h2>
-        <div class="carrusel-destacados">
-          <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
-          <div class="carrusel-pista">${htmlPista}</div>
-          <button type="button" class="btn-carrusel derecha" aria-label="Ver siguiente">›</button>
-        </div>
-      `;
-
-      const pista = catalogoDestacados.querySelector('.carrusel-pista');
-      const anchoPaso = () => {
-        const tarjeta = pista.querySelector('.item-catalogo-publico');
-        return tarjeta ? tarjeta.getBoundingClientRect().width + 14 : 200;
-      };
-
-      // Distancia entre una tarjeta y su gemela de la copia siguiente:
-      // ese es el salto exacto que deja la pantalla igual.
-      let anchoCopia = 0;
-      if (hayLoop) {
-        anchoCopia = pista.children[productos.length].offsetLeft - pista.children[0].offsetLeft;
-        if (anchoCopia <= pista.clientWidth) {
-          // Entran todas las tarjetas en pantalla: con tres copias se
-          // verían los mismos productos repetidos uno al lado del otro.
-          // Se deja una sola copia, sin loop.
-          pista.innerHTML = tarjetasHtml.join('');
-          anchoCopia = 0;
-        } else {
-          pista.scrollLeft = anchoCopia;
-        }
-      }
-
-      catalogoDestacados.querySelector('.btn-carrusel.izquierda').addEventListener('click', () => {
-        pista.scrollBy({ left: -anchoPaso(), behavior: 'smooth' });
-      });
-      catalogoDestacados.querySelector('.btn-carrusel.derecha').addEventListener('click', () => {
-        pista.scrollBy({ left: anchoPaso(), behavior: 'smooth' });
-      });
-
-      // Recentrar solo cuando el scroll frenó del todo: tocar scrollLeft
-      // mientras el dedo sigue deslizando (o mientras corre la inercia)
-      // corta el movimiento en seco, que es justo lo que se sentía trabado.
-      let timeoutScrollPista = null;
-      let dedoApoyado = false;
-      pista.addEventListener('scroll', () => {
-        clearTimeout(timeoutScrollPista);
-        if (dedoApoyado) return;
-        timeoutScrollPista = setTimeout(() => recentrarCarrusel(pista, anchoCopia), 140);
-      });
-
-      // El auto-avance no tiene que pelear contra el dedo: se corta apenas
-      // se toca el carrusel y vuelve recién un rato después de soltarlo.
-      pista.addEventListener('touchstart', () => {
-        dedoApoyado = true;
-        clearInterval(intervaloCarruselDestacados);
-      }, { passive: true });
-      pista.addEventListener('touchend', () => {
-        dedoApoyado = false;
-        clearTimeout(timeoutScrollPista);
-        timeoutScrollPista = setTimeout(() => recentrarCarrusel(pista, anchoCopia), 140);
-        setTimeout(() => iniciarAutoavanceCarrusel(pista), 3000);
-      }, { passive: true });
-
-      pista.addEventListener('mouseenter', () => clearInterval(intervaloCarruselDestacados));
-      pista.addEventListener('mouseleave', () => iniciarAutoavanceCarrusel(pista));
-      iniciarAutoavanceCarrusel(pista);
-
-      catalogoDestacados.querySelectorAll('[data-sku-destacado]').forEach((boton) => {
-        const skuGeneral = boton.getAttribute('data-sku-destacado');
-        const producto = productosDestacadosPorSku.get(skuGeneral)
-          || catalogoPublicoProductos.find((p) => p.skuGeneral === skuGeneral);
-        conectarTarjetaProducto(boton, producto);
-      });
-    } catch (err) {
-      // Si falla, simplemente no se muestra la sección — no es crítico
-      // para poder usar el resto del catálogo.
-      catalogoDestacados.innerHTML = '';
-    }
   }
 
   // Slug legible para la URL, armado a partir del nombre (sin acentos, en
@@ -1410,8 +1218,7 @@
       </div>
     `;
 
-    // Tres copias de las categorías, misma técnica que el carrusel de
-    // destacados: así el dedo nunca choca contra una punta y la vuelta de
+    // Tres copias de las categorías: así el dedo nunca choca contra una punta y la vuelta de
     // 360° también funciona deslizando, no solo con las flechas. Si todas
     // las categorías entran en pantalla no hace falta (y se verían
     // repetidas), así que abajo se descartan las copias sobrantes.
@@ -1530,7 +1337,7 @@
       }
     }
 
-    // Registramos la visita para "Destacados: más visitados" — en
+    // Registramos la visita (hoja VISITAS; ya no se muestra «Destacados») — en
     // segundo plano, sin bloquear ni avisar nada si falla (no es
     // crítico para poder ver el producto).
     if (producto.skuGeneral) {
@@ -1708,7 +1515,6 @@
   });
 
   cargarCatalogoPublico();
-  cargarDestacados();
 
   /* ------------------------------------------------------------
    * LOGIN DE CLIENTE (Google Identity Services)
@@ -1966,7 +1772,7 @@
   }
 
   /* Feedback del botón "Agregar al carrito" en las tarjetas de las
-     grillas (destacados, búsqueda, categoría, relacionados): confirma
+     grillas (búsqueda, categoría, relacionados): confirma
      en el propio botón sin abrir el detalle ni recargar nada. */
   function manejarClickAgregarCarrito(boton, producto){
     const agregado = agregarAlCarrito(producto);
@@ -2553,15 +2359,6 @@
         document.querySelectorAll('[data-landing-ig-text]').forEach(function (el) {
           el.textContent = '@' + h;
         });
-      }
-
-      if (contenido.destacados_titulo && String(contenido.destacados_titulo).trim()) {
-        var box = document.getElementById('catalogoDestacados');
-        if (box) {
-          box.setAttribute('data-destacados-titulo', String(contenido.destacados_titulo).trim());
-          var h2 = box.querySelector('.titulo-seccion-destacados');
-          if (h2) h2.textContent = String(contenido.destacados_titulo).trim();
-        }
       }
 
       // Mostrar slots de foto solo si tienen src real (no vacío).
