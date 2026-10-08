@@ -50,9 +50,6 @@ a{color:inherit;text-decoration:none}
 .hero-video::-webkit-media-controls-start-playback-button{display:none !important;-webkit-appearance:none}
 .hero-video::-webkit-media-controls-overlay-play-button{display:none !important;-webkit-appearance:none}
 .hero-video::-webkit-media-controls{display:none !important}
-.hero-video-ctl{position:absolute;right:18px;bottom:18px;z-index:2;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,251,245,.35);background:rgba(255,251,245,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#FFFBF5;font-size:13px;line-height:1;cursor:pointer}
-.hero-video-ctl[hidden]{display:none}
-.hero-video-ctl:hover,.hero-video-ctl:focus-visible{background:rgba(255,251,245,.28);outline:2px solid #FFFBF5;outline-offset:3px}
 @media (prefers-reduced-motion: reduce){.hero .hero-video{transition:none}}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(94,30,43,.2) 0%,rgba(59,18,32,.45) 55%,rgba(59,18,32,.72) 100%);pointer-events:none}
 .hero-copy{position:relative;z-index:1;padding:48px 24px 56px;max-width:720px;color:#FFFBF5}
@@ -276,7 +273,8 @@ footer a:hover{color:var(--accent-terracota)}
      antes de src/load()/play(); si bloquea el autoplay (Ahorro de batería) play()
      falla en silencio: se reintenta una vez en el primer gesto, al volver a la
      pestaña y al cargar datos. Hasta que reproduce de verdad el video es invisible
-     (se ve la foto) y no aparece ningún botón de play. */
+     (se ve la foto). Sin botón de play/pausa ni nada tocable: siempre en bucle,
+     sin controles y pointer-events none (nunca se pausa al tocar). */
   function prepararVideoIOS(video) {
     video.muted = true;
     video.defaultMuted = true;
@@ -318,19 +316,9 @@ footer a:hover{color:var(--accent-terracota)}
     video.setAttribute('data-src', url);
     video.src = url;
 
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'hero-video-ctl';
-    btn.hidden = true; // recién cuando el video se mueve (pausa, WCAG 2.2.2)
-    video.addEventListener('error', function () { video.remove(); btn.remove(); });
+    video.addEventListener('error', function () { video.remove(); });
     img.insertAdjacentElement('afterend', video);
 
-    function etiqueta() {
-      var pausado = video.paused;
-      btn.textContent = pausado ? '▶' : '❚❚';
-      btn.setAttribute('aria-label', pausado ? 'Reproducir video de fondo' : 'Pausar video de fondo');
-    }
-    var pausadoPorUsuario = false;
     var gestoPendiente = false;
     function reintentarEnGesto() {
       if (gestoPendiente) return;
@@ -345,7 +333,7 @@ footer a:hover{color:var(--accent-terracota)}
       eventos.forEach(function (ev) { window.addEventListener(ev, alGesto, opts); });
     }
     function intentar(desdeGesto) {
-      if (pausadoPorUsuario || !video.paused) return;
+      if (!video.paused) return;
       video.muted = true;
       var q = video.play();
       if (q && q.catch) {
@@ -353,25 +341,14 @@ footer a:hover{color:var(--accent-terracota)}
       }
     }
     video._lonIntentar = intentar;
-    btn.addEventListener('click', function (ev) {
-      ev.stopPropagation();
-      if (video.paused) { pausadoPorUsuario = false; intentar(true); }
-      else { pausadoPorUsuario = true; video.pause(); }
-    });
     video.addEventListener('playing', function () {
       video.classList.add('reproduciendo');
-      btn.hidden = false;
-      etiqueta();
     });
-    video.addEventListener('play', etiqueta);
-    video.addEventListener('pause', etiqueta);
     video.addEventListener('loadeddata', function () { intentar(); });
     video.addEventListener('canplay', function () { intentar(); });
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') intentar();
     });
-    etiqueta();
-    img.closest('.hero').appendChild(btn);
     intentar();
   }
 

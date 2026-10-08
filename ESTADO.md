@@ -246,7 +246,9 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   vacío).
 - Video del hero con el fix de autoplay de iOS de PROA (#53): muted /
   playsinline como propiedades **y** atributos antes de `src`, invisible
-  hasta que reproduce, reintento en el primer gesto.
+  hasta que reproduce, reintento en el primer gesto. **Sin botón de
+  play/pausa** ni nada tocable (2026-10-08): siempre en bucle y sin
+  controles; si iOS lo bloquea, queda solo la foto.
 
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 
