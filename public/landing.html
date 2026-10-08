@@ -21,7 +21,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400;1,9..144,500&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400;1,9..144,500&family=Archivo:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F6EFE4; --bg-alt:#EDE3D0; --bg-card:#FFFBF5; --ink:#3B1220; --ink-muted:#6B3A45;
@@ -29,7 +29,7 @@
   --bg-header:#5E1E2B; --header-text:#FFF3E5; --radius:2px;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Archivo,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+body{margin:0;font-family:var(--lon-font, Archivo, sans-serif);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 .header{background:var(--bg-header);color:var(--header-text);position:sticky;top:0;z-index:40}
 .header-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:64px;padding:0 20px;max-width:1280px;margin:0 auto}
@@ -45,10 +45,19 @@ a{color:inherit;text-decoration:none}
 .cats a.activo{color:var(--accent-terracota);box-shadow:inset 0 -2px 0 var(--accent-terracota);padding-bottom:2px}
 .hero{position:relative;min-height:68vh;display:flex;align-items:flex-end;background:#2a1518;overflow:hidden}
 .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.hero .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease;pointer-events:none}
+.hero .hero-video.reproduciendo{opacity:.55}
+.hero-video::-webkit-media-controls-start-playback-button{display:none !important;-webkit-appearance:none}
+.hero-video::-webkit-media-controls-overlay-play-button{display:none !important;-webkit-appearance:none}
+.hero-video::-webkit-media-controls{display:none !important}
+.hero-video-ctl{position:absolute;right:18px;bottom:18px;z-index:2;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,251,245,.35);background:rgba(255,251,245,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#FFFBF5;font-size:13px;line-height:1;cursor:pointer}
+.hero-video-ctl[hidden]{display:none}
+.hero-video-ctl:hover,.hero-video-ctl:focus-visible{background:rgba(255,251,245,.28);outline:2px solid #FFFBF5;outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.hero .hero-video{transition:none}}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(94,30,43,.2) 0%,rgba(59,18,32,.45) 55%,rgba(59,18,32,.72) 100%);pointer-events:none}
 .hero-copy{position:relative;z-index:1;padding:48px 24px 56px;max-width:720px;color:#FFFBF5}
 .eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.9;margin:0 0 12px;font-weight:500}
-.hero h1{font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(36px,6vw,64px);margin:0 0 12px;line-height:1.1}
+.hero h1{font-family:var(--lon-font-titulos, Fraunces, serif);font-weight:300;font-style:italic;font-size:clamp(36px,6vw,64px);margin:0 0 12px;line-height:1.1}
 .hero p{margin:0 0 28px;font-weight:300;opacity:.92;font-size:16px}
 .cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:20px}
 .btn-solid{background:var(--bg);color:var(--ink);padding:14px 28px;font-size:13px;letter-spacing:.06em;border:none;display:inline-block;font-weight:500}
@@ -67,15 +76,15 @@ a{color:inherit;text-decoration:none}
 .pillars{display:grid;gap:40px;grid-template-columns:1fr;padding:56px 24px;background:var(--bg-alt)}
 @media(min-width:800px){.pillars{grid-template-columns:repeat(3,1fr);max-width:1280px;margin:0 auto;width:100%}}
 .pillars-wrap{background:var(--bg-alt)}
-.pillars-wrap > h2{max-width:1280px;margin:0 auto;padding:56px 24px 0;font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px)}
+.pillars-wrap > h2{max-width:1280px;margin:0 auto;padding:56px 24px 0;font-family:var(--lon-font-titulos, Fraunces, serif);font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px)}
 .pillars h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 10px;font-weight:600}
 .espacio{max-width:1280px;margin:0 auto;padding:56px 24px}
 .espacio figure{margin:0}
 .espacio img{width:100%;max-height:480px;object-fit:cover;display:block;border-radius:var(--radius);background:var(--bg-alt)}
 .espacio figcaption{margin-top:12px;font-size:13px;color:var(--ink-muted);font-weight:300}
-.espacio-quote{font-family:Fraunces,serif;font-style:italic;font-weight:300;font-size:clamp(18px,2.5vw,22px);color:var(--ink-muted);margin:20px 0 0;max-width:640px;line-height:1.45}
+.espacio-quote{font-family:var(--lon-font-titulos, Fraunces, serif);font-style:italic;font-weight:300;font-size:clamp(18px,2.5vw,22px);color:var(--ink-muted);margin:20px 0 0;max-width:640px;line-height:1.45}
 .band{text-align:center;padding:64px 24px;background:var(--bg)}
-.band p{font-family:Fraunces,serif;font-style:italic;font-size:clamp(20px,3vw,26px);margin:0 0 24px;font-weight:300}
+.band p{font-family:var(--lon-font-titulos, Fraunces, serif);font-style:italic;font-size:clamp(20px,3vw,26px);margin:0 0 24px;font-weight:300}
 .btn-ink{background:var(--ink);color:var(--bg);padding:14px 28px;display:inline-block;font-size:13px;letter-spacing:.06em;border:none;font-weight:500}
 footer{padding:40px 24px;text-align:center;font-size:12px;color:var(--ink-muted);line-height:1.7}
 footer a{color:var(--ink-muted)}
@@ -147,15 +156,15 @@ footer a:hover{color:var(--accent-terracota)}
 
 <main>
   <section class="hero" aria-label="Presentación LON Philosophy">
-    <img src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen">
+    <img class="hero-foto" src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen" data-landing-alt="hero_imagen_alt">
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-copy">
-      <p class="eyebrow">LON Philosophy</p>
+      <p class="eyebrow" data-landing="hero_eyebrow">LON Philosophy</p>
       <h1 data-landing="hero_tagline">Making community</h1>
-      <p data-landing="hero_ubicacion">Libros, objetos y café — para estar presente</p>
+      <p class="hero-sub" data-landing="hero_ubicacion">Libros, objetos y café — para estar presente</p>
       <div class="cta-row">
         <a class="btn-solid" href="/tienda" data-landing="cta_primary_label">Ver piezas</a>
-        <a class="btn-link" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label" data-landing-href="cta_secondary_href" data-landing-ig-href>Seguinos en Instagram</a>
+        <a class="btn-link" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label">Seguinos en Instagram</a>
       </div>
     </div>
   </section>
@@ -167,8 +176,8 @@ footer a:hover{color:var(--accent-terracota)}
       <p class="lon-sobre-cuerpo muted" data-landing="sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
     </div>
     <div class="lon-sobre-fotos">
-      <img src="" alt="LON — el local" data-landing="sobre_foto_a" class="lon-foto-oculta" width="600" height="800">
-      <img src="" alt="LON — detalle" data-landing="sobre_foto_b" class="lon-foto-oculta" width="600" height="800">
+      <img src="" alt="LON — el local" data-landing="sobre_foto_a" data-landing-alt="sobre_foto_a_alt" class="lon-foto-oculta" width="600" height="800">
+      <img src="" alt="LON — detalle" data-landing="sobre_foto_b" data-landing-alt="sobre_foto_b_alt" class="lon-foto-oculta" width="600" height="800">
     </div>
   </section>
 
@@ -192,7 +201,7 @@ footer a:hover{color:var(--accent-terracota)}
 
   <section class="espacio" aria-label="El espacio">
     <figure>
-      <img src="/hero-editorial.webp" alt="El espacio LON" data-landing="espacio_imagen" width="1280" height="720">
+      <img src="/hero-editorial.webp" alt="El espacio LON" data-landing="espacio_imagen" data-landing-alt="espacio_imagen_alt" width="1280" height="720">
       <figcaption data-landing="espacio_caption">El local — luz, textura y anaquel.</figcaption>
     </figure>
     <blockquote class="espacio-quote" data-landing="espacio_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
@@ -205,12 +214,13 @@ footer a:hover{color:var(--accent-terracota)}
 </main>
 
 <footer>
-  <p><a href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing-ig-href>Instagram <span data-landing-ig-text>@lonphilosophy</span></a></p>
+  <p><a href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer">Instagram <span data-landing-ig-text>@lonphilosophy</span></a></p>
   <p><span data-landing="footer_texto">© 2026 FLN Data Analysis — LON Philosophy</span></p>
   <p><a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a> · <a href="/admin.html">Acceso admin →</a></p>
 </footer>
 <img id="lonLogoCms" src="" alt="" data-landing="logo" class="lon-foto-oculta" width="1" height="1">
 
+<script src="/lon-contenido.js"></script>
 <script>
 (function () {
   var panel = document.getElementById('panelMenuLanding');
@@ -241,6 +251,130 @@ footer a:hover{color:var(--accent-terracota)}
     else img.classList.add('lon-foto-oculta');
   }
 
+  /* Bloques de texto con fuente/alineación/tamaño/estilo propios (claves
+     <bloque>_fuente, _alineacion, _tamano, _estilo). Mismos nombres en admin.html. */
+  var BLOQUES_TEXTO = {
+    hero_eyebrow: '.hero-copy .eyebrow',
+    hero_tagline: '.hero h1',
+    hero_ubicacion: '.hero-copy .hero-sub',
+    hero_ctas: '.hero .cta-row a',
+    sobre_titulo: '.lon-sobre h2',
+    sobre_lead: '.lon-sobre-lead',
+    sobre_cuerpo: '.lon-sobre-cuerpo',
+    pilares_titulo: '.pillars-wrap > h2',
+    pilares_items_titulo: '.pillars h3',
+    pilares_items_texto: '.pillars p',
+    espacio_caption: '.espacio figcaption',
+    espacio_quote: '.espacio-quote',
+    catalogo_cta_texto: '.band p',
+    catalogo_cta_boton: '.band .btn-ink',
+    footer: 'footer p',
+  };
+
+  /* Video de fondo opcional del hero (hero_video); la foto queda de poster y
+     respaldo. iOS Safari exige muted + playsinline como propiedades Y atributos
+     antes de src/load()/play(); si bloquea el autoplay (Ahorro de batería) play()
+     falla en silencio: se reintenta una vez en el primer gesto, al volver a la
+     pestaña y al cargar datos. Hasta que reproduce de verdad el video es invisible
+     (se ve la foto) y no aparece ningún botón de play. */
+  function prepararVideoIOS(video) {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.controls = false;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('loop', '');
+    video.setAttribute('autoplay', '');
+    video.removeAttribute('controls');
+  }
+
+  function aplicarHeroVideo(contenido) {
+    var url = String(contenido.hero_video || '').trim();
+    var img = document.querySelector('.hero img.hero-foto');
+    if (!url || !img) return;
+    if (navigator.connection && navigator.connection.saveData) return;
+
+    var existente = document.querySelector('.hero video.hero-video');
+    if (existente) {
+      if (existente.getAttribute('data-src') === url) return;
+      prepararVideoIOS(existente);
+      existente.setAttribute('data-src', url);
+      existente.src = url;
+      existente.load();
+      if (existente._lonIntentar) existente._lonIntentar();
+      return;
+    }
+
+    var video = document.createElement('video');
+    video.className = 'hero-video';
+    prepararVideoIOS(video);
+    video.setAttribute('aria-hidden', 'true');
+    video.preload = 'auto';
+    video.poster = img.getAttribute('src') || '';
+    video.setAttribute('data-src', url);
+    video.src = url;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hero-video-ctl';
+    btn.hidden = true; // recién cuando el video se mueve (pausa, WCAG 2.2.2)
+    video.addEventListener('error', function () { video.remove(); btn.remove(); });
+    img.insertAdjacentElement('afterend', video);
+
+    function etiqueta() {
+      var pausado = video.paused;
+      btn.textContent = pausado ? '▶' : '❚❚';
+      btn.setAttribute('aria-label', pausado ? 'Reproducir video de fondo' : 'Pausar video de fondo');
+    }
+    var pausadoPorUsuario = false;
+    var gestoPendiente = false;
+    function reintentarEnGesto() {
+      if (gestoPendiente) return;
+      gestoPendiente = true;
+      var opts = { once: true, passive: true };
+      var eventos = ['touchstart', 'touchend', 'click', 'scroll'];
+      var alGesto = function () {
+        eventos.forEach(function (ev) { window.removeEventListener(ev, alGesto, opts); });
+        gestoPendiente = false;
+        intentar(true);
+      };
+      eventos.forEach(function (ev) { window.addEventListener(ev, alGesto, opts); });
+    }
+    function intentar(desdeGesto) {
+      if (pausadoPorUsuario || !video.paused) return;
+      video.muted = true;
+      var q = video.play();
+      if (q && q.catch) {
+        q.catch(function () { if (!desdeGesto) reintentarEnGesto(); });
+      }
+    }
+    video._lonIntentar = intentar;
+    btn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      if (video.paused) { pausadoPorUsuario = false; intentar(true); }
+      else { pausadoPorUsuario = true; video.pause(); }
+    });
+    video.addEventListener('playing', function () {
+      video.classList.add('reproduciendo');
+      btn.hidden = false;
+      etiqueta();
+    });
+    video.addEventListener('play', etiqueta);
+    video.addEventListener('pause', etiqueta);
+    video.addEventListener('loadeddata', function () { intentar(); });
+    video.addEventListener('canplay', function () { intentar(); });
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') intentar();
+    });
+    etiqueta();
+    img.closest('.hero').appendChild(btn);
+    intentar();
+  }
+
   function aplicarContenido(contenido) {
     if (!contenido || typeof contenido !== 'object') return;
 
@@ -264,33 +398,36 @@ footer a:hover{color:var(--accent-terracota)}
       }
     });
 
-    document.querySelectorAll('[data-landing-href]').forEach(function (el) {
-      var key = el.getAttribute('data-landing-href');
-      var valor = contenido[key];
-      if (valor == null || String(valor).trim() === '') return;
-      el.href = String(valor).trim();
+    // Textos alternativos de las fotos (vacío = el del HTML).
+    document.querySelectorAll('[data-landing-alt]').forEach(function (el) {
+      var valor = contenido[el.getAttribute('data-landing-alt')];
+      if (valor != null && String(valor).trim() !== '') el.alt = String(valor);
     });
 
+    // Links (CTAs, Instagram) fijos en código: el CMS solo cambia el texto visible.
     // CTAs primarios siempre a /tienda (no ancla de catálogo en landing)
     document.querySelectorAll('a[data-landing="cta_primary_label"], a[data-landing="catalogo_cta_label"]').forEach(function (el) {
       el.href = '/tienda';
     });
 
-    var handle = contenido.ig_handle;
-    if (handle != null && String(handle).trim() !== '') {
-      var h = String(handle).trim().replace(/^@/, '');
-      var url = 'https://www.instagram.com/' + encodeURIComponent(h) + '/';
-      document.querySelectorAll('[data-landing-ig-href]').forEach(function (el) {
-        if (el.hasAttribute('data-landing-href') && contenido.cta_secondary_href) {
-          /* keep */
-        } else {
-          el.href = url;
-        }
-      });
-      document.querySelectorAll('[data-landing-ig-text]').forEach(function (el) {
-        el.textContent = '@' + h;
+    // Texto junto a «Instagram» en el footer: footer_ig_texto; si está vacío,
+    // el @ de la vieja clave ig_handle (compatibilidad); si no, el del HTML.
+    var igTexto = String(contenido.footer_ig_texto || '').trim();
+    if (!igTexto && contenido.ig_handle != null && String(contenido.ig_handle).trim() !== '') {
+      igTexto = '@' + String(contenido.ig_handle).trim().replace(/^@/, '');
+    }
+    if (igTexto) {
+      document.querySelectorAll('[data-landing-ig-text]').forEach(function (el) { el.textContent = igTexto; });
+    }
+
+    if (window.LONContenido) {
+      window.LONContenido.aplicar(contenido, BLOQUES_TEXTO, {
+        landing_fuente: '--lon-font',
+        landing_titulos_fuente: '--lon-font-titulos',
       });
     }
+
+    aplicarHeroVideo(contenido);
 
     ['sobre_foto_a', 'sobre_foto_b', 'espacio_imagen', 'hero_imagen'].forEach(function (k) {
       document.querySelectorAll('[data-landing="' + k + '"]').forEach(mostrarSiTieneSrc);

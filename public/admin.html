@@ -299,6 +299,7 @@
   }
   #panelGenerarUnidades select, #panelGenerarUnidades input[type="text"], #panelGenerarUnidades input[type="number"],
   #panelCatalogo select, #panelCatalogo input[type="text"], #panelCatalogo input[type="number"],
+  #panelLanding select,
   #panelLanding input[type="text"], #panelLanding textarea{
     width:100%; padding:12px 14px; font-size:16px; font-family:'Archivo', sans-serif;
     border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
@@ -599,6 +600,100 @@
     padding:6px 10px; font-size:12.5px; border-radius:var(--radius);
     border:1px solid var(--stamp-red); background:#fff; color:var(--stamp-red); cursor:pointer;
   }
+  /* Panel Contenido (mismo diseño que PROA). Todo prefijado con #panelLanding: las reglas
+     genéricas de ID de arriba (label, input, textarea) le ganan a cualquier clase suelta.
+     overflow visible: con overflow:auto el panel sería el contenedor de scroll del sticky
+     y la barra de guardado no se pegaría al borde de la pantalla. */
+  #panelLanding{ overflow:visible; padding:16px 24px 0; }
+  #panelLanding .lc-titulo{ padding-bottom:4px; }
+  #panelLanding .lc-titulo h2{
+    font-family:'Fraunces', Georgia, serif; font-weight:500; font-size:28px; line-height:1.15;
+    margin:0 0 4px; color:var(--ink);
+  }
+  #panelLanding .lc-ayuda{ font-size:13px; line-height:1.45; color:var(--ink-muted); margin:0; }
+  #panelLanding .lc-indice{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+  #panelLanding .lc-indice a{
+    padding:6px 12px; border:1px solid var(--line); border-radius:var(--radius);
+    font-size:13px; font-weight:500; color:var(--ink-muted); text-decoration:none;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  #panelLanding .lc-indice a:hover{ background:var(--bg-alt); color:var(--ink); border-color:var(--ink-muted); }
+  #panelLanding .lc-secciones{ columns:560px; column-gap:56px; max-width:1800px; }
+  #panelLanding .lc-seccion{ break-inside:avoid; padding:28px 0 20px; border-top:1px solid var(--line); margin-top:24px; }
+  #panelLanding .lc-sec-head{ margin-bottom:16px; }
+  #panelLanding .lc-sec-head h3{
+    font-family:'Fraunces', Georgia, serif; font-weight:500; font-size:22px; line-height:1.2;
+    margin:0 0 2px; color:var(--ink);
+  }
+  #panelLanding .lc-sec-head .lc-ayuda + .lc-ayuda{ margin-top:4px; }
+  #panelLanding .lc-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px 20px; align-items:start; }
+  #panelLanding .lc-full{ grid-column:1 / -1; }
+  #panelLanding .lc-campo{ min-width:0; container-type:inline-size; }
+  #panelLanding .lc-campo > .lc-ayuda{ margin-top:6px; }
+  #panelLanding .lc-label, #panelLanding label.lc-label{
+    display:block; margin:0 0 6px; font-family:'Archivo', sans-serif; font-size:12px; font-weight:600;
+    letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-muted);
+  }
+  #panelLanding .lc-campo input[type="text"], #panelLanding .lc-campo select, #panelLanding .lc-campo textarea{
+    display:block; font-size:15px; line-height:1.4; padding:10px 12px; min-height:44px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  #panelLanding .lc-campo textarea{ resize:vertical; min-height:88px; }
+  /* Ajustes por texto: pares «etiqueta + control» (Fuente/Alineación, Tamaño/Estilo). */
+  #panelLanding .lc-fuente{ display:grid; grid-template-columns:auto minmax(0, 1fr); align-items:center; gap:8px 10px; margin-top:8px; }
+  @container (min-width: 520px){
+    #panelLanding .lc-fuente{ grid-template-columns:auto minmax(0, 1fr) auto minmax(0, 1fr); }
+  }
+  #panelLanding .lc-fuente label.lc-label{ margin:0; }
+  #panelLanding .lc-fuente .lc-tam{ display:flex; align-items:center; gap:6px; min-width:0; }
+  #panelLanding .lc-fuente .lc-tam input[type="number"]{
+    width:84px; min-height:38px; padding:6px 10px; font-size:14px; font-family:'Archivo', sans-serif;
+    border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg); color:var(--field-text);
+  }
+  #panelLanding .lc-fuente .lc-px{ font-size:13px; color:var(--ink-muted); }
+  #panelLanding .lc-campo .lc-fuente select{ width:100%; min-height:38px; padding:6px 10px; font-size:14px; }
+  #panelLanding .lc-campo input[type="text"]:hover, #panelLanding .lc-campo select:hover,
+  #panelLanding .lc-campo textarea:hover{ border-color:var(--ink-muted); }
+  #panelLanding .lc-campo input::placeholder, #panelLanding .lc-campo textarea::placeholder{ color:#9C7F86; }
+  #panelLanding :is(input, textarea, select, button, a):focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  #panelLanding .lc-btn{
+    padding:10px 18px; min-height:42px; font-family:'Archivo', sans-serif; font-size:14px; font-weight:600;
+    border-radius:var(--radius); cursor:pointer; white-space:nowrap;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  #panelLanding .lc-btn:disabled{ opacity:.55; cursor:default; }
+  #panelLanding .lc-btn-prim{ background:var(--ink); color:var(--bg); border:1px solid var(--ink); }
+  #panelLanding .lc-btn-prim:hover{ background:var(--accent); border-color:var(--accent); }
+  #panelLanding .lc-btn-sec{ background:transparent; color:var(--ink); border:1px solid var(--ink-muted); }
+  #panelLanding .lc-btn-sec:hover{ background:var(--bg-alt); border-color:var(--ink); }
+  #panelLanding .lc-foto{ display:flex; gap:16px; align-items:center; min-width:0; }
+  #panelLanding .lc-foto-prev{
+    flex:0 0 auto; width:144px; aspect-ratio:3 / 2; overflow:hidden;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-alt);
+  }
+  #panelLanding .lc-foto--vert .lc-foto-prev{ width:108px; aspect-ratio:3 / 4; }
+  #panelLanding .lc-foto-prev img,
+  #panelLanding .lc-foto-prev video{ display:block; width:100%; height:100%; object-fit:cover; }
+  #panelLanding .lc-video-vacio{ display:flex; align-items:center; justify-content:center; width:100%; height:100%; padding:6px; box-sizing:border-box; text-align:center; font-size:12px; color:var(--ink-muted); word-break:break-all; }
+  #panelLanding .lc-video-acciones{ display:flex; flex-wrap:wrap; gap:8px; }
+  #panelLanding .lc-foto-info{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; min-width:0; }
+  #panelLanding .lc-foto-info .lc-label{ margin:0; }
+  /* Barra de guardado: queda pegada abajo mientras se scrollea el formulario largo. */
+  #panelLanding .lc-barra{
+    position:sticky; bottom:0; z-index:5; margin:20px -24px 0; padding:12px 24px calc(12px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--bg); border-top:1px solid var(--line);
+  }
+  #panelLanding #mensajeLanding{ flex:1 1 180px; min-width:0; font-size:14px; font-weight:500; line-height:1.3; }
+  @media (max-width:640px){
+    #panelLanding .lc-grid{ grid-template-columns:minmax(0, 1fr); }
+    #panelLanding .lc-foto{ gap:12px; }
+    #panelLanding .lc-foto-prev{ width:120px; }
+    #panelLanding .lc-foto--vert .lc-foto-prev{ width:96px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #panelLanding *{ transition:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -625,7 +720,7 @@
     <button class="activo" id="tabEscanear" type="button">Escanear</button>
     <button id="tabGenerarUnidades" type="button">Productos</button>
     <button id="tabCatalogo" type="button">Catálogo</button>
-    <button id="tabLanding" type="button">Landing</button>
+    <button id="tabLanding" type="button">Contenido</button>
     <button id="tabPedidos" type="button">Pedidos</button>
     <button id="tabCierreCaja" type="button">Cierre de caja</button>
     <button id="tabUsuarios" type="button">Usuarios</button>
@@ -811,125 +906,293 @@
   </div>
 
 
-  <div id="panelLanding" style="display:none; padding:16px 24px 40px;">
-    <div class="campo">
-      <label>Editor de la landing (/)</label>
-      <p style="font-size:12.5px; color:var(--ink-muted); margin:0 0 12px;">Textos y fotos de la página de inicio (nivel 2). Subí las fotos con el botón; no hace falta editar rutas. Después tocá Guardar.</p>
-      <div id="mensajeLanding" style="font-size:13px; margin:0 0 12px; min-height:1.2em;"></div>
+  <div id="panelLanding" style="display:none;">
+    <div class="lc-titulo">
+      <h2>Contenido</h2>
+      <p class="lc-ayuda">Textos, fotos, video, fuentes, alineación, tamaño y estilo de la página de inicio (/). Las fotos y el video que subas no se publican hasta que tocás <strong>Guardar</strong>. Los links, el menú, el carrito y el orden de las secciones son fijos.</p>
+      <nav class="lc-indice" aria-label="Secciones del editor">
+        <a href="#lc_tipografia">Tipografía</a>
+        <a href="#lc_hero">Hero</a>
+        <a href="#lc_sobre">Quiénes somos</a>
+        <a href="#lc_pilares">Pilares</a>
+        <a href="#lc_espacio">El espacio</a>
+        <a href="#lc_catalogo">Franja catálogo</a>
+        <a href="#lc_footer">Footer</a>
+        <a href="#lc_tienda">Tienda</a>
+      </nav>
     </div>
 
-    <div class="campo">
-      <label>Marca</label>
-      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Logo</label>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <img id="preview_logo" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:50%; border:1px solid var(--line); background:var(--bg-alt);">
-        <button type="button" class="btn-generar" data-landing-upload="logo" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
-        <input type="hidden" id="landing_logo" data-landing-field="logo">
+    <div class="lc-secciones">
+    <section class="lc-seccion" id="lc_tipografia">
+      <div class="lc-sec-head">
+        <h3>Tipografía</h3>
+        <p class="lc-ayuda">Fuente general de la portada. Cada texto puede tener además su propia fuente, alineación, tamaño y estilo (debajo de cada campo). «Por defecto del sitio» = como se ve hoy.</p>
+        <p class="lc-ayuda">Tamaño: en píxeles, entre 6 y 120. Vacío = automático. Estilo: «Normal» le quita al texto la negrita o la cursiva que trae.</p>
       </div>
-      <label for="landing_ig_handle" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Instagram (sin @)</label>
-      <input type="text" id="landing_ig_handle" data-landing-field="ig_handle" autocomplete="off" placeholder="lonphilosophy">
-    </div>
-
-    <hr class="separador-panel">
-
-    <div class="campo">
-      <label>Hero</label>
-      <label for="landing_hero_tagline" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Tagline</label>
-      <input type="text" id="landing_hero_tagline" data-landing-field="hero_tagline" autocomplete="off">
-      <label for="landing_hero_ubicacion" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Ubicación / subtítulo</label>
-      <input type="text" id="landing_hero_ubicacion" data-landing-field="hero_ubicacion" autocomplete="off">
-      <label for="landing_cta_primary_label" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA primario</label>
-      <input type="text" id="landing_cta_primary_label" data-landing-field="cta_primary_label" autocomplete="off">
-      <label for="landing_cta_secondary_label" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA secundario</label>
-      <input type="text" id="landing_cta_secondary_label" data-landing-field="cta_secondary_label" autocomplete="off">
-      <label for="landing_cta_secondary_href" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA secundario (URL)</label>
-      <input type="text" id="landing_cta_secondary_href" data-landing-field="cta_secondary_href" autocomplete="off" placeholder="https://www.instagram.com/lonphilosophy/">
-      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto del hero</label>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <img id="preview_hero_imagen" alt="" style="width:96px; height:64px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
-        <button type="button" class="btn-generar" data-landing-upload="hero_imagen" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
-        <input type="hidden" id="landing_hero_imagen" data-landing-field="hero_imagen">
+      <div class="lc-grid">
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_landing_fuente">Fuente de los textos</label>
+          <select id="landing_landing_fuente" data-landing-field="landing_fuente" data-fuente-select></select>
+          <p class="lc-ayuda">Por defecto: Archivo.</p>
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_landing_titulos_fuente">Fuente de los títulos</label>
+          <select id="landing_landing_titulos_fuente" data-landing-field="landing_titulos_fuente" data-fuente-select></select>
+          <p class="lc-ayuda">Por defecto: Fraunces (título del hero, títulos de sección, cita y franja).</p>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <hr class="separador-panel">
-
-    <div class="campo">
-      <label>Sobre / Quiénes somos</label>
-      <label for="landing_sobre_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Título</label>
-      <input type="text" id="landing_sobre_titulo" data-landing-field="sobre_titulo" autocomplete="off">
-      <label for="landing_sobre_lead" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Lead</label>
-      <textarea id="landing_sobre_lead" data-landing-field="sobre_lead" rows="3"></textarea>
-      <label for="landing_sobre_cuerpo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Cuerpo</label>
-      <textarea id="landing_sobre_cuerpo" data-landing-field="sobre_cuerpo" rows="3"></textarea>
-      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto A</label>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <img id="preview_sobre_foto_a" alt="" style="width:72px; height:72px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
-        <button type="button" class="btn-generar" data-landing-upload="sobre_foto_a" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
-        <input type="hidden" id="landing_sobre_foto_a" data-landing-field="sobre_foto_a">
+    <section class="lc-seccion" id="lc_hero">
+      <div class="lc-sec-head">
+        <h3>Hero</h3>
+        <p class="lc-ayuda">Foto grande de arriba y, opcionalmente, un video de fondo (la foto queda de respaldo). Los botones siempre llevan al catálogo y a Instagram: acá solo se cambia su texto.</p>
       </div>
-      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto B (opcional)</label>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <img id="preview_sobre_foto_b" alt="" style="width:72px; height:72px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
-        <button type="button" class="btn-generar" data-landing-upload="sobre_foto_b" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
-        <input type="hidden" id="landing_sobre_foto_b" data-landing-field="sobre_foto_b">
+      <div class="lc-grid">
+        <div class="lc-foto lc-full" role="group" aria-labelledby="lc_t_hero">
+          <div class="lc-foto-prev"><img id="preview_hero_imagen" alt=""></div>
+          <div class="lc-foto-info">
+            <span class="lc-label" id="lc_t_hero">Foto del hero</span>
+            <button type="button" class="lc-btn lc-btn-sec" data-landing-upload="hero_imagen">Cambiar foto</button>
+            <p class="lc-ayuda">Vertical u horizontal, 1600 px o más. JPG, PNG o WebP.</p>
+            <input type="hidden" id="landing_hero_imagen" data-landing-field="hero_imagen">
+          </div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_hero_imagen_alt">Descripción de la foto (alt)</label>
+          <input type="text" id="landing_hero_imagen_alt" data-landing-field="hero_imagen_alt" autocomplete="off" placeholder="Vacío = decorativa">
+        </div>
+        <div class="lc-foto lc-full" role="group" aria-labelledby="lc_t_hero_video">
+          <div class="lc-foto-prev">
+            <video id="preview_hero_video" muted playsinline preload="metadata" style="display:none;"></video>
+            <span class="lc-video-vacio" id="preview_hero_video_vacio">Sin video</span>
+          </div>
+          <div class="lc-foto-info">
+            <span class="lc-label" id="lc_t_hero_video">Video de fondo (opcional)</span>
+            <div class="lc-video-acciones">
+              <button type="button" class="lc-btn lc-btn-sec" id="btnSubirHeroVideo">Subir video</button>
+              <button type="button" class="lc-btn lc-btn-sec" id="btnQuitarHeroVideo">Quitar video</button>
+            </div>
+            <p class="lc-ayuda">Sin sonido y en bucle. Ideal: MP4 (H.264), 5 a 15 segundos, hasta 40 MB. Los videos del iPhone en HEVC pueden no verse en todos los navegadores: exportalo como MP4/H.264.</p>
+            <input type="hidden" id="landing_hero_video" data-landing-field="hero_video">
+          </div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_hero_eyebrow">Antetítulo</label>
+          <input type="text" id="landing_hero_eyebrow" data-landing-field="hero_eyebrow" autocomplete="off" placeholder="LON Philosophy">
+          <div class="lc-fuente" data-lc-ajustes="hero_eyebrow"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_hero_tagline">Título</label>
+          <input type="text" id="landing_hero_tagline" data-landing-field="hero_tagline" autocomplete="off" placeholder="Making community">
+          <div class="lc-fuente" data-lc-ajustes="hero_tagline"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_hero_ubicacion">Bajada</label>
+          <input type="text" id="landing_hero_ubicacion" data-landing-field="hero_ubicacion" autocomplete="off" placeholder="Libros, objetos y café — para estar presente">
+          <div class="lc-fuente" data-lc-ajustes="hero_ubicacion"></div>
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_cta_primary_label">Botón principal (va al catálogo)</label>
+          <input type="text" id="landing_cta_primary_label" data-landing-field="cta_primary_label" autocomplete="off" placeholder="Ver piezas">
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_cta_secondary_label">Link secundario (va a Instagram)</label>
+          <input type="text" id="landing_cta_secondary_label" data-landing-field="cta_secondary_label" autocomplete="off" placeholder="Seguinos en Instagram">
+        </div>
+        <div class="lc-campo lc-full">
+          <span class="lc-label">Botones del hero</span>
+          <div class="lc-fuente" data-lc-ajustes="hero_ctas" data-lc-sin-alineacion></div>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <hr class="separador-panel">
-
-    <div class="campo">
-      <label>Pilares</label>
-      <label for="landing_pilares_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Título sección</label>
-      <input type="text" id="landing_pilares_titulo" data-landing-field="pilares_titulo" autocomplete="off">
-      <label for="landing_pilar_1_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 1 — título</label>
-      <input type="text" id="landing_pilar_1_titulo" data-landing-field="pilar_1_titulo" autocomplete="off">
-      <label for="landing_pilar_1_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 1 — texto</label>
-      <textarea id="landing_pilar_1_texto" data-landing-field="pilar_1_texto" rows="2"></textarea>
-      <label for="landing_pilar_2_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 2 — título</label>
-      <input type="text" id="landing_pilar_2_titulo" data-landing-field="pilar_2_titulo" autocomplete="off">
-      <label for="landing_pilar_2_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 2 — texto</label>
-      <textarea id="landing_pilar_2_texto" data-landing-field="pilar_2_texto" rows="2"></textarea>
-      <label for="landing_pilar_3_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 3 — título</label>
-      <input type="text" id="landing_pilar_3_titulo" data-landing-field="pilar_3_titulo" autocomplete="off">
-      <label for="landing_pilar_3_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Pilar 3 — texto</label>
-      <textarea id="landing_pilar_3_texto" data-landing-field="pilar_3_texto" rows="2"></textarea>
-    </div>
-
-    <hr class="separador-panel">
-
-    <div class="campo">
-      <label>El espacio</label>
-      <label style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Foto</label>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <img id="preview_espacio_imagen" alt="" style="width:96px; height:64px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt);">
-        <button type="button" class="btn-generar" data-landing-upload="espacio_imagen" style="padding:8px 14px; white-space:nowrap;">Subir archivo</button>
-        <input type="hidden" id="landing_espacio_imagen" data-landing-field="espacio_imagen">
+    <section class="lc-seccion" id="lc_sobre">
+      <div class="lc-sec-head">
+        <h3>Quiénes somos</h3>
+        <p class="lc-ayuda">Sin fotos, el texto ocupa todo el ancho.</p>
       </div>
-      <label for="landing_espacio_caption" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Caption</label>
-      <input type="text" id="landing_espacio_caption" data-landing-field="espacio_caption" autocomplete="off">
-      <label for="landing_espacio_quote" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Quote (opcional)</label>
-      <textarea id="landing_espacio_quote" data-landing-field="espacio_quote" rows="2"></textarea>
+      <div class="lc-grid">
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_sobre_titulo">Título</label>
+          <input type="text" id="landing_sobre_titulo" data-landing-field="sobre_titulo" autocomplete="off" placeholder="Quiénes somos">
+          <div class="lc-fuente" data-lc-ajustes="sobre_titulo"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_sobre_lead">Primer párrafo</label>
+          <textarea id="landing_sobre_lead" data-landing-field="sobre_lead" rows="3"></textarea>
+          <div class="lc-fuente" data-lc-ajustes="sobre_lead"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_sobre_cuerpo">Segundo párrafo</label>
+          <textarea id="landing_sobre_cuerpo" data-landing-field="sobre_cuerpo" rows="3"></textarea>
+          <div class="lc-fuente" data-lc-ajustes="sobre_cuerpo"></div>
+        </div>
+        <div class="lc-foto lc-foto--vert" role="group" aria-labelledby="lc_t_sobre_a">
+          <div class="lc-foto-prev"><img id="preview_sobre_foto_a" alt=""></div>
+          <div class="lc-foto-info">
+            <span class="lc-label" id="lc_t_sobre_a">Foto A</span>
+            <button type="button" class="lc-btn lc-btn-sec" data-landing-upload="sobre_foto_a">Cambiar foto</button>
+            <button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="sobre_foto_a">Quitar</button>
+            <input type="hidden" id="landing_sobre_foto_a" data-landing-field="sobre_foto_a">
+          </div>
+        </div>
+        <div class="lc-foto lc-foto--vert" role="group" aria-labelledby="lc_t_sobre_b">
+          <div class="lc-foto-prev"><img id="preview_sobre_foto_b" alt=""></div>
+          <div class="lc-foto-info">
+            <span class="lc-label" id="lc_t_sobre_b">Foto B (opcional)</span>
+            <button type="button" class="lc-btn lc-btn-sec" data-landing-upload="sobre_foto_b">Cambiar foto</button>
+            <button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="sobre_foto_b">Quitar</button>
+            <input type="hidden" id="landing_sobre_foto_b" data-landing-field="sobre_foto_b">
+          </div>
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_sobre_foto_a_alt">Descripción foto A (alt)</label>
+          <input type="text" id="landing_sobre_foto_a_alt" data-landing-field="sobre_foto_a_alt" autocomplete="off" placeholder="LON — el local">
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_sobre_foto_b_alt">Descripción foto B (alt)</label>
+          <input type="text" id="landing_sobre_foto_b_alt" data-landing-field="sobre_foto_b_alt" autocomplete="off" placeholder="LON — detalle">
+        </div>
+        <p class="lc-ayuda lc-full">Fotos verticales 3:4, 1200 × 1600 px o más. JPG, PNG o WebP.</p>
+      </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_pilares">
+      <div class="lc-sec-head">
+        <h3>Pilares</h3>
+        <p class="lc-ayuda">«Qué vas a encontrar»: título y tres columnas.</p>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_pilares_titulo">Título de la sección</label>
+          <input type="text" id="landing_pilares_titulo" data-landing-field="pilares_titulo" autocomplete="off" placeholder="Qué vas a encontrar">
+          <div class="lc-fuente" data-lc-ajustes="pilares_titulo"></div>
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_pilar_1_titulo">Pilar 1 — título</label>
+          <input type="text" id="landing_pilar_1_titulo" data-landing-field="pilar_1_titulo" autocomplete="off" placeholder="Libros">
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_pilar_1_texto">Pilar 1 — texto</label>
+          <textarea id="landing_pilar_1_texto" data-landing-field="pilar_1_texto" rows="2"></textarea>
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_pilar_2_titulo">Pilar 2 — título</label>
+          <input type="text" id="landing_pilar_2_titulo" data-landing-field="pilar_2_titulo" autocomplete="off" placeholder="Objetos">
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_pilar_2_texto">Pilar 2 — texto</label>
+          <textarea id="landing_pilar_2_texto" data-landing-field="pilar_2_texto" rows="2"></textarea>
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_pilar_3_titulo">Pilar 3 — título</label>
+          <input type="text" id="landing_pilar_3_titulo" data-landing-field="pilar_3_titulo" autocomplete="off" placeholder="Café &amp; comunidad">
+        </div>
+        <div class="lc-campo">
+          <label class="lc-label" for="landing_pilar_3_texto">Pilar 3 — texto</label>
+          <textarea id="landing_pilar_3_texto" data-landing-field="pilar_3_texto" rows="2"></textarea>
+        </div>
+        <div class="lc-campo lc-full">
+          <span class="lc-label">Títulos de los pilares</span>
+          <div class="lc-fuente" data-lc-ajustes="pilares_items_titulo"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <span class="lc-label">Textos de los pilares</span>
+          <div class="lc-fuente" data-lc-ajustes="pilares_items_texto"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_espacio">
+      <div class="lc-sec-head">
+        <h3>El espacio</h3>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-foto lc-full" role="group" aria-labelledby="lc_t_espacio">
+          <div class="lc-foto-prev"><img id="preview_espacio_imagen" alt=""></div>
+          <div class="lc-foto-info">
+            <span class="lc-label" id="lc_t_espacio">Foto</span>
+            <button type="button" class="lc-btn lc-btn-sec" data-landing-upload="espacio_imagen">Cambiar foto</button>
+            <p class="lc-ayuda">Horizontal 16:9, 1600 px de ancho o más. JPG, PNG o WebP.</p>
+            <input type="hidden" id="landing_espacio_imagen" data-landing-field="espacio_imagen">
+          </div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_espacio_imagen_alt">Descripción de la foto (alt)</label>
+          <input type="text" id="landing_espacio_imagen_alt" data-landing-field="espacio_imagen_alt" autocomplete="off" placeholder="El espacio LON">
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_espacio_caption">Epígrafe</label>
+          <input type="text" id="landing_espacio_caption" data-landing-field="espacio_caption" autocomplete="off" placeholder="El local — luz, textura y anaquel.">
+          <div class="lc-fuente" data-lc-ajustes="espacio_caption"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_espacio_quote">Cita</label>
+          <textarea id="landing_espacio_quote" data-landing-field="espacio_quote" rows="2"></textarea>
+          <div class="lc-fuente" data-lc-ajustes="espacio_quote"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_catalogo">
+      <div class="lc-sec-head">
+        <h3>Franja catálogo</h3>
+        <p class="lc-ayuda">El botón siempre lleva al catálogo (/tienda).</p>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_catalogo_cta_texto">Texto</label>
+          <input type="text" id="landing_catalogo_cta_texto" data-landing-field="catalogo_cta_texto" autocomplete="off" placeholder="Explorá el catálogo y armá tu pedido online.">
+          <div class="lc-fuente" data-lc-ajustes="catalogo_cta_texto"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_catalogo_cta_label">Botón</label>
+          <input type="text" id="landing_catalogo_cta_label" data-landing-field="catalogo_cta_label" autocomplete="off" placeholder="Ir al catálogo">
+          <div class="lc-fuente" data-lc-ajustes="catalogo_cta_boton" data-lc-sin-alineacion></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_footer">
+      <div class="lc-sec-head">
+        <h3>Footer</h3>
+        <p class="lc-ayuda">El link a Instagram y los de Privacidad, Términos y Acceso admin son fijos.</p>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_footer_texto">Texto del pie</label>
+          <textarea id="landing_footer_texto" data-landing-field="footer_texto" rows="2"></textarea>
+          <div class="lc-fuente" data-lc-ajustes="footer"></div>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_footer_ig_texto">Texto junto a «Instagram»</label>
+          <input type="text" id="landing_footer_ig_texto" data-landing-field="footer_ig_texto" autocomplete="off" placeholder="@lonphilosophy">
+          <p class="lc-ayuda">Solo el texto que se ve. Vacío = el usuario de Instagram de siempre.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_tienda">
+      <div class="lc-sec-head">
+        <h3>Tienda (/tienda)</h3>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_destacados_titulo">Título de destacados</label>
+          <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" autocomplete="off" placeholder="Piezas que miramos dos veces">
+        </div>
+      </div>
+    </section>
     </div>
 
-    <hr class="separador-panel">
+    <input type="file" id="inputLandingFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
+    <input type="file" id="inputLandingVideoFile" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" style="display:none;">
 
-    <div class="campo">
-      <label>Franja CTA + Destacados + Footer</label>
-      <label for="landing_catalogo_cta_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA catálogo (texto)</label>
-      <input type="text" id="landing_catalogo_cta_texto" data-landing-field="catalogo_cta_texto" autocomplete="off">
-      <label for="landing_catalogo_cta_label" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">CTA catálogo (botón)</label>
-      <input type="text" id="landing_catalogo_cta_label" data-landing-field="catalogo_cta_label" autocomplete="off">
-      <label for="landing_destacados_titulo" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Título destacados</label>
-      <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" autocomplete="off">
-      <label for="landing_footer_texto" style="text-transform:none; letter-spacing:0; font-size:12px; margin-top:8px;">Texto legal / pie</label>
-      <textarea id="landing_footer_texto" data-landing-field="footer_texto" rows="2"></textarea>
-      <input type="file" id="inputLandingFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
-    </div>
-
-    <div class="campo" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
-      <button type="button" class="btn-generar" id="btnGuardarLanding">Guardar</button>
-      <button type="button" class="btn-generar" id="btnRecargarLanding" style="background:none; color:var(--ink-muted);">Recargar</button>
+    <div class="lc-barra">
+      <button type="button" class="lc-btn lc-btn-prim" id="btnGuardarLanding">Guardar</button>
+      <button type="button" class="lc-btn lc-btn-sec" id="btnRecargarLanding">Recargar</button>
+      <div id="mensajeLanding" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -1399,13 +1662,127 @@
 
 
   /* ------------------------------------------------------------
-   * LANDING — editor de textos/fotos (nivel 2)
-   * Endpoints: GET/PUT /admin/landing, POST /admin/landing/foto
+   * CONTENIDO — editor de la landing (nivel 2), mismo modelo que PROA.
+   * Endpoints: GET/PUT /admin/landing, POST /admin/landing/foto, POST /admin/landing/video
    * Claves snake_case del sheet Landing (ver googleSheets LANDING_DEFAULTS).
-   * Paths ocultos: solo preview + Subir archivo.
+   * Subir foto/video solo deja la URL en el formulario: no se publica hasta Guardar.
+   * Links, menú, carrito y estructura NO son campos: viven fijos en landing.html.
    * ------------------------------------------------------------ */
-  const LANDING_CAMPOS_IMG = ['logo', 'hero_imagen', 'sobre_foto_a', 'sobre_foto_b', 'espacio_imagen'];
+  const LANDING_CAMPOS_IMG = ['hero_imagen', 'sobre_foto_a', 'sobre_foto_b', 'espacio_imagen'];
+  // Lo que muestra la landing cuando la clave está vacía (para que la vista previa no mienta).
+  const LANDING_IMG_DEFAULTS = { hero_imagen: '/hero-editorial.webp', espacio_imagen: '/hero-editorial.webp' };
+
+  /* Fuentes del sitio LON — única lista para todos los *_fuente. `css` es el string
+     font-family que se guarda. Fraunces/Archivo/IBM Plex Mono se cargan de Google Fonts. */
+  const FUENTES_SITIO = [
+    { nombre: 'Fraunces', css: "'Fraunces', Georgia, serif" },
+    { nombre: 'Archivo', css: "'Archivo', -apple-system, sans-serif" },
+    { nombre: 'IBM Plex Mono', css: "'IBM Plex Mono', ui-monospace, monospace" },
+  ];
+
+  /* Un valor guardado con comillas rotas («Fraunces', Georgia, serif») es esa misma
+     fuente: se compara por la primera familia, sin comillas. */
+  function primeraFamilia(valor) {
+    return String(valor).split(',')[0].replace(/["']/g, '').trim();
+  }
+
+  /* Deja seleccionado `valor` tal cual está guardado (o el de la lista equivalente).
+     Si no está en la lista se agrega como opción extra: no se pierde ni se reescribe. */
+  function poblarSelectFuente(select, valor) {
+    const actual = valor == null ? '' : String(valor);
+    select.innerHTML = '';
+    const porDefecto = document.createElement('option');
+    porDefecto.value = '';
+    porDefecto.textContent = 'Por defecto del sitio';
+    select.appendChild(porDefecto);
+    FUENTES_SITIO.forEach((f) => {
+      const opt = document.createElement('option');
+      opt.value = f.css;
+      opt.textContent = f.nombre;
+      opt.style.fontFamily = f.css;
+      select.appendChild(opt);
+    });
+    const enLista = FUENTES_SITIO.find((f) => f.css === actual) || FUENTES_SITIO.find((f) => f.nombre === primeraFamilia(actual));
+    if (enLista) {
+      select.value = enLista.css;
+      select.style.fontFamily = enLista.css;
+      return;
+    }
+    if (actual !== '') {
+      const extra = document.createElement('option');
+      extra.value = actual;
+      extra.textContent = 'Valor guardado: ' + actual;
+      select.appendChild(extra);
+    }
+    select.value = actual;
+    select.style.fontFamily = actual || '';
+  }
+
+  /* Fila «Fuente / Alineación / Tamaño / Estilo» de cada texto. Se arma acá para no
+     repetir el mismo HTML 15 veces; las claves son <bloque>_fuente, _alineacion,
+     _tamano y _estilo (las mismas que lee BLOQUES_TEXTO en landing.html). */
+  function crearOpciones(select, opciones) {
+    opciones.forEach(([valor, texto]) => {
+      const opt = document.createElement('option');
+      opt.value = valor;
+      opt.textContent = texto;
+      select.appendChild(opt);
+    });
+  }
+  function armarAjustesTexto(cont) {
+    const bloque = cont.getAttribute('data-lc-ajustes');
+    const conAlineacion = !cont.hasAttribute('data-lc-sin-alineacion');
+    const agregar = (sufijo, texto, control) => {
+      const id = 'landing_' + bloque + '_' + sufijo;
+      const label = document.createElement('label');
+      label.className = 'lc-label';
+      label.htmlFor = id;
+      label.textContent = texto;
+      control.id = id;
+      control.setAttribute('data-landing-field', bloque + '_' + sufijo);
+      cont.appendChild(label);
+      if (sufijo === 'tamano') {
+        const envoltura = document.createElement('span');
+        envoltura.className = 'lc-tam';
+        const px = document.createElement('span');
+        px.className = 'lc-px';
+        px.textContent = 'px';
+        envoltura.appendChild(control);
+        envoltura.appendChild(px);
+        cont.appendChild(envoltura);
+      } else {
+        cont.appendChild(control);
+      }
+    };
+    const fuente = document.createElement('select');
+    fuente.setAttribute('data-fuente-select', '');
+    agregar('fuente', 'Fuente', fuente);
+    if (conAlineacion) {
+      const alin = document.createElement('select');
+      crearOpciones(alin, [['', 'Por defecto'], ['left', 'Izquierda'], ['center', 'Centrado'], ['right', 'Derecha'], ['justify', 'Justificado']]);
+      agregar('alineacion', 'Alineación', alin);
+    }
+    const tam = document.createElement('input');
+    tam.type = 'number';
+    tam.min = '6';
+    tam.max = '120';
+    tam.step = '1';
+    tam.inputMode = 'numeric';
+    tam.placeholder = 'Auto';
+    agregar('tamano', 'Tamaño', tam);
+    const estilo = document.createElement('select');
+    crearOpciones(estilo, [['', 'Por defecto'], ['normal', 'Normal'], ['bold', 'Negrita'], ['italic', 'Cursiva'], ['bolditalic', 'Negrita y cursiva']]);
+    agregar('estilo', 'Estilo', estilo);
+  }
+  document.querySelectorAll('#panelLanding [data-lc-ajustes]').forEach(armarAjustesTexto);
+
+  document.querySelectorAll('#panelLanding select[data-fuente-select]').forEach((sel) => {
+    poblarSelectFuente(sel, '');
+    sel.addEventListener('change', () => { sel.style.fontFamily = sel.value || ''; });
+  });
+
   let landingUploadTarget = null;
+  let landingCambiosSinGuardar = false;
 
   function mensajeLanding(texto, tipo) {
     const el = document.getElementById('mensajeLanding');
@@ -1413,32 +1790,65 @@
     el.textContent = texto || '';
     el.style.color = tipo === 'ok' ? 'var(--stamp-green)' : (tipo === 'error' ? 'var(--stamp-red)' : 'var(--ink-muted)');
   }
+  function marcarCambiosLanding(texto) {
+    landingCambiosSinGuardar = true;
+    mensajeLanding(texto || 'Hay cambios sin guardar. Tocá Guardar para publicar.', '');
+  }
 
   function actualizarPreviewsLanding() {
     LANDING_CAMPOS_IMG.forEach((campo) => {
       const input = document.getElementById('landing_' + campo);
       const preview = document.getElementById('preview_' + campo);
       if (!input || !preview) return;
-      const url = (input.value || '').trim();
-      preview.src = url || '';
+      const url = (input.value || '').trim() || LANDING_IMG_DEFAULTS[campo] || '';
+      preview.src = url;
       preview.style.visibility = url ? 'visible' : 'hidden';
     });
+    actualizarPreviewVideoHero();
+  }
+
+  function actualizarPreviewVideoHero() {
+    const input = document.getElementById('landing_hero_video');
+    const video = document.getElementById('preview_hero_video');
+    const vacio = document.getElementById('preview_hero_video_vacio');
+    if (!input || !video || !vacio) return;
+    const url = (input.value || '').trim();
+    if (url) {
+      if (video.getAttribute('src') !== url) video.src = url;
+      video.style.display = 'block';
+      vacio.style.display = 'none';
+    } else {
+      video.removeAttribute('src');
+      video.load();
+      video.style.display = 'none';
+      vacio.style.display = 'flex';
+    }
   }
 
   function rellenarFormLanding(data) {
     const src = data || {};
-    document.querySelectorAll('[data-landing-field]').forEach((el) => {
+    document.querySelectorAll('#panelLanding [data-landing-field]').forEach((el) => {
       const key = el.getAttribute('data-landing-field');
+      if (el.hasAttribute('data-fuente-select')) {
+        poblarSelectFuente(el, src[key]);
+        return;
+      }
       el.value = src[key] != null ? String(src[key]) : '';
     });
+    // Compatibilidad: sin footer_ig_texto propio, se ve el @ de la vieja clave ig_handle.
+    const igTexto = document.getElementById('landing_footer_ig_texto');
+    const handle = String(src.ig_handle || '').trim().replace(/^@/, '');
+    if (igTexto) igTexto.placeholder = handle ? '@' + handle : '@lonphilosophy';
+    landingCambiosSinGuardar = false;
     actualizarPreviewsLanding();
   }
 
+  // Solo los campos del formulario: claves viejas que ya no se editan (ig_handle,
+  // cta_secondary_href, logo) no se mandan y quedan intactas en la hoja.
   function leerFormLanding() {
     const data = {};
-    document.querySelectorAll('[data-landing-field]').forEach((el) => {
-      const key = el.getAttribute('data-landing-field');
-      data[key] = el.value;
+    document.querySelectorAll('#panelLanding [data-landing-field]').forEach((el) => {
+      data[el.getAttribute('data-landing-field')] = el.value;
     });
     return data;
   }
@@ -1457,6 +1867,8 @@
   }
 
   async function guardarLandingContenidoAdmin() {
+    const btn = document.getElementById('btnGuardarLanding');
+    if (btn) btn.disabled = true;
     mensajeLanding('Guardando…', '');
     try {
       const contenido = leerFormLanding();
@@ -1468,9 +1880,12 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
       if (data.contenido) rellenarFormLanding(data.contenido);
-      mensajeLanding('Guardado.', 'ok');
+      landingCambiosSinGuardar = false;
+      mensajeLanding('Guardado. Ya se ve en la página.', 'ok');
     } catch (err) {
       mensajeLanding(err.message || 'Error al guardar', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
 
@@ -1485,11 +1900,52 @@
     return data.url;
   }
 
+  /* XMLHttpRequest y no fetch: solo así se puede mostrar el % de subida. */
+  function subirVideoLanding(archivo, alProgreso) {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('token', adminToken); // antes del archivo: el servidor valida la sesión con él
+      formData.append('video', archivo);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/admin/landing/video');
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) alProgreso(Math.round((ev.loaded / ev.total) * 100));
+      };
+      xhr.onerror = () => reject(new Error('Se cortó la conexión al subir el video.'));
+      xhr.onload = () => {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText); } catch (e) { data = {}; }
+        if (xhr.status < 200 || xhr.status >= 300) return reject(new Error(data.error || 'No se pudo subir el video.'));
+        if (!data.url) return reject(new Error('El servidor no devolvió url'));
+        resolve(data.url);
+      };
+      xhr.send(formData);
+    });
+  }
+
+  const panelLandingEl = document.getElementById('panelLanding');
+  if (panelLandingEl) {
+    panelLandingEl.addEventListener('input', (ev) => {
+      if (ev.target.closest('[data-landing-field]') || ev.target.matches('[data-landing-field]')) marcarCambiosLanding();
+    });
+    panelLandingEl.addEventListener('change', (ev) => {
+      if (ev.target.matches('[data-landing-field]')) marcarCambiosLanding();
+    });
+  }
+
   const inputLandingFotoFile = document.getElementById('inputLandingFotoFile');
   document.querySelectorAll('[data-landing-upload]').forEach((btn) => {
     btn.addEventListener('click', () => {
       landingUploadTarget = btn.getAttribute('data-landing-upload');
       if (inputLandingFotoFile) inputLandingFotoFile.click();
+    });
+  });
+  document.querySelectorAll('[data-landing-quitar]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById('landing_' + btn.getAttribute('data-landing-quitar'));
+      if (input) input.value = '';
+      actualizarPreviewsLanding();
+      marcarCambiosLanding('Foto quitada. Tocá Guardar para publicar.');
     });
   });
   if (inputLandingFotoFile) {
@@ -1505,16 +1961,53 @@
         const input = document.getElementById('landing_' + target);
         if (input) input.value = url;
         actualizarPreviewsLanding();
-        mensajeLanding('Foto lista. Tocá Guardar para publicar.', 'ok');
+        marcarCambiosLanding('Foto lista. Tocá Guardar para publicar.');
       } catch (err) {
         mensajeLanding(err.message || 'Error al subir', 'error');
       }
     });
   }
+
+  const inputLandingVideoFile = document.getElementById('inputLandingVideoFile');
+  const btnSubirHeroVideo = document.getElementById('btnSubirHeroVideo');
+  const btnQuitarHeroVideo = document.getElementById('btnQuitarHeroVideo');
+  if (btnSubirHeroVideo && inputLandingVideoFile) {
+    btnSubirHeroVideo.addEventListener('click', () => inputLandingVideoFile.click());
+    inputLandingVideoFile.addEventListener('change', async () => {
+      const archivo = inputLandingVideoFile.files && inputLandingVideoFile.files[0];
+      inputLandingVideoFile.value = '';
+      if (!archivo) return;
+      btnSubirHeroVideo.disabled = true;
+      mensajeLanding('Subiendo video…', '');
+      try {
+        const url = await subirVideoLanding(archivo, (pct) => mensajeLanding('Subiendo video… ' + pct + '%', ''));
+        document.getElementById('landing_hero_video').value = url;
+        actualizarPreviewVideoHero();
+        marcarCambiosLanding('Video listo. Tocá Guardar para publicar.');
+      } catch (err) {
+        mensajeLanding(err.message || 'Error al subir el video', 'error');
+      } finally {
+        btnSubirHeroVideo.disabled = false;
+      }
+    });
+  }
+  if (btnQuitarHeroVideo) {
+    btnQuitarHeroVideo.addEventListener('click', () => {
+      document.getElementById('landing_hero_video').value = '';
+      actualizarPreviewVideoHero();
+      marcarCambiosLanding('Video quitado. Tocá Guardar para publicar.');
+    });
+  }
+
   const btnGuardarLanding = document.getElementById('btnGuardarLanding');
   if (btnGuardarLanding) btnGuardarLanding.addEventListener('click', guardarLandingContenidoAdmin);
   const btnRecargarLanding = document.getElementById('btnRecargarLanding');
-  if (btnRecargarLanding) btnRecargarLanding.addEventListener('click', cargarLandingContenidoAdmin);
+  if (btnRecargarLanding) {
+    btnRecargarLanding.addEventListener('click', () => {
+      if (landingCambiosSinGuardar && !confirm('Hay cambios sin guardar. ¿Descartarlos y recargar?')) return;
+      cargarLandingContenidoAdmin();
+    });
+  }
 
 
   document.getElementById('btnActivarCamara').addEventListener('click', () => {
