@@ -151,7 +151,7 @@
     scroll-snap-type:x proximity; padding-bottom:2px;
     /* Sin esto, deslizar hacia atrás en la punta se lo come el gesto de
        "volver atrás" del navegador en vez de scrollear (mismo motivo
-       que en el carrusel de destacados del catálogo público). */
+       que en los tabs de categoría del catálogo público). */
     overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch;
   }
   .fila-tabs-categorias-lector::-webkit-scrollbar{ display:none; }
@@ -918,7 +918,6 @@
         <a href="#lc_espacio">El espacio</a>
         <a href="#lc_catalogo">Franja catálogo</a>
         <a href="#lc_footer">Footer</a>
-        <a href="#lc_tienda">Tienda</a>
       </nav>
     </div>
 
@@ -1173,17 +1172,6 @@
       </div>
     </section>
 
-    <section class="lc-seccion" id="lc_tienda">
-      <div class="lc-sec-head">
-        <h3>Tienda (/tienda)</h3>
-      </div>
-      <div class="lc-grid">
-        <div class="lc-campo lc-full">
-          <label class="lc-label" for="landing_destacados_titulo">Título de destacados</label>
-          <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" autocomplete="off" placeholder="Piezas que miramos dos veces">
-        </div>
-      </div>
-    </section>
     </div>
 
     <input type="file" id="inputLandingFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
@@ -2390,8 +2378,8 @@
    * mismo log de "Últimos escaneados", mismo total acumulado.
    *
    * Arriba del buscador hay también un scroll horizontal infinito de
-   * categorías (misma técnica de tres copias que el carrusel de
-   * destacados del catálogo público — ver index.html): tocando una
+   * categorías (misma técnica de tres copias que los tabs de
+   * categoría del catálogo público — ver index.html): tocando una
    * categoría aparece, en un scroll vertical, la lista de productos de
    * esa categoría para elegir y vender directo, sin tener que escribir
    * nada.

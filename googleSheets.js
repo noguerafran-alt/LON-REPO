@@ -2292,11 +2292,12 @@ const LANDING_DEFAULTS = {
   espacio_quote: 'Ver y apreciar lo que uno está obteniendo es elegir estar presente.',
   catalogo_cta_texto: 'Explorá el catálogo y armá tu pedido online.',
   catalogo_cta_label: 'Ir al catálogo',
-  destacados_titulo: 'Piezas que miramos dos veces',
   footer_texto: '© 2026 FLN Data Analysis — LON Philosophy',
   /* Admin › Contenido (mismo modelo que PROA). Se siembran solo si faltan; vacío =
      lo que se ve hoy. ig_handle / cta_secondary_href / logo quedan guardadas pero
-     ya no se editan: los links son fijos en código y el logo del header es fijo. */
+     ya no se editan: los links son fijos en código y el logo del header es fijo.
+     destacados_titulo ya no se siembra (se quitó «Destacados» de /tienda); si
+     existe en la hoja queda intacta. */
   hero_eyebrow: 'LON Philosophy',
   hero_video: '',
   hero_imagen_alt: '',
