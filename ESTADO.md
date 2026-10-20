@@ -69,6 +69,12 @@ Detalle JSON** — la app nunca escribe encabezados).
 
 ## Pendiente / a medias
 
+- **Factura electrónica (ARCA)**: arrancada el 2026-10-20. Hay un módulo
+  nuevo `arca.js` con la lógica del comprobante y su autochequeo
+  (`node arca.js`), pero **todavía no emite nada** y **no lo llama nadie**:
+  falta el certificado y el cliente WSAA/WSFE. La app funciona igual que
+  antes. Ver la sección propia más abajo.
+
 - **Payway**: código completo (`payway.js`, endpoints, webhook) pero
   deshabilitado en el frontend. Falta confirmar con soporte de Payway
   el endpoint real de checkout hospedado antes de poner
@@ -277,6 +283,113 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   reseñas con premios.
 - **No se hizo**: contador de taps. Agregarlo si se quiere medir
   (hoy el redirect no registra nada).
+
+## Factura electrónica contra ARCA (2026-10-20, arrancado)
+
+LON es **monotributo** y usa **un solo punto de venta** para el local y la
+tienda online (dato del usuario, 2026-10-20).
+
+- Se emite **siempre Factura C** (código 11): el IVA **no** se discrimina,
+  así que `ImpNeto = ImpTotal`, `ImpIVA = 0` y **no va** el array de IVA.
+  Devoluciones = **nota de crédito C** (código 13), que **tiene que llevar
+  el comprobante asociado** (`CbtesAsoc`) o ARCA la rechaza. Si algún día
+  LON pasa a responsable inscripto, `arca.js` **no alcanza**: habría que
+  sumar Factura A y B con desglose de alícuotas.
+- **Ojo con la numeración**: un solo punto de venta **no** quiere decir una
+  sola secuencia. La numeración es por **(punto de venta, tipo de
+  comprobante)**, así que la Factura C, la nota de crédito y la nota de
+  débito llevan cada una la suya. `FECompUltimoAutorizado` se consulta con
+  los dos datos. Como el punto de venta es uno solo, las emisiones del
+  mismo tipo **no se pueden paralelizar**.
+
+**Qué hay hecho.** Solo `arca.js`, y solo la parte que no toca la red:
+arma y valida el comprobante, que es donde se mete la plata. Corre su
+autochequeo con `node arca.js`. **No tiene cliente WSAA/WSFE todavía.**
+
+**Por qué el módulo es tan desconfiado con los parámetros.** Pasó dos
+rondas de revisión independiente y volvió con agujeros reales las dos
+veces, todos verificados corriendo el módulo con la entrada exacta:
+
+- el tope para emitir sin identificar al comprador se salteaba mandando
+  `docTipo` como string, porque `'99' !== 99`;
+- un importe `'15.000'` (quince mil para cualquiera de acá) facturaba
+  **$15**, porque `Number('15.000')` da 15;
+- `CbteFch` salía con la zona horaria del proceso: en Render (UTC) una
+  venta del 31/10 a las 21:30 se facturaba el 1/11, **y ARCA la aceptaba
+  en silencio** porque tolera unos días;
+- `Math.round(x * 100) / 100` redondeaba `1.005` a `1`;
+- una nota de crédito se armaba sin el comprobante asociado;
+- un importe de `1e307` salía con `ImpTotal: Infinity`, porque
+  `Infinity <= 0` es falso y el chequeo no lo atrapaba;
+- `cuitValido` aceptaba cualquier prefijo mientras cerrara el dígito
+  verificador: uno de cada once números inventados al azar.
+
+Por eso ahora el importe se exige `number` (el que llama convierte, porque
+sabe de dónde salió el dato), se valida que sea finito y que no pase un
+**techo de cordura** contra el cero de más tipeado en el mostrador, los
+tipos se validan contra su catálogo con `===`, el CUIT se chequea por
+prefijo **y** módulo 11, y la fecha fiscal se arma con una zona **fija**
+de Argentina: no usa `config.TIMEZONE`, justamente para que nadie la
+mueva sin querer. El autochequeo corre igual con `TZ=UTC` y con
+`TIMEZONE=UTC`.
+
+**Dónde va a engancharse (decidido, no implementado).** En el **barrido**
+del `setInterval` que ya procesa ventas y tiene el candado
+`procesandoVentas`, **no en los endpoints**. Los caminos por los que se
+registra una venta se reducen a dos hechos en las hojas: una fila de
+`VENTAS` marcada `Vendido` con `G` vacío, y una fila de `PEDIDOS` con
+`stockReservado = SI`. Facturar desde ahí los cubre a todos sin tocar
+ningún endpoint, y si ARCA se cae la venta no se rompe: reintenta al ciclo
+siguiente. Las filas de `VENTAS` que tienen `pedidoId` (G) **no** se
+facturan, porque de esas ya factura el pedido.
+
+**El riesgo real, que es del código que falta escribir**: emitir en ARCA y
+guardar el CAE en Sheets **no son atómicos**. Si ARCA autoriza y después
+falla la escritura, el ciclo siguiente vuelve a emitir y ahí sí hay dos
+CAE para la misma venta — y un CAE no se borra, se anula con nota de
+crédito. Al implementar hay que escribir una **marca de intención** en la
+fila ANTES de llamar a ARCA, y si un ciclo encuentra esa marca sin CAE,
+**consultar a ARCA** (`FECompConsultar`) en vez de reintentar a ciegas.
+
+**Lo que se revisó y resultó NO ser problema.** Se dio por sentado que
+había que hacer `/scan` idempotente antes de facturar, porque un doble
+escaneo mete dos filas en `VENTAS`. No hace falta: `procesarVentasNuevas`
+arma `skusYaVendidos` con **todas** las filas `Vendido` de la hoja entera
+(no de una ventana), así que la segunda queda `Duplicado, no contado` y el
+barrido no la va a facturar.
+
+**Librería**: se eligió `@ramiidv/arca-facturacion` (MIT, firma local con
+node-forge, habla directo con ARCA) y se **descartó `@afipsdk/afip.js`
+aunque sea la más popular y mejor documentada**: su código manda el
+certificado y la clave privada a `app.afipsdk.com`, y con ese par un
+tercero puede emitir facturas a nombre del CUIT mientras el certificado
+esté vigente. Mismo motivo para `@roslabs/arca-client`. Antes de instalar
+nada hay que leerle el `wsaa.js`: es un paquete joven y de autor único.
+
+**Columnas nuevas cuando se implemente**: van **al final** de `VENTAS`
+(regla del repo) y los encabezados los escribe el usuario a mano. Como
+mínimo: CAE, vencimiento del CAE, número de comprobante y la marca de
+estado de la emisión.
+
+**Sin verificar todavía**: el endpoint de producción de `wsfev1`, la lista
+completa de campos de `FECAESolicitar`, el tope para facturar a consumidor
+final sin identificar (está como constante suelta en `arca.js` por eso
+mismo) y los ids de `CondicionIVAReceptorId` (se confirman con
+`FEParamGetCondicionIvaReceptor`). Todo eso salió de fuentes secundarias:
+el sitio de ARCA cortó la conexión.
+
+**Pendiente de rever**: el mapeo de los caminos de venta se hizo con el
+repo 30 commits atrasado, antes de que el carrito pasara a **multi-ítem
+con Mercado Pago**. Hay que rehacerlo sobre `main` al día antes de
+implementar el enganche, y decidir si se factura por unidad o agrupando.
+
+**Trámite que tiene que hacer el titular del CUIT** (no lo puede hacer la
+app): generar la clave privada y el CSR, pedir el certificado de
+homologación en **WSASS** y el de producción en *Administración de
+Certificados Digitales*, autorizar el servicio **wsfe** para ese alias, y
+dar de alta un punto de venta para **web services** (*Factura electrónica
+- Monotributo - Webservices*). Un punto de venta de *Comprobantes en
+línea* **no sirve**.
 
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 
