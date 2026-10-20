@@ -132,6 +132,19 @@ montarRutasSeo(app, {
   urlBase: config.SITIO_URL,
 });
 
+// La tarjeta NFC graba /resena y no el link de Google: si Google lo cambia,
+// se corrige la variable y no hay que reprogramar tarjetas ya repartidas.
+// 302 + no-store a proposito: un 301 queda cacheado en el celular y el
+// cliente seguiria yendo al link viejo. Sin configurar cae a una busqueda
+// de Maps para que el tap nunca termine en un error.
+app.get('/resena', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const url = config.GOOGLE_RESENA_URL;
+  res.redirect(302, url.startsWith('https://')
+    ? url
+    : 'https://www.google.com/maps/search/?api=1&query=LON+Philosophy');
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ============================================================
@@ -221,6 +234,9 @@ if (!config.EMAIL_USER || !config.EMAIL_APP_PASSWORD) {
 }
 if (!config.WHATSAPP_TOKEN || !config.WHATSAPP_PHONE_NUMBER_ID) {
   console.warn('⚠️  No configuraste WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID — el chatbot de WhatsApp no va a poder responder hasta que los agregues.');
+}
+if (!config.GOOGLE_RESENA_URL) {
+  console.warn('⚠️  No configuraste GOOGLE_RESENA_URL — la tarjeta NFC de reseñas (/resena) manda a una búsqueda de Google Maps en vez del formulario de reseña.');
 }
 if (config.OPENROUTER_API_KEY) {
   console.log('Cierre de caja: IA gratis via OpenRouter (' + config.OPENROUTER_MODEL + ').');

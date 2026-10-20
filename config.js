@@ -414,6 +414,12 @@ module.exports = {
   // Solo la usa seo.js.
   SITIO_URL: (process.env.SITIO_URL || 'https://lonphilosophy.onrender.com').replace(/\/+$/, ''),
 
+  // Formulario de reseña de Google de LON. Es el link "Pedir reseñas" del
+  // Perfil de Empresa (https://g.page/r/XXXX/review) o
+  // https://search.google.com/local/writereview?placeid=PLACE_ID.
+  // Lo usa /resena (tarjeta NFC); la tarjeta lleva /resena, no este link.
+  GOOGLE_RESENA_URL: (process.env.GOOGLE_RESENA_URL || '').trim(),
+
   /* ------------------------------------------------------------
    * 5) PAGOS — dos opciones para el comprador: Payway (link de pago
    *    hospedado — el comprador carga la tarjeta en una pagina de

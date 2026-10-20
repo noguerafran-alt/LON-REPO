@@ -96,7 +96,8 @@ reintentarlo), un bug que costó encontrar, y lo que quedó a medias.
 Google: `GOOGLE_CREDENTIALS_JSON` (o `credentials.json` local),
 `SHEET_ID_PRODUCTOS`, `SHEET_ID_VENTAS`, `GOOGLE_OAUTH_CLIENT_ID`,
 `ADMIN_SEED_EMAIL`. Sesión: `SESSION_SECRET`. Sitio: `PUBLIC_URL`,
-`SITIO_URL`. Pagos: `MP_ACCESS_TOKEN`, `PAYWAY_PRIVATE_API_KEY` /
+`SITIO_URL`. Reseñas (tarjeta NFC, `/resena`): `GOOGLE_RESENA_URL`.
+Pagos: `MP_ACCESS_TOKEN`, `PAYWAY_PRIVATE_API_KEY` /
 `PAYWAY_PUBLIC_API_KEY` / `PAYWAY_SITE_ID`. Mail:
 `EMAIL_USER`/`EMAIL_APP_PASSWORD`. WhatsApp: `WHATSAPP_TOKEN` /
 `WHATSAPP_PHONE_NUMBER_ID`. Cierre de caja (IA gratis, opcional):
