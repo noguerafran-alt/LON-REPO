@@ -199,6 +199,7 @@ app.use(limiteGeneral);
 // Rutas amigables (sin ".html") ademas del acceso directo a los archivos.
 app.get('/cliente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cliente.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/carta', (req, res) => res.sendFile(path.join(__dirname, 'public', 'carta.html')));
 app.get('/ticketCierre.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'ticketCierre.js'));

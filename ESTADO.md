@@ -256,6 +256,23 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   play/pausa** ni nada tocable (2026-10-08): siempre en bucle y sin
   controles; si iOS lo bloquea, queda solo la foto.
 
+## Carta del café online (/carta, 2026-10-20)
+
+- **Qué es**: `public/carta.html`, página estática pública (sin sesión),
+  servida por `app.get('/carta')` en `server.js`. Linkeada desde la landing
+  (barra de categorías y menú lateral). Replica la carta impresa: versalitas
+  (`font-variant-caps: all-small-caps`), cajas de 1px con esquinas
+  redondeadas, marca de agua con `logo-catalogo.png` al 6% de opacidad,
+  puntos guía en SWEET BITES/BAKERY/PATISSERIE/DRINKS. Fraunces, sin fuentes
+  ni CDN nuevos.
+- **Contenido**: transcripto de las fotos de la carta impresa (2026-10-20),
+  hardcodeado en el HTML (no sale de Sheets). Precios y ortografía tal cual
+  el impreso (incluye "ORANGE COFFE" y "CAPUCCINO"). Para cambiar un precio
+  se edita el HTML.
+- **THE CLASSICS en mobile**: tabla de grilla CSS (nombre + 3 columnas de
+  3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
+  baja el espaciado de letras. Sin scroll horizontal.
+
 ## Reseñas con tarjeta NFC (/resena, 2026-10-20)
 
 - **Qué hace**: el cliente toca con el celular una tarjeta NFC en el
