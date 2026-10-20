@@ -358,7 +358,7 @@ module.exports = {
   // ID de cliente OAuth de Google Cloud Console (tipo "Aplicacion web").
   // Se pide una sola vez por instalacion, es publico (va al navegador),
   // asi que no hace falta mantenerlo en secreto. Hay que agregar el
-  // dominio de la app (ej https://lon-philosophy.onrender.com) a
+  // dominio de la app (ej https://lonphilosophy-3h5c.onrender.com) a
   // "Origenes de JavaScript autorizados" en la config de ese cliente.
   GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
 
@@ -397,7 +397,7 @@ module.exports = {
 
   PORT: process.env.PORT || 3000,
 
-  // URL publica de la app (sin barra al final), ej "https://lon-philosophy.onrender.com".
+  // URL publica de la app (sin barra al final), ej "https://lonphilosophy-3h5c.onrender.com".
   // La usan Payway (success_url / redirect_url / notifications_url) y el chatbot de WhatsApp
   // (para mandar el link del catalogo). En local podés dejarla vacia, pero los
   // pagos y el webhook de WhatsApp necesitan una URL publica con HTTPS para
@@ -412,7 +412,7 @@ module.exports = {
   // a onrender.com en vez de al dominio nuevo. Por ahora coinciden
   // (todavia no hay dominio propio), pero conviene tenerlos separados.
   // Solo la usa seo.js.
-  SITIO_URL: (process.env.SITIO_URL || 'https://lonphilosophy.onrender.com').replace(/\/+$/, ''),
+  SITIO_URL: (process.env.SITIO_URL || 'https://lonphilosophy-3h5c.onrender.com').replace(/\/+$/, ''),
 
   // Formulario de reseña de Google de LON. Es el link "Pedir reseñas" del
   // Perfil de Empresa (https://g.page/r/XXXX/review) o

@@ -276,13 +276,30 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 - **Cómo programar la tarjeta**: comprar NTAG213/215/216 de 13,56 MHz
   (las RFID de 125 kHz **no** las lee un celular). App NFC Tools →
   Escribir → Agregar registro → URL →
-  `https://lonphilosophy.onrender.com/resena`. Probar con un celular
+  `https://lonphilosophy-3h5c.onrender.com/resena`. Probar con un celular
   antes de bloquearla: bloquear es irreversible.
 - **Límites de Google**: no permite publicar la reseña solo (abre el
   formulario, el cliente pone las estrellas y publica) ni incentivar
   reseñas con premios.
 - **No se hizo**: contador de taps. Agregarlo si se quiere medir
   (hoy el redirect no registra nada).
+
+## Mudanza en Render (2026-10-20)
+
+- El servicio se mudó a **`https://lonphilosophy-3h5c.onrender.com`**
+  (el viejo `lonphilosophy.onrender.com` quedó suspendido). Se cambió la
+  URL escrita a mano en el canonical/og/JSON-LD de `index.html`,
+  `landing.html`, `privacidad.html`, `terminos.html`, `robots.txt`, el
+  default de `SITIO_URL` y la documentación. El sitemap ya salía bien
+  porque en Render `SITIO_URL` estaba cargada.
+- **Fuera del repo, a revisar a mano en cada mudanza**: variables de
+  entorno del servicio nuevo (incluidas `PUBLIC_URL`, `SITIO_URL`,
+  `GOOGLE_RESENA_URL`); "Orígenes de JavaScript autorizados" del
+  cliente OAuth en Google Cloud (si no, no anda el login admin ni "Mi
+  cuenta"); webhook de WhatsApp en Meta.
+- Las tarjetas NFC graban `<URL del servicio>/resena`: si el servicio
+  vuelve a mudarse, las tarjetas bloqueadas quedan apuntando a la
+  dirección vieja. Con dominio propio esto deja de pasar.
 
 ## Factura electrónica contra ARCA (2026-10-20, arrancado)
 
