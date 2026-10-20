@@ -3,7 +3,7 @@
 App de e-commerce + gestión de inventario para LON Philosophy (casa de
 libros, velas, joyas y objetos de diseño, Argentina), usando **Google
 Sheets como base de datos** (no hay SQL). Desplegada en Render:
-`lonphilosophy.onrender.com`.
+`lonphilosophy-3h5c.onrender.com`.
 
 ## Regla de oro: actualizar ESTADO.md
 

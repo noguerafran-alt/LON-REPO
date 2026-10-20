@@ -149,7 +149,7 @@ Cosas a tener en cuenta al tocar esto:
 Después de subir esto a producción, falta hacer una vez, a mano:
 
 1. Dar de alta el sitio en [Google Search Console](https://search.google.com/search-console)
-   y enviar `https://lonphilosophy.onrender.com/sitemap.xml`.
+   y enviar `https://lonphilosophy-3h5c.onrender.com/sitemap.xml`.
 2. Crear/completar el perfil de **Google Business** si el negocio tiene local físico.
 
 ## Catálogo: agregar al carrito desde la tarjeta
