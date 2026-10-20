@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-10-08**
+> Última actualización: **2026-10-20**
 
 ## Qué hace la app hoy
 
@@ -249,6 +249,34 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   hasta que reproduce, reintento en el primer gesto. **Sin botón de
   play/pausa** ni nada tocable (2026-10-08): siempre en bucle y sin
   controles; si iOS lo bloquea, queda solo la foto.
+
+## Reseñas con tarjeta NFC (/resena, 2026-10-20)
+
+- **Qué hace**: el cliente toca con el celular una tarjeta NFC en el
+  mostrador y se abre el formulario de reseña de LON en Google Maps.
+  `GET /resena` (en `server.js`, antes de `express.static`) responde un
+  302 con `Cache-Control: no-store` a `GOOGLE_RESENA_URL`. No consulta
+  Sheets ni tiene rate limit.
+- **Por qué la tarjeta apunta a /resena y no a Google directo**: si
+  Google cambia el link, se corrige la variable en Render y las tarjetas
+  ya repartidas siguen andando. Es 302 y no 301 a propósito: un 301 se
+  cachea en el celular y el cliente seguiría yendo al link viejo.
+- **Variable de entorno**: `GOOGLE_RESENA_URL` (en `config.js`; avisa al
+  arrancar si falta). Es el link «Pedir reseñas» del Perfil de Empresa
+  de Google (`https://g.page/r/XXXX/review`) o
+  `https://search.google.com/local/writereview?placeid=PLACE_ID`. Si no
+  está o no empieza con `https://`, `/resena` manda a una búsqueda de
+  Google Maps de «LON Philosophy» para que el tap nunca dé error.
+- **Cómo programar la tarjeta**: comprar NTAG213/215/216 de 13,56 MHz
+  (las RFID de 125 kHz **no** las lee un celular). App NFC Tools →
+  Escribir → Agregar registro → URL →
+  `https://lonphilosophy.onrender.com/resena`. Probar con un celular
+  antes de bloquearla: bloquear es irreversible.
+- **Límites de Google**: no permite publicar la reseña solo (abre el
+  formulario, el cliente pone las estrellas y publica) ni incentivar
+  reseñas con premios.
+- **No se hizo**: contador de taps. Agregarlo si se quiere medir
+  (hoy el redirect no registra nada).
 
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 
