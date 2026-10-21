@@ -31,19 +31,18 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:var(--lon-font, Archivo, sans-serif);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.header{background:var(--bg-header);color:var(--header-text);position:sticky;top:0;z-index:40}
-.header-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:64px;padding:0 20px;max-width:1280px;margin:0 auto}
+.header{background:linear-gradient(180deg,rgba(30,8,14,.45),rgba(30,8,14,0));color:var(--header-text);position:fixed;top:0;left:0;right:0;z-index:40;transition:transform .35s ease,background-color .35s ease}
+.header.header-solido{background:var(--bg-header)}
+.header.header-oculto{transform:translateY(-100%)}
+.header-zona{position:fixed;top:0;left:0;right:0;height:24px;z-index:39}
+@media (prefers-reduced-motion: reduce){.header{transition:none}}
+.header-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:56px;padding:0 20px;max-width:1280px;margin:0 auto}
 .header-row .left{justify-self:start;display:flex;gap:4px;align-items:center}
 .header-row .right{justify-self:end;display:flex;gap:4px;align-items:center}
 .icon-btn{background:none;border:none;color:var(--header-text);width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
 .logo{height:28px;width:auto;display:block}
-.cats{background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
-.cats-inner{display:flex;gap:28px;padding:14px 20px;max-width:1280px;margin:0 auto;white-space:nowrap}
-.cats a{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted);font-weight:500}
-.cats a:hover,.cats a:focus{color:var(--ink)}
-.cats a.activo{color:var(--accent-terracota);box-shadow:inset 0 -2px 0 var(--accent-terracota);padding-bottom:2px}
-.hero{position:relative;min-height:68vh;display:flex;align-items:flex-end;background:#2a1518;overflow:hidden}
+.hero{position:relative;height:100vh;height:100dvh;display:flex;align-items:flex-end;background:#2a1518;overflow:hidden}
 .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
 .hero .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease;pointer-events:none}
 .hero .hero-video.reproduciendo{opacity:.55}
@@ -63,18 +62,19 @@ a{color:inherit;text-decoration:none}
 .section{max-width:1280px;margin:0 auto;padding:72px 24px}
 .section h2{font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px);margin:0 0 20px}
 .muted{color:var(--ink-muted);font-weight:300;line-height:1.65}
-.lon-sobre{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;max-width:1280px;margin:0 auto;padding:56px 24px}
-.lon-sobre-lead{font-size:17px;margin:0 0 16px;line-height:1.55}
-.lon-sobre-cuerpo{margin:0;font-size:15px}
-.lon-sobre-fotos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.lon-sobre-fotos img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:var(--radius);display:block;background:var(--bg-alt)}
-.lon-sobre-fotos img:only-child{grid-column:1 / -1;aspect-ratio:4/5}
 .lon-foto-oculta{display:none !important}
-.pillars{display:grid;gap:40px;grid-template-columns:1fr;padding:56px 24px;background:var(--bg-alt)}
-@media(min-width:800px){.pillars{grid-template-columns:repeat(3,1fr);max-width:1280px;margin:0 auto;width:100%}}
-.pillars-wrap{background:var(--bg-alt)}
-.pillars-wrap > h2{max-width:1280px;margin:0 auto;padding:56px 24px 0;font-family:var(--lon-font-titulos, Fraunces, serif);font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px)}
-.pillars h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 10px;font-weight:600}
+.lon-banda{background:var(--bg-header);color:var(--header-text);padding:72px 24px 40px;text-align:center}
+.lon-banda-texto{width:60%;max-width:760px;min-width:min(100%,280px);margin:0 auto;font-family:var(--lon-font-titulos, Fraunces, serif);font-weight:300;font-size:clamp(18px,2.2vw,24px);line-height:1.8}
+.lon-banda-fotos{padding:0 24px;background:linear-gradient(180deg,var(--bg-header) 50%,transparent 50%) no-repeat;background-size:100% 100%}
+.lon-banda-pista{max-width:1232px;margin:0 auto;display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.lon-banda-pista::-webkit-scrollbar{display:none}
+.lon-banda-pista a{flex:0 0 calc((100% - 32px) / 3);scroll-snap-align:start;display:block}
+.lon-banda-pista img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--bg-alt);border-radius:var(--radius)}
+.lon-banda-fotos[hidden]{display:none}
+.lon-banda-etiqueta{display:none}
+@media(min-width:1100px){.lon-banda-etiqueta{display:block;position:absolute;left:24px;top:50%;writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;letter-spacing:.3em;text-transform:uppercase;opacity:.7}}
+.lon-banda{position:relative}
+.lon-banda-sigue{height:40px}
 .espacio{max-width:1280px;margin:0 auto;padding:56px 24px}
 .espacio figure{margin:0}
 .espacio img{width:100%;max-height:480px;object-fit:cover;display:block;border-radius:var(--radius);background:var(--bg-alt)}
@@ -94,16 +94,20 @@ footer a:hover{color:var(--accent-terracota)}
 .panel-menu-sheet a{display:block;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
 .panel-menu-cerrar{align-self:flex-end;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:4px}
 @media(max-width:799px){
-  .lon-sobre{grid-template-columns:1fr;gap:24px;padding:40px 20px}
-  .lon-sobre-fotos{order:-1}
-  .hero{min-height:56vh}
+  .lon-banda{padding:56px 20px 32px}
+  .lon-banda-texto{width:100%}
+  .lon-banda-fotos{padding:0 12px}
+  .lon-banda-pista{gap:8px}
+  /* Tres fotos en un celular quedan de 112px y no se ve nada. Se muestran
+     menos y mas grandes, y la cortada al borde avisa que hay mas. */
+  .lon-banda-pista a{flex-basis:calc((100% - 8px) / 1.8)}
   .hero-copy{padding:36px 20px 44px}
   .section{padding:48px 20px}
 }
 </style>
 </head>
 <body>
-<header class="header">
+<header class="header" id="headerLanding">
   <div class="header-row">
     <div class="left">
       <a class="icon-btn" href="/cliente.html" aria-label="Escanear" title="Escanear" data-i18n-attr="aria-label:g_escanear,title:g_escanear">
@@ -126,17 +130,7 @@ footer a:hover{color:var(--accent-terracota)}
   </div>
 </header>
 
-<nav class="cats" aria-label="Categorías" data-i18n-attr="aria-label:g_categorias">
-  <div class="cats-inner">
-    <a href="/tienda?cat=ANTIGUEDADES" data-i18n="g_cat_antiguedades">Antigüedades</a>
-    <a href="/tienda?cat=CERAMICA" data-i18n="g_cat_ceramica">Cerámica</a>
-    <a href="/tienda?cat=JOYAS" data-i18n="g_cat_joyas">Joyas</a>
-    <a href="/tienda?cat=LIBROS" data-i18n="g_cat_libros">Libros</a>
-    <a href="/tienda?cat=MADERA" data-i18n="g_cat_madera">Madera</a>
-    <a href="/tienda?cat=VELAS" data-i18n="g_cat_velas">Velas</a>
-    <a href="/carta" data-i18n="g_carta_cafe">Carta del café</a>
-  </div>
-</nav>
+<div class="header-zona" id="zonaHeader" aria-hidden="true"></div>
 
 <div class="panel-menu" id="panelMenuLanding" hidden>
   <div class="panel-menu-backdrop" data-cerrar-menu></div>
@@ -169,35 +163,14 @@ footer a:hover{color:var(--accent-terracota)}
     </div>
   </section>
 
-  <section class="lon-sobre" id="sobre" aria-label="Quiénes somos" data-i18n-attr="aria-label:l_quienes">
-    <div>
-      <h2 data-landing="sobre_titulo" data-i18n="l_quienes">Quiénes somos</h2>
-      <p class="lon-sobre-lead muted" data-landing="sobre_lead" data-i18n="l_sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
-      <p class="lon-sobre-cuerpo muted" data-landing="sobre_cuerpo" data-i18n="l_sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
-    </div>
-    <div class="lon-sobre-fotos">
-      <img src="" alt="LON — el local" data-i18n-attr="alt:l_alt_local" data-landing="sobre_foto_a" data-landing-alt="sobre_foto_a_alt" class="lon-foto-oculta" width="600" height="800">
-      <img src="" alt="LON — detalle" data-i18n-attr="alt:l_alt_detalle" data-landing="sobre_foto_b" data-landing-alt="sobre_foto_b_alt" class="lon-foto-oculta" width="600" height="800">
-    </div>
+  <section class="lon-banda" id="sobre" aria-label="Quiénes somos" data-i18n-attr="aria-label:l_quienes">
+    <span class="lon-banda-etiqueta" aria-hidden="true">Making community</span>
+    <p class="lon-banda-texto" data-landing="sobre_lead" data-i18n="l_sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
   </section>
-
-  <div class="pillars-wrap">
-    <h2 data-landing="pilares_titulo" data-i18n="l_pilares_titulo">Qué vas a encontrar</h2>
-    <div class="pillars">
-      <div>
-        <h3 data-landing="pilar_1_titulo" data-i18n="g_cat_libros">Libros</h3>
-        <p class="muted" data-landing="pilar_1_texto" data-i18n="l_pilar1_texto">Lecturas para demorarse — club, novedades y anaqueles con criterio.</p>
-      </div>
-      <div>
-        <h3 data-landing="pilar_2_titulo" data-i18n="l_pilar2_titulo">Objetos</h3>
-        <p class="muted" data-landing="pilar_2_texto" data-i18n="l_pilar2_texto">Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.</p>
-      </div>
-      <div>
-        <h3 data-landing="pilar_3_titulo" data-i18n="l_pilar3_titulo">Café &amp; comunidad</h3>
-        <p class="muted" data-landing="pilar_3_texto" data-i18n="l_pilar3_texto">Un espacio para encontrarse. Fidelidad en taza, conversación en el local.</p>
-      </div>
-    </div>
+  <div class="lon-banda-fotos" id="bandaFotos" hidden>
+    <div class="lon-banda-pista" id="bandaPista"></div>
   </div>
+  <div class="lon-banda-sigue" aria-hidden="true"></div>
 
   <section class="espacio" aria-label="El espacio" data-i18n-attr="aria-label:l_espacio">
     <figure>
@@ -245,6 +218,117 @@ footer a:hover{color:var(--accent-terracota)}
 })();
 
 (function () {
+  var header = document.getElementById('headerLanding');
+  var zona = document.getElementById('zonaHeader');
+  var sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var ultimoY = window.scrollY;
+  function mostrar() {
+    header.classList.remove('header-oculto');
+    header.classList.toggle('header-solido', window.scrollY > 10);
+  }
+  function alScroll() {
+    var y = window.scrollY;
+    if (y <= 10) {
+      header.classList.remove('header-oculto', 'header-solido');
+    } else if (sinMovimiento.matches) {
+      mostrar();
+    } else if (y > ultimoY + 4) {
+      if (!header.contains(document.activeElement)) header.classList.add('header-oculto');
+    } else if (y < ultimoY - 4) {
+      mostrar();
+    }
+    ultimoY = y;
+  }
+  window.addEventListener('scroll', alScroll, { passive: true });
+  // Un tab hacia un elemento del header escondido tiene que mostrarlo.
+  header.addEventListener('focusin', mostrar);
+  zona.addEventListener('mouseenter', mostrar);
+  zona.addEventListener('touchstart', mostrar, { passive: true });
+  zona.addEventListener('click', mostrar);
+  document.addEventListener('mousemove', function (e) { if (e.clientY <= 24) mostrar(); }, { passive: true });
+})();
+
+/* Carrusel infinito de la banda: mismo patrón que los destacados de index.html
+   (tres copias, arranque en la del medio, recentrado cuando frena el scroll). */
+(function () {
+  var cont = document.getElementById('bandaFotos');
+  var pista = document.getElementById('bandaPista');
+  var sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var intervalo = null;
+  var anchoCopia = 0;
+
+  function esc(t) {
+    return String(t || '').replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function recentrar() {
+    if (!anchoCopia) return;
+    var destino = pista.scrollLeft, vueltas = 0;
+    while (destino < anchoCopia * 0.5 && vueltas++ < 5) destino += anchoCopia;
+    while (destino > anchoCopia * 1.5 && vueltas++ < 5) destino -= anchoCopia;
+    if (destino !== pista.scrollLeft) pista.scrollLeft = destino;
+  }
+  function avanzar() {
+    var t = pista.firstElementChild;
+    var paso = t ? t.getBoundingClientRect().width + parseFloat(getComputedStyle(pista).columnGap || 0) : 200;
+    pista.scrollBy({ left: paso, behavior: 'smooth' });
+  }
+  function iniciar() {
+    clearInterval(intervalo);
+    if (anchoCopia && !sinMovimiento.matches) intervalo = setInterval(avanzar, 4000);
+  }
+
+  function armar(productos) {
+    var items = productos.map(function (p) {
+      return '<a href="/tienda?producto=' + encodeURIComponent(p.skuGeneral) + '"><img src="' + esc(encodeURI(p.foto)) +
+        '" alt="' + esc(p.nombre) + '" loading="lazy" draggable="false"></a>';
+    });
+    // Con 3 o menos fotos entran todas: quietas, sin loop.
+    var hayLoop = items.length > 3;
+    pista.innerHTML = hayLoop ? items.join('') + items.join('') + items.join('') : items.join('');
+    cont.hidden = false;
+    if (!hayLoop) return;
+    anchoCopia = pista.children[items.length].offsetLeft - pista.children[0].offsetLeft;
+    if (anchoCopia <= pista.clientWidth) {
+      pista.innerHTML = items.join('');
+      anchoCopia = 0;
+      return;
+    }
+    pista.scrollLeft = anchoCopia;
+    var t = null, dedo = false;
+    pista.addEventListener('scroll', function () {
+      clearTimeout(t);
+      if (!dedo) t = setTimeout(recentrar, 140);
+    });
+    pista.addEventListener('touchstart', function () { dedo = true; clearInterval(intervalo); }, { passive: true });
+    pista.addEventListener('touchend', function () {
+      dedo = false;
+      clearTimeout(t);
+      t = setTimeout(recentrar, 140);
+      setTimeout(iniciar, 3000);
+    }, { passive: true });
+    pista.addEventListener('mouseenter', function () { clearInterval(intervalo); });
+    pista.addEventListener('mouseleave', iniciar);
+    iniciar();
+  }
+
+  fetch('/catalogo-destacados')
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (data) {
+      if (!data) return;
+      var vistos = {};
+      var productos = (data.masConsultados || []).concat(data.masVisitados || []).filter(function (p) {
+        if (!p.foto || vistos[p.skuGeneral]) return false;
+        vistos[p.skuGeneral] = true;
+        return true;
+      });
+      if (productos.length) armar(productos);
+    })
+    .catch(function () { /* sin fotos la banda queda solo con el texto */ });
+})();
+
+(function () {
   function mostrarSiTieneSrc(img) {
     if (!img) return;
     var url = (img.getAttribute('src') || '').trim();
@@ -259,12 +343,7 @@ footer a:hover{color:var(--accent-terracota)}
     hero_tagline: '.hero h1',
     hero_ubicacion: '.hero-copy .hero-sub',
     hero_ctas: '.hero .cta-row a',
-    sobre_titulo: '.lon-sobre h2',
-    sobre_lead: '.lon-sobre-lead',
-    sobre_cuerpo: '.lon-sobre-cuerpo',
-    pilares_titulo: '.pillars-wrap > h2',
-    pilares_items_titulo: '.pillars h3',
-    pilares_items_texto: '.pillars p',
+    sobre_lead: '.lon-banda-texto',
     espacio_caption: '.espacio figcaption',
     espacio_quote: '.espacio-quote',
     catalogo_cta_texto: '.band p',
@@ -411,17 +490,9 @@ footer a:hover{color:var(--accent-terracota)}
 
     aplicarHeroVideo(contenido);
 
-    ['sobre_foto_a', 'sobre_foto_b', 'espacio_imagen', 'hero_imagen'].forEach(function (k) {
+    ['espacio_imagen', 'hero_imagen'].forEach(function (k) {
       document.querySelectorAll('[data-landing="' + k + '"]').forEach(mostrarSiTieneSrc);
     });
-
-    var fotosSobre = document.querySelector('.lon-sobre-fotos');
-    if (fotosSobre) {
-      var visibles = Array.prototype.filter.call(fotosSobre.querySelectorAll('img'), function (img) {
-        return !img.classList.contains('lon-foto-oculta');
-      });
-      fotosSobre.style.display = visibles.length ? '' : 'none';
-    }
   }
 
   fetch('/landing-contenido')
