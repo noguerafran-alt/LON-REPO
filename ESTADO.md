@@ -357,6 +357,10 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   en un `<dialog>` nativo (`showModal()`, `::backdrop` oscuro) solo sobre la
   carta; cierra con tocar afuera, Esc o la X (`c_cerrar_foto`, traducible).
   El fondo no scrollea mientras está abierto (`body.foto-abierta`).
+  Bajo el subtítulo de la portada hay un aviso «Tocá un producto para ver su
+  foto» (`c_aviso_foto`, `#avisoFoto`): arranca `hidden` y el mismo script lo
+  muestra solo si al menos un ítem tiene foto cargada (si el fetch falla, sigue
+  oculto), para no prometer fotos que no existen.
   - **Mecanismo**: cada ítem de `carta.html` lleva `data-foto="<slug>"` (slug
     fijo en español, no depende de la traducción). Al cargar, la carta pide
     `/landing-contenido` una vez y los ítems con la clave
