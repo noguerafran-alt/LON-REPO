@@ -2266,27 +2266,18 @@ async function getHistorialCierreCaja(sheetsClient, spreadsheetId, sheetName, li
  *  nunca Productos ni Ventas.
  * ============================================================ */
 
+/* Se sacaron de acá (y del panel) las claves de secciones que la landing rediseñada ya
+   no dibuja: sobre_titulo, sobre_cuerpo, sobre_foto_a/b (+ _alt), pilares_titulo,
+   pilar_N_titulo/texto, cta_secondary_href y logo. Sus filas NO se borran de la hoja:
+   si el dueño tenía algo cargado, queda. */
 const LANDING_DEFAULTS = {
-  logo: '',
   ig_handle: 'lonphilosophy',
   hero_tagline: 'Making community',
   hero_ubicacion: 'Libros, objetos y café — para estar presente',
   cta_primary_label: 'Ver piezas',
   cta_secondary_label: 'Seguinos en Instagram',
-  cta_secondary_href: 'https://www.instagram.com/lonphilosophy/',
   hero_imagen: '',
-  sobre_titulo: 'Quiénes somos',
   sobre_lead: 'Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.',
-  sobre_cuerpo: 'LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.',
-  sobre_foto_a: '',
-  sobre_foto_b: '',
-  pilares_titulo: 'Qué vas a encontrar',
-  pilar_1_titulo: 'Libros',
-  pilar_1_texto: 'Lecturas para demorarse — club, novedades y anaqueles con criterio.',
-  pilar_2_titulo: 'Objetos',
-  pilar_2_texto: 'Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.',
-  pilar_3_titulo: 'Café & comunidad',
-  pilar_3_texto: 'Un espacio para encontrarse. Fidelidad en taza, conversación en el local.',
   espacio_imagen: '',
   espacio_caption: 'El local — luz, textura y anaquel.',
   espacio_quote: 'Ver y apreciar lo que uno está obteniendo es elegir estar presente.',
@@ -2295,79 +2286,50 @@ const LANDING_DEFAULTS = {
   destacados_titulo: 'Piezas que miramos dos veces',
   footer_texto: '© 2026 FLN Data Analysis — LON Philosophy',
   /* Admin › Contenido (mismo modelo que PROA). Se siembran solo si faltan; vacío =
-     lo que se ve hoy. ig_handle / cta_secondary_href / logo quedan guardadas pero
-     ya no se editan: los links son fijos en código y el logo del header es fijo. */
+     lo que se ve hoy. ig_handle queda guardada pero ya no se edita: los links son
+     fijos en código y el logo del header es fijo. */
   hero_eyebrow: 'LON Philosophy',
   hero_video: '',
   hero_imagen_alt: '',
-  sobre_foto_a_alt: 'LON — el local',
-  sobre_foto_b_alt: 'LON — detalle',
   espacio_imagen_alt: 'El espacio LON',
   // Texto junto a «Instagram» en el footer; vacío = @ de ig_handle.
   footer_ig_texto: '',
   // Fuente base (textos) y de títulos de la landing; vacío = Archivo / Fraunces.
   landing_fuente: '',
   landing_titulos_fuente: '',
-  // Por bloque de texto: fuente, alineación, tamaño (px 6–120) y estilo. Vacío = como hoy.
-  hero_eyebrow_fuente: '',
-  hero_tagline_fuente: '',
-  hero_ubicacion_fuente: '',
-  hero_ctas_fuente: '',
-  sobre_titulo_fuente: '',
-  sobre_lead_fuente: '',
-  sobre_cuerpo_fuente: '',
-  pilares_titulo_fuente: '',
-  pilares_items_titulo_fuente: '',
-  pilares_items_texto_fuente: '',
-  espacio_caption_fuente: '',
-  espacio_quote_fuente: '',
-  catalogo_cta_texto_fuente: '',
-  catalogo_cta_boton_fuente: '',
-  footer_fuente: '',
-  hero_eyebrow_alineacion: '',
-  hero_tagline_alineacion: '',
-  hero_ubicacion_alineacion: '',
-  sobre_titulo_alineacion: '',
-  sobre_lead_alineacion: '',
-  sobre_cuerpo_alineacion: '',
-  pilares_titulo_alineacion: '',
-  pilares_items_titulo_alineacion: '',
-  pilares_items_texto_alineacion: '',
-  espacio_caption_alineacion: '',
-  espacio_quote_alineacion: '',
-  catalogo_cta_texto_alineacion: '',
-  footer_alineacion: '',
-  hero_eyebrow_tamano: '',
-  hero_tagline_tamano: '',
-  hero_ubicacion_tamano: '',
-  hero_ctas_tamano: '',
-  sobre_titulo_tamano: '',
-  sobre_lead_tamano: '',
-  sobre_cuerpo_tamano: '',
-  pilares_titulo_tamano: '',
-  pilares_items_titulo_tamano: '',
-  pilares_items_texto_tamano: '',
-  espacio_caption_tamano: '',
-  espacio_quote_tamano: '',
-  catalogo_cta_texto_tamano: '',
-  catalogo_cta_boton_tamano: '',
-  footer_tamano: '',
-  hero_eyebrow_estilo: '',
-  hero_tagline_estilo: '',
-  hero_ubicacion_estilo: '',
-  hero_ctas_estilo: '',
-  sobre_titulo_estilo: '',
-  sobre_lead_estilo: '',
-  sobre_cuerpo_estilo: '',
-  pilares_titulo_estilo: '',
-  pilares_items_titulo_estilo: '',
-  pilares_items_texto_estilo: '',
-  espacio_caption_estilo: '',
-  espacio_quote_estilo: '',
-  catalogo_cta_texto_estilo: '',
-  catalogo_cta_boton_estilo: '',
-  footer_estilo: '',
+  // Textos nuevos editables: vacío = lo que dice el HTML.
+  banda_etiqueta: '',
+  menu_categorias: '',
+  footer_privacidad: '',
+  footer_terminos: '',
+  footer_instagram: '',
 };
+
+/* Doble idioma: cada texto editable lleva <clave>_en (inglés). Vacío = se usa el
+   diccionario de idioma.js y, si tampoco hay, el texto del HTML. */
+const LANDING_TEXTOS_BILINGUES = [
+  'hero_eyebrow', 'hero_tagline', 'hero_ubicacion', 'cta_primary_label', 'cta_secondary_label',
+  'sobre_lead', 'espacio_caption', 'espacio_quote', 'catalogo_cta_texto', 'catalogo_cta_label',
+  'footer_texto', 'destacados_titulo', 'banda_etiqueta', 'menu_categorias',
+  'footer_privacidad', 'footer_terminos', 'footer_instagram',
+];
+for (const clave of LANDING_TEXTOS_BILINGUES) LANDING_DEFAULTS[clave + '_en'] = '';
+
+/* Estilo por bloque (mismos nombres que BLOQUES_TEXTO en landing.html y los
+   data-lc-ajustes de admin.html). Vacío = como lo dice el CSS. Rangos: tamano px 6–120,
+   interlineado 1–3, espaciado -0.05–0.5 em. Sin color a propósito (decisión del dueño). */
+const LANDING_BLOQUES_ESTILO = [
+  'hero_eyebrow', 'hero_tagline', 'hero_ubicacion', 'hero_ctas', 'sobre_lead',
+  'espacio_caption', 'espacio_quote', 'catalogo_cta_texto', 'catalogo_cta_boton',
+  'footer', 'banda_etiqueta',
+];
+const LANDING_BLOQUES_SIN_ALINEACION = ['hero_ctas', 'catalogo_cta_boton'];
+for (const bloque of LANDING_BLOQUES_ESTILO) {
+  for (const sufijo of ['fuente', 'alineacion', 'tamano', 'estilo', 'mayusculas', 'interlineado', 'espaciado']) {
+    if (sufijo === 'alineacion' && LANDING_BLOQUES_SIN_ALINEACION.includes(bloque)) continue;
+    LANDING_DEFAULTS[bloque + '_' + sufijo] = '';
+  }
+}
 
 /**
  * Asegura que exista la pestaña Landing con encabezado clave/valor y,

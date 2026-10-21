@@ -3,8 +3,10 @@
    - HTML estático: data-i18n="clave" (reemplaza el texto del elemento) y
      data-i18n-attr="atributo:clave,otro:clave" (placeholder, aria-label, title, alt).
    - Textos armados por JS: LONi18n.t(clave, textoEnEspanol, { variables }).
-   - Lo que viene de Google Sheets (catálogo, /landing-contenido) NO se traduce.
-     Los elementos de la landing que el CMS pisó llevan data-i18n-cms y se saltean. */
+   - Lo que viene de Google Sheets (catálogo) NO se traduce.
+   - Textos del CMS (/landing-contenido): el elemento lleva data-i18n-cms y en su
+     dataset lonEs / lonEn (valores del CMS, '' si no hay) y lonBase (texto del HTML).
+     Español → lonEs o lonBase. Inglés → lonEn, si no el diccionario, si no lonBase. */
 (function () {
   'use strict';
 
@@ -36,6 +38,7 @@
 
     // Landing (textos de respaldo; si el CMS tiene valor, manda el CMS)
     l_presentacion: 'LON Philosophy introduction',
+    l_banda_etiqueta: 'Making community',
     l_ubicacion: 'Books, objects and coffee — to be present',
     l_ver_piezas: 'Browse pieces',
     l_instagram: 'Follow us on Instagram',
@@ -249,6 +252,12 @@
   function aplicarDom() {
     document.documentElement.lang = idioma;
 
+    document.querySelectorAll('[data-lon-base]').forEach(function (el) {
+      var d = el.dataset;
+      var dic = EN[el.getAttribute('data-i18n')];
+      el.textContent = idioma === 'en' ? (d.lonEn || dic || d.lonBase) : (d.lonEs || d.lonBase);
+    });
+
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
       if (el.hasAttribute('data-i18n-cms')) return;
       if (el._lonEs === undefined) el._lonEs = el.textContent;
@@ -359,5 +368,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
   else iniciar();
 
-  window.LONi18n = { t: t, idioma: function () { return idioma; }, fijar: fijar, claves: EN };
+  window.LONi18n = { t: t, idioma: function () { return idioma; }, fijar: fijar, claves: EN, repintar: aplicarDom };
 })();
