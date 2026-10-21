@@ -64,6 +64,7 @@
 
     // Carta
     c_portada: 'Philosophy · Menu',
+    c_aviso_foto: 'Tap a product to see its photo',
     c_adicionales: 'Extras',
     c_matcha: 'Green matcha tea drink. Frothed with milk',
     c_golden: 'Drink made with turmeric, cinnamon, nutmeg, honey and black pepper. Frothed with milk',
