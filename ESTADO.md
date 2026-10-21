@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-10-20**
+> Última actualización: **2026-10-21**
 
 ## Qué hace la app hoy
 
@@ -255,6 +255,35 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   hasta que reproduce, reintento en el primer gesto. **Sin botón de
   play/pausa** ni nada tocable (2026-10-08): siempre en bucle y sin
   controles; si iOS lo bloquea, queda solo la foto.
+
+## Rediseño de la landing (2026-10-21)
+
+- **Hero a `100dvh`** (con `100vh` de respaldo): al abrir solo se ve el hero.
+- **Barra de categorías eliminada**; las categorías y `/carta` viven solo en
+  el menú de las tres barras (ya los tenía).
+- **Header estilo Zara Home**: `position:fixed`, transparente sobre el hero
+  (degradé oscuro suave para que se lea). Al bajar se esconde
+  (`translateY(-100%)`), al subir reaparece con fondo bordó. También
+  reaparece con el puntero en los 24px de arriba (`#zonaHeader`, que también
+  recibe el toque en celular) y con `focusin` dentro del header (teclado; no
+  se esconde si el foco está adentro). Con `prefers-reduced-motion` no se
+  esconde ni anima (solo cambia a bordó al salir del tope). Selector de
+  idioma intacto (`[data-selector-idioma]` sigue en `.right`).
+- **Banda con carrusel** reemplaza «Quiénes somos» y «Qué vas a encontrar»:
+  banda bordó con el texto de `sobre_lead` (sigue editable desde Contenido) y
+  tres fotos a caballo sobre el borde (truco: el contenedor de las fotos
+  tiene un `linear-gradient` 50% bordó / 50% transparente, sin calcular
+  alturas). Fotos = productos de `/catalogo-destacados` (mismo endpoint que
+  la tienda) con `foto`; carrusel infinito con el patrón de `index.html`
+  (3 copias + recentrado). Con 3 o menos fotos quedan quietas; sin fotos la
+  banda queda solo con el texto. Autoavance apagado con reduced-motion.
+- **Campos del admin que ya no se usan en la landing**: `sobre_titulo`,
+  `sobre_cuerpo`, `sobre_foto_a/b` y los `pilar_*`/`pilares_titulo`. Siguen
+  en el editor y en la hoja; falta sacarlos de `admin.html` si molesta.
+- `/catalogo-destacados` solo trae productos con consultas/visitas y stock:
+  si es un sitio nuevo puede venir vacío y la banda sin fotos.
+- **Sin verificar en navegador** (solo `node --check` del script): ni a
+  375px, ni el comportamiento del scroll.
 
 ## Carta del café online (/carta, 2026-10-20)
 
