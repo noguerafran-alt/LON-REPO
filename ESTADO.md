@@ -353,6 +353,27 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   hardcodeado en el HTML (no sale de Sheets). Precios y ortografía tal cual
   el impreso (incluye "ORANGE COFFE" y "CAPUCCINO"). Para cambiar un precio
   se edita el HTML.
+- **Fotos de productos (2026-10-21)**: al tocar un producto se abre su foto
+  en un `<dialog>` nativo (`showModal()`, `::backdrop` oscuro) solo sobre la
+  carta; cierra con tocar afuera, Esc o la X (`c_cerrar_foto`, traducible).
+  El fondo no scrollea mientras está abierto (`body.foto-abierta`).
+  - **Mecanismo**: cada ítem de `carta.html` lleva `data-foto="<slug>"` (slug
+    fijo en español, no depende de la traducción). Al cargar, la carta pide
+    `/landing-contenido` una vez y los ítems con la clave
+    `carta_foto_<slug>` quedan tocables (`role=button`, `tabindex=0`,
+    Enter/Espacio). Sin foto o con el fetch caído: la carta queda como antes.
+  - **Carga**: Admin › Contenido › «Carta — fotos de productos» (nivel 2),
+    un campo por ítem, mismo modelo que `hero_imagen` (sube a
+    `/admin/landing/foto`, se publica con Guardar). Las claves se crean en la
+    hoja Landing al guardar (el upsert no exige que estén en
+    `LANDING_DEFAULTS`). La lista de slugs está en `CARTA_FOTOS` en
+    `admin.html`: **al agregar un producto a la carta hay que sumarlo en los
+    dos lados** (`data-foto` en el HTML y `CARTA_FOTOS`).
+  - **Hoy no hay ninguna foto cargada**: el dueño tiene que subirlas desde
+    Admin › Contenido; hasta entonces la carta no cambia.
+  - **Verificado** a 375px con `/landing-contenido` simulado (abre, oscurece,
+    Esc cierra, ítem sin foto no reacciona). **Sin probar**: subida real
+    contra Sheets, el panel del admin en navegador (sin login) y iOS Safari.
 - **THE CLASSICS en mobile**: tabla de grilla CSS (nombre + 3 columnas de
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
