@@ -273,6 +273,51 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
 
+## Selector de idioma ES/EN (sitio público, 2026-10-20)
+
+- **Qué es**: `public/idioma.js`, compartido por `landing.html`, `carta.html`
+  y `index.html` (la tienda). Dos banderas arriba a la derecha fuerzan
+  español o inglés; la elección se guarda en `localStorage` (`lon_idioma`,
+  en `try/catch` por la navegación privada) y persiste entre páginas y
+  visitas. Cambia también `<html lang>`. Default: español. Un solo
+  `<script src="/idioma.js">`, sin build ni dependencias.
+- **Banderas en SVG inline, no emoji**: Windows no dibuja las banderas
+  emoji (muestra "AR"/"US" en texto) y muchos clientes están en Windows.
+  Argentina y EE.UU. simplificados (sol y estrellas reducidos).
+- **Posición**: cada página tiene un hueco `<div data-selector-idioma>` que
+  idioma.js rellena: zona `.right` del header en la landing, derecha de la
+  barra `.barra` en la carta, `.acciones-header-catalogo` en la tienda (y
+  también en los headers de las pantallas carrito/login/checkout, que tapan
+  al principal). El CSS del selector usa `.lon-idioma button.lon-idioma-btn`
+  para ganarle a reglas genéricas de `button` (ver CLAUDE.md, CSS).
+- **Cómo se marcan los textos**: el español queda escrito en el HTML (si el
+  JS no carga, la página sigue en español) y el diccionario del inglés vive
+  solo en `idioma.js` (objeto `EN`, ~180 claves; prefijos `g_` compartidas,
+  `l_` landing, `c_` carta, `t_` tienda).
+  - Texto: `data-i18n="clave"` (reemplaza el `textContent`; si el elemento
+    tiene hijos, se envuelve el texto en un `<span data-i18n>`).
+  - Atributos: `data-i18n-attr="placeholder:clave,aria-label:clave"`.
+  - Texto armado por JS (la tienda): `T(clave, español, {vars})` con
+    `{variables}`; al cambiar de idioma idioma.js dispara el evento
+    `lon-idioma` y `index.html` repinta catálogo, destacados, detalle,
+    carrito y checkout. El repintado del detalle NO cuenta como visita.
+  - Para agregar un texto: marcarlo y sumar la clave en `EN`.
+- **Qué NO se traduce (a propósito, decisión del dueño)**: lo que viene de
+  Sheets (nombres/descripciones/categorías de productos, tarifas por
+  provincia, datos de transferencia) y el contenido editable de la landing
+  (`/landing-contenido`). En la landing, los textos con `data-landing` tienen
+  también `data-i18n` para su texto de respaldo; si el CMS les pone valor,
+  `aplicarContenido` les agrega `data-i18n-cms` y idioma.js los deja en
+  paz (queda el español del CMS). Tampoco: mensajes de error que devuelve el
+  servidor (`data.error`), `<title>`/meta/SEO (los crawlers ven español), los
+  nombres de los platos de la carta (ESPRESSO, MEDIALUNAS...; solo se
+  traducen secciones, descripciones y subtítulos descriptivos), el valor
+  interno de los radios de entrega (`Retiro en el local`, que lee el
+  servidor), `privacidad.html`, `terminos.html`, `cliente.html`, los pies de
+  copyright, ni las páginas `checkout-*.html` ni el admin.
+- **Sin verificar en navegador** al momento de escribir esto (solo
+  `node --check` y cruce de claves usadas/definidas).
+
 ## Reseñas con tarjeta NFC (/resena, 2026-10-20)
 
 - **Qué hace**: el cliente toca con el celular una tarjeta NFC en el
