@@ -339,11 +339,16 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   `aplicarContenido` les agrega `data-i18n-cms` y idioma.js los deja en
   paz (queda el español del CMS). Tampoco: mensajes de error que devuelve el
   servidor (`data.error`), `<title>`/meta/SEO (los crawlers ven español), los
-  nombres de los platos de la carta (ESPRESSO, MEDIALUNAS...; solo se
-  traducen secciones, descripciones y subtítulos descriptivos), el valor
+  nombres que ya están en inglés en la carta impresa (ESPRESSO, FLAT WHITE...,
+  con sus erratas: `ORANGE COFFE`, `CAPUCCINO`), el valor
   interno de los radios de entrega (`Retiro en el local`, que lee el
   servidor), `privacidad.html`, `terminos.html`, `cliente.html`, los pies de
   copyright, ni las páginas `checkout-*.html` ni el admin.
+- **Nombres de platos y bebidas (2026-10-21)**: los descriptivos también se
+  traducen (claves `cn_*`, 25; p. ej. `ALFAJOR DE PISTACHO` -> `PISTACHIO
+  ALFAJOR`). Quedan en español a propósito `ALFAJOR`, `CHIPA`, `MEDIALUNAS`,
+  `MACARON` (y `PAIN AU CHOCOLAT`): son nombres propios del producto, sin
+  equivalente o que un café no traduce; solo se traduce el complemento.
 - **Sin verificar en navegador** al momento de escribir esto (solo
   `node --check` y cruce de claves usadas/definidas).
 

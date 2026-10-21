@@ -17,8 +17,10 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Fraunces,Georgia,serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.barra{background:var(--bg-header);color:var(--header-text);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.volver{font-size:12px;font-variant-caps:all-small-caps;letter-spacing:.18em}
+/* Quedo solo el selector de idioma: va a la derecha, donde esta en el
+   resto del sitio. El volver al inicio ahora es el logo. */
+.barra{background:var(--bg-header);color:var(--header-text);padding:12px 20px;display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.portada a{display:inline-block}
 main{max-width:640px;margin:0 auto;padding:28px 16px 56px}
 .portada{text-align:center;margin-bottom:28px}
 .portada img{width:min(260px,70%);height:auto}
@@ -32,7 +34,12 @@ h4{font-weight:400;font-size:12px;font-variant-caps:all-small-caps;letter-spacin
    costados del gajo, y al 230% quedan fuera de la caja. Asi se ve solo el
    gajo, como la marca de agua de la carta impresa — con el logo entero se
    leia "L O N" compitiendo con los precios. */
-.caja.marca::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:url('/logo-catalogo.png') center/230% auto no-repeat;opacity:.045}
+/* Marca de agua con el gajo SOLO (gajo.png, recortado del logo): con el
+   logo entero habia que agrandarlo tanto para sacarle las letras que el
+   gajo se salia de las cajas chicas y quedaba cortado y descentrado.
+   El alto relativo lo deja centrado y entero en cada caja, mida lo que
+   mida, que es como esta en la carta impresa. */
+.caja.marca::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:url('/gajo.png') center/auto 62% no-repeat;opacity:.05}
 .nombre{font-variant-caps:all-small-caps;letter-spacing:.14em;font-size:15px;font-weight:400}
 .precio{font-variant-numeric:lining-nums;text-align:right;white-space:nowrap;font-size:15px}
 .desc{display:block;margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-muted);font-weight:300}
@@ -62,12 +69,15 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
 </head>
 <body>
 <div class="barra">
-  <a class="volver" href="/">‹ LON Philosophy</a>
   <div data-selector-idioma></div>
 </div>
 <main>
+  <!-- El logo es el camino de vuelta al inicio: es donde la gente toca
+       por reflejo, y asi no hace falta un "volver" aparte. -->
   <header class="portada">
-    <img src="/logo-catalogo.png" alt="LON" width="260" height="102">
+    <a href="/" aria-label="LON Philosophy — ir al inicio">
+      <img src="/logo-catalogo.png" alt="LON" width="260" height="102">
+    </a>
     <p data-i18n="c_portada">Philosophy · Carta</p>
   </header>
 
@@ -103,9 +113,9 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
 
   <section class="caja" aria-labelledby="t-adicionales">
     <h3 id="t-adicionales" data-i18n="c_adicionales">Adicionales</h3>
-    <div class="fila uno"><span class="nombre">LECHE DE ALMENDRAS</span><span class="precio">2000</span></div>
-    <div class="fila uno"><span class="nombre">LECHE DE AVENA</span><span class="precio">2000</span></div>
-    <div class="fila uno"><span class="nombre">EXTRA SHOT</span><span class="precio">2500</span></div>
+    <div class="fila uno"><span class="nombre" data-i18n="cn_almendra">LECHE DE ALMENDRAS</span><span class="precio">2000</span></div>
+    <div class="fila uno"><span class="nombre" data-i18n="cn_avena">LECHE DE AVENA</span><span class="precio">2000</span></div>
+    <div class="fila uno"><span class="nombre" data-i18n="cn_extra_shot">EXTRA SHOT</span><span class="precio">2500</span></div>
   </section>
 
   <section class="caja" aria-labelledby="t-takeaway">
@@ -130,11 +140,11 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
     <h3 id="t-drinks">Drinks</h3>
     <ul class="puntos">
       <li><span class="nombre">MATCHA ORANGE</span><i></i><span class="precio">7300</span></li>
-      <li><span class="nombre">JUGO DE NARANJA</span><i></i><span class="precio">6600</span></li>
-      <li><span class="nombre">LIMONADA CLÁSICA</span><i></i><span class="precio">5600</span></li>
-      <li><span class="nombre">LIMONADA FRUTOS ROJOS</span><i></i><span class="precio">7200</span></li>
-      <li><span class="nombre">LIMONADA DE HIBISCUS</span><i></i><span class="precio">7300</span></li>
-      <li><span class="nombre">AGUA CON GAS</span><i></i><span class="precio">4900</span></li>
+      <li><span class="nombre" data-i18n="cn_jugo">JUGO DE NARANJA</span><i></i><span class="precio">6600</span></li>
+      <li><span class="nombre" data-i18n="cn_lim_clasica">LIMONADA CLÁSICA</span><i></i><span class="precio">5600</span></li>
+      <li><span class="nombre" data-i18n="cn_lim_frutos">LIMONADA FRUTOS ROJOS</span><i></i><span class="precio">7200</span></li>
+      <li><span class="nombre" data-i18n="cn_lim_hibiscus">LIMONADA DE HIBISCUS</span><i></i><span class="precio">7300</span></li>
+      <li><span class="nombre" data-i18n="cn_agua_gas">AGUA CON GAS</span><i></i><span class="precio">4900</span></li>
     </ul>
   </section>
 
@@ -150,18 +160,18 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
   <h2 class="seccion">Brunch</h2>
 
   <section class="caja marca" aria-label="Brunch">
-    <div class="item"><div class="linea"><span class="nombre">PALTA · TOAST</span><span class="precio">13500</span></div>
+    <div class="item"><div class="linea"><span class="nombre" data-i18n="cn_palta">PALTA · TOAST</span><span class="precio">13500</span></div>
       <span class="desc" data-i18n="c_palta">(tostón de pan integral, palta, tomate confitado, queso crema)</span>
       <span class="desc opc" data-i18n="c_palta_opc">opcional: huevo poché $2000</span></div>
-    <div class="item"><div class="linea"><span class="nombre">TOAST FOREST (<span data-i18n="c_sin_tacc_mayus">SIN TACC</span>)</span><span class="precio">18500</span></div>
+    <div class="item"><div class="linea"><span class="nombre"><span data-i18n="cn_forest">TOAST FOREST</span> (<span data-i18n="c_sin_tacc_mayus">SIN TACC</span>)</span><span class="precio">18500</span></div>
       <span class="desc" data-i18n="c_forest">Pan de elaboración propia preparado con fécula de mandioca, almidón de maíz, harina de arroz integral, harina de garbanzos, harina de trigo sarraceno y un mix de semillas. Servido con alioli de almendras, palta fresca y cebollas encurtidas.</span></div>
-    <div class="item"><div class="linea"><span class="nombre">CHIPA DE SETAS</span><span class="precio">15400</span></div>
+    <div class="item"><div class="linea"><span class="nombre" data-i18n="cn_chipa_setas">CHIPA DE SETAS</span><span class="precio">15400</span></div>
       <span class="desc" data-i18n="c_chipa_setas">Relleno de una selección de hongos de pino, portobellos y champiñones salteados con cebolla puerro y tomates secos confitados.</span></div>
-    <div class="item"><div class="linea"><span class="nombre">CHIPA DE TOMATES CONFITADOS X2</span><span class="precio">16500</span></div>
+    <div class="item"><div class="linea"><span class="nombre" data-i18n="cn_chipa_tomates">CHIPA DE TOMATES CONFITADOS X2</span><span class="precio">16500</span></div>
       <span class="desc" data-i18n="c_chipa_tomates">Relleno de cebollas encurtidas y tomates confitados.</span></div>
-    <div class="item"><div class="linea"><span class="nombre">HANDROLL DE VERDURA</span><span class="precio">15800</span></div>
+    <div class="item"><div class="linea"><span class="nombre" data-i18n="cn_handroll_verdura">HANDROLL DE VERDURA</span><span class="precio">15800</span></div>
       <span class="desc" data-i18n="c_handroll_verdura">Panqueque de premezcla sin gluten, relleno de espinaca, cebolla y zanahoria salteadas, ricotta cremosa y queso dambo.</span></div>
-    <div class="item"><div class="linea"><span class="nombre">HANDROLL DE BONDIOLA BRASEADA</span><span class="precio">15800</span></div>
+    <div class="item"><div class="linea"><span class="nombre" data-i18n="cn_handroll_bondiola">HANDROLL DE BONDIOLA BRASEADA</span><span class="precio">15800</span></div>
       <span class="desc" data-i18n="c_handroll_bondiola">Panqueque de premezcla sin gluten, relleno de bondiola braseada, cebolla caramelizada y queso dambo fundido.</span></div>
   </section>
 
@@ -171,12 +181,12 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
   <section class="caja marca" aria-labelledby="t-sweet">
     <h3 id="t-sweet">Sweet Bites</h3>
     <ul class="puntos">
-      <li><span class="nombre">FLORENTINOS (X3)</span><i></i><span class="precio">4200</span></li>
-      <li><span class="nombre">BOCADITO DE ALMENDRA (X3)</span><i></i><span class="precio">4400</span></li>
-      <li><span class="nombre">MINI ALFAJOR DE PISTACHO</span><i></i><span class="precio">4900</span></li>
-      <li><span class="nombre">MINI ALFAJOR DE AVELLANAS</span><i></i><span class="precio">4900</span></li>
+      <li><span class="nombre" data-i18n="cn_florentinos">FLORENTINOS (X3)</span><i></i><span class="precio">4200</span></li>
+      <li><span class="nombre" data-i18n="cn_bocadito">BOCADITO DE ALMENDRA (X3)</span><i></i><span class="precio">4400</span></li>
+      <li><span class="nombre" data-i18n="cn_mini_alf_pist">MINI ALFAJOR DE PISTACHO</span><i></i><span class="precio">4900</span></li>
+      <li><span class="nombre" data-i18n="cn_mini_alf_avel">MINI ALFAJOR DE AVELLANAS</span><i></i><span class="precio">4900</span></li>
       <li><span class="nombre">MACARON</span><i></i><span class="precio">4900</span></li>
-      <li><span class="nombre">DATIL RELLENO</span><i></i><span class="precio">6000</span></li>
+      <li><span class="nombre" data-i18n="cn_datil">DATIL RELLENO</span><i></i><span class="precio">6000</span></li>
     </ul>
   </section>
 
@@ -186,7 +196,7 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
       <li><span class="nombre">MEDIALUNAS</span><i></i><span class="precio">3200</span></li>
       <li><span class="nombre">PAIN AU CHOCOLAT</span><i></i><span class="precio">6500</span></li>
       <li><span class="nombre">CHIPA</span><i></i><span class="precio">5200</span></li>
-      <li><span class="nombre">BUDIN DE FRUTOS ROJOS
+      <li><span class="nombre"><span data-i18n="cn_budin">BUDIN DE FRUTOS ROJOS</span>
         <svg class="sintacc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" role="img" aria-label="Sin TACC" data-i18n-attr="aria-label:c_sin_tacc"><title data-i18n="c_sin_tacc">Sin TACC</title><path d="M12 21V9"/><path d="M12 9c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 9c2-.5 3-2 3-4-2 .5-3 2-3 4zM12 14c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 14c2-.5 3-2 3-4-2 .5-3 2-3 4z"/><path d="M4 20L20 4"/></svg></span><i></i><span class="precio">8200</span></li>
     </ul>
   </section>
@@ -194,11 +204,11 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
   <section class="caja marca" aria-labelledby="t-pat">
     <h3 id="t-pat">Patisserie</h3>
     <ul class="puntos">
-      <li><span class="nombre">COOKIE DE MANI Y CHOCOLATE</span><i></i><span class="precio">5800</span></li>
-      <li><span class="nombre">COOKIE DE FRUTOS ROJOS</span><i></i><span class="precio">5800</span></li>
-      <li><span class="nombre">ALFAJOR DE PISTACHO</span><i></i><span class="precio">7500</span></li>
-      <li><span class="nombre">ALFAJOR DE AVELLANAS</span><i></i><span class="precio">7500</span></li>
-      <li><span class="nombre">BROWNIE DE CHOCOLATE</span><i></i><span class="precio">8200</span></li>
+      <li><span class="nombre" data-i18n="cn_cookie_mani">COOKIE DE MANI Y CHOCOLATE</span><i></i><span class="precio">5800</span></li>
+      <li><span class="nombre" data-i18n="cn_cookie_frutos">COOKIE DE FRUTOS ROJOS</span><i></i><span class="precio">5800</span></li>
+      <li><span class="nombre" data-i18n="cn_alf_pist">ALFAJOR DE PISTACHO</span><i></i><span class="precio">7500</span></li>
+      <li><span class="nombre" data-i18n="cn_alf_avel">ALFAJOR DE AVELLANAS</span><i></i><span class="precio">7500</span></li>
+      <li><span class="nombre" data-i18n="cn_brownie">BROWNIE DE CHOCOLATE</span><i></i><span class="precio">8200</span></li>
     </ul>
   </section>
 </main>
