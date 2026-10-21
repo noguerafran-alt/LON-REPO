@@ -48,6 +48,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="/idioma.js"></script>
 <style>
   :root{
     --bg:#F6EFE4; --bg-alt:#EDE3D0; --bg-card:#FFFBF5; --ink:#3B1220; --ink-muted:#6B3A45;
@@ -770,120 +771,120 @@
 </head>
 <body>
 
-<h1 style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;">LON Philosophy — Libros, velas y objetos de diseño, hechos a pedido</h1>
+<h1 style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;" data-i18n="t_h1">LON Philosophy — Libros, velas y objetos de diseño, hechos a pedido</h1>
 
 <div class="fullscreen hidden" id="pantallaCarrito">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo">←</button>
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <span></span>
+    <div data-selector-idioma style="justify-self:end;"></div>
   </div>
   <div class="login-box" style="max-width:380px;">
-    <p class="eyebrow">Tu carrito</p>
+    <p class="eyebrow" data-i18n="t_tu_carrito">Tu carrito</p>
     <div id="listaItemsCarrito"></div>
     <div class="total-carrito oculto" id="totalCarrito"></div>
-    <button type="button" id="btnIrAPagarCarrito">Continuar compra</button>
-    <button class="acceso-admin-link" id="btnCerrarCarrito" style="width:100%;">Seguir viendo el catálogo</button>
+    <button type="button" id="btnIrAPagarCarrito" data-i18n="t_continuar">Continuar compra</button>
+    <button class="acceso-admin-link" id="btnCerrarCarrito" style="width:100%;" data-i18n="t_seguir_viendo">Seguir viendo el catálogo</button>
   </div>
 </div>
 
 <div class="fullscreen hidden" id="pantallaLoginCliente">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <button type="button" class="volver btn-volver-flecha" id="btnVolverLoginCliente" title="Volver al catálogo" aria-label="Volver al catálogo">←</button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverLoginCliente" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo">←</button>
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <span></span>
+    <div data-selector-idioma style="justify-self:end;"></div>
   </div>
   <div class="login-box">
-    <p class="eyebrow">Mi cuenta</p>
+    <p class="eyebrow" data-i18n="t_mi_cuenta">Mi cuenta</p>
     <div id="loginClienteLogueado" class="oculto" style="margin-bottom:16px;">
-      <p style="margin:0 0 14px;">Hola, <strong id="nombreClienteLogueado"></strong>.</p>
+      <p style="margin:0 0 14px;"><span data-i18n="t_hola">Hola,</span> <strong id="nombreClienteLogueado"></strong>.</p>
       <div class="tarjeta-fidelidad-cafe">
-        <p class="eyebrow" style="margin:0 0 8px;">Café de fidelidad</p>
+        <p class="eyebrow" style="margin:0 0 8px;" data-i18n="t_cafe_fidelidad">Café de fidelidad</p>
         <div id="puntosFidelidadCafe" class="puntos-fidelidad-cafe">Cargando...</div>
-        <img id="qrFidelidadCliente" class="qr-fidelidad-cliente oculto" alt="Tu código QR de fidelidad">
-        <p style="font-size:12px; color:var(--ink-muted); margin:8px 0 0;">Mostrá este QR en el local para cargar tu café. Al completar 3, el próximo escaneo te entrega un regalo sorpresa.</p>
+        <img id="qrFidelidadCliente" class="qr-fidelidad-cliente oculto" alt="Tu código QR de fidelidad" data-i18n-attr="alt:t_qr_alt">
+        <p style="font-size:12px; color:var(--ink-muted); margin:8px 0 0;" data-i18n="t_qr_texto">Mostrá este QR en el local para cargar tu café. Al completar 3, el próximo escaneo te entrega un regalo sorpresa.</p>
       </div>
-      <button type="button" id="btnSalirCliente" style="width:100%; margin-top:16px;">Cerrar sesión</button>
+      <button type="button" id="btnSalirCliente" style="width:100%; margin-top:16px;" data-i18n="t_cerrar_sesion">Cerrar sesión</button>
     </div>
     <div id="loginClienteFormulario">
-      <p style="font-size:13px; color:var(--ink-muted); margin:0 0 14px;">Ingresá con tu cuenta de Google para que la próxima vez no tengas que volver a cargar tus datos en el checkout.</p>
+      <p style="font-size:13px; color:var(--ink-muted); margin:0 0 14px;" data-i18n="t_login_texto">Ingresá con tu cuenta de Google para que la próxima vez no tengas que volver a cargar tus datos en el checkout.</p>
       <div id="botonGoogleLoginCliente"></div>
       <div id="mensajeLoginCliente" style="margin-top:10px; font-size:13px; color:var(--stamp-red);"></div>
     </div>
-    <button class="acceso-admin-link" id="btnCerrarLoginCliente" style="width:100%; margin-top:14px;">Cerrar</button>
+    <button class="acceso-admin-link" id="btnCerrarLoginCliente" style="width:100%; margin-top:14px;" data-i18n="g_cerrar">Cerrar</button>
   </div>
 </div>
 
 <div class="fullscreen hidden" id="pantallaCheckout">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
-    <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver">←</button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver" data-i18n-attr="title:t_volver,aria-label:t_volver">←</button>
+    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <span></span>
+    <div data-selector-idioma style="justify-self:end;"></div>
   </div>
   <div class="login-box checkout-box" id="checkoutBox">
     <p class="eyebrow" id="tituloCheckout">Finalizar compra</p>
     <div class="checkout-resumen" id="checkoutResumen"></div>
 
     <div id="campoCantidadCheckout">
-      <label for="inputCantidadCheckout">Cantidad</label>
+      <label for="inputCantidadCheckout" data-i18n="t_cantidad">Cantidad</label>
       <input type="number" id="inputCantidadCheckout" min="1" step="1" value="1">
     </div>
 
-    <label for="inputNombreCheckout">Nombre y apellido</label>
-    <input type="text" id="inputNombreCheckout" placeholder="Tu nombre" autocomplete="name">
+    <label for="inputNombreCheckout" data-i18n="t_nombre">Nombre y apellido</label>
+    <input type="text" id="inputNombreCheckout" placeholder="Tu nombre" data-i18n-attr="placeholder:t_ph_nombre" autocomplete="name">
 
     <label for="inputEmailCheckout">Email</label>
     <input type="email" id="inputEmailCheckout" placeholder="tu@email.com" autocomplete="email" required>
 
-    <label for="inputTelefonoCheckout">Teléfono</label>
-    <input type="tel" id="inputTelefonoCheckout" placeholder="Tu teléfono" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" required>
+    <label for="inputTelefonoCheckout" data-i18n="t_telefono">Teléfono</label>
+    <input type="tel" id="inputTelefonoCheckout" placeholder="Tu teléfono" data-i18n-attr="placeholder:t_ph_telefono" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" required>
 
-    <label>Entrega</label>
+    <label data-i18n="t_entrega">Entrega</label>
     <div class="metodo-envio-opciones">
-      <label><input type="radio" name="metodoEnvio" value="Retiro en el local" checked> Retiro en el local</label>
-      <label><input type="radio" name="metodoEnvio" value="Envio a domicilio"> Envío a domicilio</label>
+      <label><input type="radio" name="metodoEnvio" value="Retiro en el local" checked> <span data-i18n="t_retiro">Retiro en el local</span></label>
+      <label><input type="radio" name="metodoEnvio" value="Envio a domicilio"> <span data-i18n="t_domicilio">Envío a domicilio</span></label>
     </div>
 
     <div id="camposDomicilio" class="oculto" style="margin-top:10px;">
-      <label for="inputDireccionCheckout">Dirección</label>
-      <input type="text" id="inputDireccionCheckout" placeholder="Calle y número" autocomplete="street-address">
+      <label for="inputDireccionCheckout" data-i18n="t_direccion">Dirección</label>
+      <input type="text" id="inputDireccionCheckout" placeholder="Calle y número" data-i18n-attr="placeholder:t_ph_direccion" autocomplete="street-address">
 
-      <label for="inputCiudadCheckout">Ciudad</label>
-      <input type="text" id="inputCiudadCheckout" placeholder="Ciudad" autocomplete="address-level2">
+      <label for="inputCiudadCheckout" data-i18n="t_ciudad">Ciudad</label>
+      <input type="text" id="inputCiudadCheckout" placeholder="Ciudad" data-i18n-attr="placeholder:t_ph_ciudad" autocomplete="address-level2">
 
-      <label for="inputProvinciaCheckout">Provincia</label>
+      <label for="inputProvinciaCheckout" data-i18n="t_provincia">Provincia</label>
       <select id="inputProvinciaCheckout" autocomplete="address-level1">
         <option value="">Elegí tu provincia...</option>
       </select>
 
-      <label for="inputCPCheckout">Código postal</label>
-      <input type="text" id="inputCPCheckout" placeholder="Código postal" autocomplete="postal-code" inputmode="numeric">
+      <label for="inputCPCheckout" data-i18n="t_cp">Código postal</label>
+      <input type="text" id="inputCPCheckout" placeholder="Código postal" data-i18n-attr="placeholder:t_cp" autocomplete="postal-code" inputmode="numeric">
 
       <div id="envioEstimadoCheckout" class="envio-estimado-checkout oculto"></div>
     </div>
 
-    <label for="inputNotasCheckout">Notas <span class="opcional-tag">(opcional)</span></label>
-    <input type="text" id="inputNotasCheckout" placeholder="Algo que debamos saber">
+    <label for="inputNotasCheckout"><span data-i18n="t_notas">Notas</span> <span class="opcional-tag" data-i18n="t_opcional">(opcional)</span></label>
+    <input type="text" id="inputNotasCheckout" placeholder="Algo que debamos saber" data-i18n-attr="placeholder:t_ph_notas">
 
-    <label>Método de pago</label>
+    <label data-i18n="t_metodo_pago">Método de pago</label>
     <div class="metodo-pago-opciones">
-      <label id="opcionPayway"><input type="radio" name="metodoPago" value="payway"> Tarjeta (Payway)</label>
+      <label id="opcionPayway"><input type="radio" name="metodoPago" value="payway"> <span data-i18n="t_tarjeta">Tarjeta (Payway)</span></label>
       <label id="opcionMercadoPago"><input type="radio" name="metodoPago" value="mercadopago" checked> Mercado Pago</label>
-      <label id="opcionTransferencia"><input type="radio" name="metodoPago" value="transferencia"> Transferencia bancaria</label>
+      <label id="opcionTransferencia"><input type="radio" name="metodoPago" value="transferencia"> <span data-i18n="t_transferencia">Transferencia bancaria</span></label>
     </div>
 
     <div id="avisoRecargoMP" class="aviso-recargo-mp oculto"></div>
 
     <div id="panelTransferencia" class="panel-transferencia oculto">
-      <p>Transferí el total de la compra a:</p>
+      <p data-i18n="t_transf_intro">Transferí el total de la compra a:</p>
       <div class="transferencia-datos" id="transferenciaDatos">Cargando datos...</div>
-      <p>Usá tu nombre como referencia. Apenas confirmemos que llegó el pago, coordinamos la entrega.</p>
+      <p data-i18n="t_transf_nota">Usá tu nombre como referencia. Apenas confirmemos que llegó el pago, coordinamos la entrega.</p>
     </div>
 
     <button id="btnPagarCheckout">Confirmar pedido</button>
@@ -895,23 +896,24 @@
 <div id="vistaCatalogo">
     <div class="barra-superior-catalogo">
     <div style="justify-self:start; display:flex; align-items:center; gap:4px;">
-      <a class="btn-icono-header" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto">
+      <a class="btn-icono-header" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto" data-i18n-attr="title:t_escanear_producto,aria-label:t_escanear_producto">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
       </a>
-      <button type="button" class="btn-icono-header" id="btnBuscarHeader" title="Menú / Categorías" aria-label="Menú categorías">
+      <button type="button" class="btn-icono-header" id="btnBuscarHeader" title="Menú / Categorías" aria-label="Menú categorías" data-i18n-attr="title:t_menu_categorias,aria-label:g_menu_categorias">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
-      <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" style="display:none;">←</button>
+      <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo" style="display:none;">←</button>
     </div>
     <a href="/" class="enlace-logo-header" title="LON Philosophy" aria-label="LON Philosophy" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <div class="acciones-header-catalogo">
-      <button type="button" class="btn-icono-header btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito">
+      <div data-selector-idioma></div>
+      <button type="button" class="btn-icono-header btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito" data-i18n-attr="title:t_carrito,aria-label:t_carrito">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
         <span class="badge-carrito oculto" id="badgeCarrito">0</span>
       </button>
-      <button type="button" class="btn-icono-header btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar">
+      <button type="button" class="btn-icono-header btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar" data-i18n-attr="aria-label:t_ingresar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
       </button>
     </div>
@@ -919,13 +921,13 @@
 
   <div id="catalogoListaView">
 
-    <div id="catalogoDestacados" data-destacados-titulo="Piezas que miramos dos veces"></div>
+    <div id="catalogoDestacados" data-destacados-titulo=""></div>
 
     <div id="catalogo" class="fila-buscador-categorias">
-      <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 Buscar</button>
+      <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 <span data-i18n="t_buscar">Buscar</span></button>
       <div id="catalogoTabsCategoria"></div>
     </div>
-    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." style="display:none;">
+    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." data-i18n-attr="placeholder:t_ph_buscar" style="display:none;">
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
@@ -935,9 +937,9 @@
 
 <div class="footer-legal">
   <span data-landing="footer_texto">© 2026 FLN Data Analysis — LON Philosophy</span>
-  · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a>
+  · <a href="/privacidad.html" data-i18n="g_privacidad">Privacidad</a> · <a href="/terminos.html" data-i18n="g_terminos">Términos</a>
   <br><a class="footer-ig" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing-ig-href>Instagram <span data-landing-ig-text>@lonphilosophy</span></a>
-  <br><a class="acceso-admin-link" href="/admin.html" style="margin-top:8px; display:inline-block;">Acceso admin →</a>
+  <br><a class="acceso-admin-link" href="/admin.html" style="margin-top:8px; display:inline-block;" data-i18n="g_acceso_admin">Acceso admin →</a>
 </div>
 <img id="lonLogoCms" src="" alt="" data-landing="logo" class="lon-foto-oculta" width="1" height="1">
 
@@ -955,6 +957,12 @@
     } catch (e) {}
     document.querySelectorAll('.enlace-logo-header').forEach((a) => { a.href = destino; });
   })();
+
+  /* Texto armado por JS: el español va escrito acá y el inglés vive en idioma.js.
+     Si idioma.js no cargó, se muestra el español igual. */
+  const T = (clave, es, vars) => window.LONi18n
+    ? window.LONi18n.t(clave, es, vars)
+    : es.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? vars[k] : m));
 
   const catalogoListaView = document.getElementById('catalogoListaView');
   const catalogoDetalleView = document.getElementById('catalogoDetalleView');
@@ -988,6 +996,7 @@
   let terminoBusquedaCatalogo = '';
   let productoEnCheckout = null;
   let modoCheckoutCarrito = false;
+  let productoDetalleActual = null;
 
   function productosCatalogoFiltrados(){
     if (!terminoBusquedaCatalogo) return catalogoPublicoProductos;
@@ -1006,7 +1015,7 @@
   function metaProductoHtml(p){
     const precioHtml = p.precio ? `<span class="precio-item">$${escaparHtmlPublico(String(p.precio))}</span>` : '';
     const estadoClase = p.disponible ? 'estado-stock disponible' : 'estado-stock agotado';
-    const estadoTexto = p.disponible ? 'En stock' : 'Sin stock';
+    const estadoTexto = p.disponible ? T('t_en_stock', 'En stock') : T('t_sin_stock', 'Sin stock');
     return `<div class="meta">${precioHtml}<span class="${estadoClase}">${estadoTexto}</span></div>`;
   }
 
@@ -1055,22 +1064,22 @@
     if (!foto) return mockupPlaceholder(categoria);
     const miniatura = urlMiniaturaPublica(foto);
     const respaldo = encodeURI(foto);
-    const textoAlt = nombre ? `${nombre} — LON Philosophy` : 'Foto del producto';
+    const textoAlt = nombre ? `${nombre} — LON Philosophy` : T('t_foto_producto', 'Foto del producto');
     return `<img src="${escaparHtmlPublico(miniatura)}" alt="${escaparHtmlPublico(textoAlt)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${respaldo}';">`;
   }
 
   async function cargarCatalogoPublico(){
-    catalogoPublicoLista.innerHTML = '<p style="color:var(--ink-muted); font-size:13px;">Cargando catálogo...</p>';
+    catalogoPublicoLista.innerHTML = `<p style="color:var(--ink-muted); font-size:13px;">${T('t_cargando_catalogo', 'Cargando catálogo...')}</p>`;
     try {
       const res = await fetch('/catalogo-publico');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al cargar el catálogo');
+      if (!res.ok) throw new Error(data.error || T('t_err_catalogo_corto', 'Error al cargar el catálogo'));
 
       catalogoPublicoProductos = data.productos || [];
       renderizarCatalogoPublico();
       abrirProductoDesdeUrlSiHaceFalta();
     } catch (err) {
-      catalogoPublicoLista.innerHTML = `<p style="color:var(--stamp-red); font-size:13px;">No se pudo cargar el catálogo: ${escaparHtmlPublico(err.message)}</p>`;
+      catalogoPublicoLista.innerHTML = `<p style="color:var(--stamp-red); font-size:13px;">${T('t_err_catalogo', 'No se pudo cargar el catálogo: {m}', { m: escaparHtmlPublico(err.message) })}</p>`;
     }
   }
 
@@ -1089,7 +1098,7 @@
         <div class="info-item">
           <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
           ${metaProductoHtml(p)}
-          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
+          <button type="button" data-sku-destacado="${escaparHtmlPublico(p.skuGeneral)}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
         </div>
       </div>
     `;
@@ -1163,13 +1172,13 @@
         ? tarjetasHtml.join('') + tarjetasHtml.join('') + tarjetasHtml.join('')
         : tarjetasHtml.join('');
 
-      const tituloDest = (catalogoDestacados.getAttribute('data-destacados-titulo') || 'Piezas que miramos dos veces').trim();
+      const tituloDest = (catalogoDestacados.getAttribute('data-destacados-titulo') || T('t_destacados', 'Piezas que miramos dos veces')).trim();
       catalogoDestacados.innerHTML = `
         <h2 class="titulo-seccion-destacados" data-landing="destacados_titulo">${tituloDest}</h2>
         <div class="carrusel-destacados">
-          <button type="button" class="btn-carrusel izquierda" aria-label="Ver anterior">‹</button>
+          <button type="button" class="btn-carrusel izquierda" aria-label="${T('t_ver_anterior', 'Ver anterior')}">‹</button>
           <div class="carrusel-pista">${htmlPista}</div>
-          <button type="button" class="btn-carrusel derecha" aria-label="Ver siguiente">›</button>
+          <button type="button" class="btn-carrusel derecha" aria-label="${T('t_ver_siguiente', 'Ver siguiente')}">›</button>
         </div>
       `;
 
@@ -1286,7 +1295,7 @@
   function renderizarCatalogoPublico(){
     if (catalogoPublicoProductos.length === 0) {
       catalogoTabsCategoria.innerHTML = '';
-      catalogoPublicoLista.innerHTML = '<p style="color:var(--ink-muted); font-size:13px;">Todavía no hay productos cargados.</p>';
+      catalogoPublicoLista.innerHTML = `<p style="color:var(--ink-muted); font-size:13px;">${T('t_sin_productos', 'Todavía no hay productos cargados.')}</p>`;
       return;
     }
 
@@ -1300,12 +1309,12 @@
       );
 
       if (encontrados.length === 0) {
-        catalogoPublicoLista.innerHTML = `<p style="color:var(--ink-muted); font-size:13px;">No encontramos productos que coincidan con "${escaparHtmlPublico(terminoBusquedaCatalogo)}".</p>`;
+        catalogoPublicoLista.innerHTML = `<p style="color:var(--ink-muted); font-size:13px;">${T('t_sin_resultados', 'No encontramos productos que coincidan con "{q}".', { q: escaparHtmlPublico(terminoBusquedaCatalogo) })}</p>`;
         return;
       }
 
       const gridHtmlBusqueda = `
-        <h3 class="titulo-categoria-catalogo">Resultados para "${escaparHtmlPublico(terminoBusquedaCatalogo)}" (${encontrados.length})</h3>
+        <h3 class="titulo-categoria-catalogo">${T('t_resultados', 'Resultados para "{q}" ({n})', { q: escaparHtmlPublico(terminoBusquedaCatalogo), n: encontrados.length })}</h3>
         <div class="grilla-catalogo-publico">
           ${encontrados.map((p) => `
             <div class="item-catalogo-publico">
@@ -1313,7 +1322,7 @@
               <div class="info-item">
                 <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
                 ${metaProductoHtml(p)}
-                <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
+                <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
               </div>
             </div>
           `).join('')}
@@ -1383,7 +1392,7 @@
 
     const subcategoriasHtml = (mostrarDesplegableSubcategorias && subcategoriasDisponibles.length > 0) ? `
       <div class="caja-subcategorias">
-        <button type="button" class="tab-subcategoria-catalogo${!subcategoriaCatalogoActiva ? ' activo' : ''}" data-subcategoria="">Todas</button>
+        <button type="button" class="tab-subcategoria-catalogo${!subcategoriaCatalogoActiva ? ' activo' : ''}" data-subcategoria="">${T('t_todas', 'Todas')}</button>
         ${subcategoriasDisponibles.map((sub) => `
           <button type="button" class="tab-subcategoria-catalogo${sub === subcategoriaCatalogoActiva ? ' activo' : ''}" data-subcategoria="${escaparHtmlPublico(sub)}">${escaparHtmlPublico(sub)}</button>
         `).join('')}
@@ -1403,7 +1412,7 @@
             <div class="info-item">
               <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
               ${metaProductoHtml(p)}
-              <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
+              <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
             </div>
           </div>
         `).join('')}
@@ -1418,9 +1427,9 @@
     catalogoTabsCategoria.innerHTML = `
       <div class="tabs-categorias-catalogo">
         <div class="contenedor-scroll-categorias">
-          <button type="button" class="btn-flecha-categorias" id="btnCategoriasIzquierda" aria-label="Ver categorías anteriores">‹</button>
+          <button type="button" class="btn-flecha-categorias" id="btnCategoriasIzquierda" aria-label="${T('t_cat_anteriores', 'Ver categorías anteriores')}">‹</button>
           <div class="fila-tabs-categorias-scroll">${tabsHtml}${tabsHtml}${tabsHtml}</div>
-          <button type="button" class="btn-flecha-categorias" id="btnCategoriasDerecha" aria-label="Ver más categorías">›</button>
+          <button type="button" class="btn-flecha-categorias" id="btnCategoriasDerecha" aria-label="${T('t_cat_mas', 'Ver más categorías')}">›</button>
         </div>
         ${subcategoriasHtml}
       </div>
@@ -1513,7 +1522,9 @@
     return [];
   }
 
-  function mostrarDetalleProductoPublico(producto, actualizarUrl = true){
+  function mostrarDetalleProductoPublico(producto, actualizarUrl = true, esRefresco = false){
+    // esRefresco: solo se vuelve a pintar por cambio de idioma; no cuenta como visita ni scrollea.
+    productoDetalleActual = producto;
     // Reflejamos el producto en la URL (?producto=nombre-del-producto) —
     // legible en la barra de direcciones en vez del SKU — para que un
     // refresh (o compartir el link) te deje en el mismo detalle en vez
@@ -1533,7 +1544,7 @@
     // Registramos la visita para "Destacados: más visitados" — en
     // segundo plano, sin bloquear ni avisar nada si falla (no es
     // crítico para poder ver el producto).
-    if (producto.skuGeneral) {
+    if (producto.skuGeneral && !esRefresco) {
       fetch('/producto-visita', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1548,7 +1559,7 @@
       <div class="miniaturas-detalle">
         ${fotos.map((url, indice) => `
           <button type="button" data-foto-indice="${indice}" class="${indice === 0 ? 'activa' : ''}">
-            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="${escaparHtmlPublico(producto.nombre)} — foto ${indice + 1}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
+            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="${escaparHtmlPublico(producto.nombre)} — ${T('t_foto_n', 'foto {n}', { n: indice + 1 })}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
           </button>
         `).join('')}
       </div>
@@ -1560,18 +1571,18 @@
         ${miniaturasHtml}
         <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
         <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
-        <div class="meta">${producto.disponible ? 'En stock' : 'Sin stock'}</div>
+        <div class="meta">${producto.disponible ? T('t_en_stock', 'En stock') : T('t_sin_stock', 'Sin stock')}</div>
         ${producto.precio ? `<div class="precio">$${escaparHtmlPublico(String(producto.precio))}</div>` : ''}
-        <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>Comprar ahora</button>
-        <button type="button" class="btn-agregar-carrito" id="btnAgregarCarrito" ${puedeComprar ? '' : 'disabled'}>Agregar al carrito</button>
+        <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>${T('t_comprar_ahora', 'Comprar ahora')}</button>
+        <button type="button" class="btn-agregar-carrito" id="btnAgregarCarrito" ${puedeComprar ? '' : 'disabled'}>${T('t_agregar_carrito', 'Agregar al carrito')}</button>
         <div id="mensajeAgregarCarrito" style="font-size:12.5px; margin-top:6px; min-height:1em;"></div>
-        ${!puedeComprar ? '<div class="sin-stock-aviso">' + (producto.disponible ? 'Todavía no tiene precio cargado para comprar online.' : 'Sin stock por el momento.') + '</div>' : ''}
+        ${!puedeComprar ? '<div class="sin-stock-aviso">' + (producto.disponible ? T('t_sin_precio', 'Todavía no tiene precio cargado para comprar online.') : T('t_sin_stock_momento', 'Sin stock por el momento.')) + '</div>' : ''}
         ${producto.descripcion ? `<p class="descripcion-producto">${escaparHtmlPublico(producto.descripcion)}</p>` : ''}
       </div>
       <div id="seccionRelacionadosDetalle"></div>
     `;
     mostrarVistaDetalleCatalogo();
-    window.scrollTo(0, 0);
+    if (!esRefresco) window.scrollTo(0, 0);
 
     const btnComprar = document.getElementById('btnComprarProducto');
     if (btnComprar) {
@@ -1585,8 +1596,8 @@
         const agregado = agregarAlCarrito(producto);
         mensajeAgregarCarrito.style.color = agregado ? 'var(--stamp-green)' : 'var(--stamp-red)';
         mensajeAgregarCarrito.textContent = agregado
-          ? 'Agregado al carrito ✓'
-          : 'No hay más stock disponible de este producto.';
+          ? T('t_agregado_carrito', 'Agregado al carrito ✓')
+          : T('t_sin_mas_stock', 'No hay más stock disponible de este producto.');
         setTimeout(() => { mensajeAgregarCarrito.textContent = ''; }, 2500);
       });
     }
@@ -1596,7 +1607,7 @@
       catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((boton) => {
         boton.addEventListener('click', () => {
           const indice = Number(boton.getAttribute('data-foto-indice'));
-          fotoPrincipalDetalle.innerHTML = `<img src="${escaparHtmlPublico(fotos[indice])}" alt="${escaparHtmlPublico(producto.nombre)} — foto ${indice + 1}">`;
+          fotoPrincipalDetalle.innerHTML = `<img src="${escaparHtmlPublico(fotos[indice])}" alt="${escaparHtmlPublico(producto.nombre)} — ${T('t_foto_n', 'foto {n}', { n: indice + 1 })}">`;
           catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((b) => b.classList.remove('activa'));
           boton.classList.add('activa');
         });
@@ -1617,11 +1628,11 @@
     let relacionados = catalogoPublicoProductos.filter((p) =>
       p.skuGeneral !== producto.skuGeneral && (p.categoria || '') === (producto.categoria || '')
     );
-    let titulo = 'También te puede interesar';
+    let titulo = T('t_tambien_interesar', 'También te puede interesar');
 
     if (relacionados.length === 0) {
       relacionados = catalogoPublicoProductos.filter((p) => p.skuGeneral !== producto.skuGeneral);
-      titulo = 'Más productos';
+      titulo = T('t_mas_productos', 'Más productos');
     }
 
     relacionados = ordenarPorDisponibilidad(relacionados).slice(0, 6);
@@ -1641,7 +1652,7 @@
               <div class="info-item">
                 <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
                 ${metaProductoHtml(p)}
-                <button type="button" data-relacionado-indice="${indice}" ${puedeComprarProducto(p) ? '' : 'disabled'}>Agregar</button>
+                <button type="button" data-relacionado-indice="${indice}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
               </div>
             </div>
           `).join('')}
@@ -1755,7 +1766,7 @@
   function actualizarUiSesionCliente(){
     const logueado = Boolean(sesionCliente);
     btnLoginCliente.classList.toggle('logueado', logueado);
-    btnLoginCliente.title = logueado ? `Hola, ${sesionCliente.nombre}` : 'Ingresar';
+    btnLoginCliente.title = logueado ? T('t_hola_nombre', 'Hola, {n}', { n: sesionCliente.nombre }) : T('t_ingresar', 'Ingresar');
     loginClienteLogueado.classList.toggle('oculto', !logueado);
     loginClienteFormulario.classList.toggle('oculto', logueado);
     if (logueado) nombreClienteLogueado.textContent = sesionCliente.nombre;
@@ -1769,15 +1780,15 @@
 
   async function cargarFidelidadCafe(){
     if (!sesionCliente) return;
-    puntosFidelidadCafe.textContent = 'Cargando...';
+    puntosFidelidadCafe.textContent = T('t_cargando', 'Cargando...');
     qrFidelidadCliente.classList.add('oculto');
     try {
       const res = await fetch(`/cliente/mi-cuenta?token=${encodeURIComponent(sesionCliente.token)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      if (!res.ok) throw new Error(data.error || T('t_err_desconocido', 'Error desconocido'));
 
       if (data.cafesContador >= data.cafesParaGratis) {
-        puntosFidelidadCafe.textContent = '🎁 ¡Tenés un regalo esperando!';
+        puntosFidelidadCafe.textContent = '🎁 ' + T('t_regalo', '¡Tenés un regalo esperando!');
       } else {
         const llenos = '☕'.repeat(data.cafesContador);
         const vacios = '⚪'.repeat(Math.max(0, data.cafesParaGratis - data.cafesContador));
@@ -1786,7 +1797,7 @@
       qrFidelidadCliente.src = data.qrDataUrl;
       qrFidelidadCliente.classList.remove('oculto');
     } catch (err) {
-      puntosFidelidadCafe.textContent = 'No se pudo cargar tu tarjeta de café.';
+      puntosFidelidadCafe.textContent = T('t_err_tarjeta', 'No se pudo cargar tu tarjeta de café.');
     }
   }
 
@@ -1824,12 +1835,12 @@
         body: JSON.stringify({ idToken: respuesta.credential }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) { mensajeLoginCliente.textContent = data.error || 'No se pudo iniciar sesión.'; return; }
+      if (!res.ok || !data.ok) { mensajeLoginCliente.textContent = data.error || T('t_err_sesion', 'No se pudo iniciar sesión.'); return; }
 
       guardarSesionCliente({ token: data.token, email: data.email, nombre: data.nombre, exp: data.exp });
       pantallaLoginCliente.classList.add('hidden');
     } catch (err) {
-      mensajeLoginCliente.textContent = 'No se pudo verificar la cuenta de Google. Revisá tu conexión.';
+      mensajeLoginCliente.textContent = T('t_err_google', 'No se pudo verificar la cuenta de Google. Revisá tu conexión.');
     }
   }
 
@@ -1867,7 +1878,7 @@
       tarifasEnvioPorProvincia = {};
       tarifas.forEach((t) => { tarifasEnvioPorProvincia[t.provincia.toUpperCase()] = t.costo; });
 
-      selectProvinciaCheckout.innerHTML = '<option value="">Elegí tu provincia...</option>' +
+      selectProvinciaCheckout.innerHTML = `<option value="">${T('t_elegi_provincia', 'Elegí tu provincia...')}</option>` +
         tarifas.map((t) => `<option value="${escaparHtmlPublico(t.provincia)}">${escaparHtmlPublico(t.provincia)}</option>`).join('');
     } catch (err) {
       // Si falla, el checkout sigue funcionando sin estimación de envío.
@@ -1895,8 +1906,8 @@
     }
     envioEstimadoCheckout.classList.remove('oculto');
     envioEstimadoCheckout.textContent = costo
-      ? `Envío estimado a ${selectProvinciaCheckout.value}: $${costo} (es solo un estimado, se paga por separado — coordinamos el costo final por WhatsApp)`
-      : 'Todavía no tenemos un costo estimado para esa provincia. El envío se paga por separado, lo coordinamos por WhatsApp.';
+      ? T('t_envio_estimado', 'Envío estimado a {p}: ${c} (es solo un estimado, se paga por separado — coordinamos el costo final por WhatsApp)', { p: selectProvinciaCheckout.value, c: costo })
+      : T('t_envio_sin_costo', 'Todavía no tenemos un costo estimado para esa provincia. El envío se paga por separado, lo coordinamos por WhatsApp.');
   }
 
   /* ------------------------------------------------------------
@@ -1972,7 +1983,7 @@
     const agregado = agregarAlCarrito(producto);
     const textoOriginal = boton.textContent;
     boton.disabled = true;
-    boton.textContent = agregado ? 'Agregado ✓' : 'Sin stock';
+    boton.textContent = agregado ? T('t_agregado', 'Agregado ✓') : T('t_sin_stock', 'Sin stock');
     setTimeout(() => {
       boton.textContent = textoOriginal;
       boton.disabled = !puedeComprarProducto(producto);
@@ -2018,7 +2029,7 @@
   function renderizarCarrito(){
     const items = obtenerCarrito();
     if (items.length === 0) {
-      listaItemsCarrito.innerHTML = '<div class="carrito-vacio">Todavía no agregaste nada.</div>';
+      listaItemsCarrito.innerHTML = `<div class="carrito-vacio">${T('t_carrito_vacio', 'Todavía no agregaste nada.')}</div>`;
       totalCarritoDiv.classList.add('oculto');
       btnIrAPagarCarrito.disabled = true;
       return;
@@ -2030,22 +2041,22 @@
         <div class="foto-item-carrito">${it.foto ? `<img src="${escaparHtmlPublico(it.foto)}" alt="">` : ''}</div>
         <div class="info-item-carrito">
           <div class="nombre-item-carrito">${escaparHtmlPublico(it.nombre)}</div>
-          <div class="precio-item-carrito">$${escaparHtmlPublico(String(it.precio))} c/u</div>
+          <div class="precio-item-carrito">$${escaparHtmlPublico(String(it.precio))} ${T('t_c_u', 'c/u')}</div>
         </div>
         <div class="controles-item-carrito">
           <div class="selector-cantidad-carrito">
-            <button type="button" class="btn-cantidad-carrito" data-accion="restar" aria-label="Quitar una unidad">−</button>
+            <button type="button" class="btn-cantidad-carrito" data-accion="restar" aria-label="${T('t_quitar_una', 'Quitar una unidad')}">−</button>
             <span class="cantidad-item-carrito">${it.cantidad}</span>
-            <button type="button" class="btn-cantidad-carrito" data-accion="sumar" aria-label="Agregar una unidad" ${it.cantidad >= (it.stock || 0) ? 'disabled title="No hay más stock disponible"' : ''}>+</button>
+            <button type="button" class="btn-cantidad-carrito" data-accion="sumar" aria-label="${T('t_agregar_una', 'Agregar una unidad')}" ${it.cantidad >= (it.stock || 0) ? `disabled title="${T('t_sin_mas_stock_corto', 'No hay más stock disponible')}"` : ''}>+</button>
           </div>
-          <button type="button" class="btn-quitar-carrito" data-accion="quitar" title="Quitar">✕</button>
+          <button type="button" class="btn-quitar-carrito" data-accion="quitar" title="${T('t_quitar', 'Quitar')}">✕</button>
         </div>
       </div>
     `).join('');
 
     const total = items.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
     totalCarritoDiv.classList.remove('oculto');
-    totalCarritoDiv.innerHTML = `<span>Total</span><span>$${total}</span>`;
+    totalCarritoDiv.innerHTML = `<span>${T('t_total', 'Total')}</span><span>$${total}</span>`;
 
     listaItemsCarrito.querySelectorAll('.item-carrito').forEach((fila) => {
       const sku = fila.getAttribute('data-sku');
@@ -2171,38 +2182,63 @@
       const totalConRecargo = aplicarRecargoMP(totalBase, porcentaje);
       avisoRecargoMP.classList.toggle('oculto', porcentaje <= 0);
       if (porcentaje > 0) {
-        avisoRecargoMP.textContent = `El precio sube ${porcentaje}% si pagás con Mercado Pago: $${totalConRecargo} en vez de $${totalBase}.`;
+        avisoRecargoMP.textContent = T('t_recargo_mp', 'El precio sube {p}% si pagás con Mercado Pago: ${a} en vez de ${b}.', { p: porcentaje, a: totalConRecargo, b: totalBase });
       }
     } else {
       avisoRecargoMP.classList.add('oculto');
     }
 
     btnPagarCheckout.textContent = esTransferencia
-      ? 'Confirmar pedido (transferencia)'
-      : (esMercadoPago ? 'Pagar con Mercado Pago' : 'Pagar con Payway');
+      ? T('t_btn_transf', 'Confirmar pedido (transferencia)')
+      : (esMercadoPago ? T('t_btn_mp', 'Pagar con Mercado Pago') : T('t_btn_payway', 'Pagar con Payway'));
 
     if (!esTransferencia) return;
 
+    if (!datosTransferenciaCache) transferenciaDatosDiv.textContent = T('t_cargando_datos', 'Cargando datos...');
     const datos = await getDatosTransferencia();
     const total = calcularTotalCheckout();
 
     if (!datos.alias && !datos.cbu) {
-      transferenciaDatosDiv.innerHTML = 'Todavía no configuramos los datos de transferencia. Escribinos por WhatsApp para coordinar el pago.';
+      transferenciaDatosDiv.textContent = T('t_sin_datos_transf', 'Todavía no configuramos los datos de transferencia. Escribinos por WhatsApp para coordinar el pago.');
       return;
     }
 
     const filas = [];
-    if (datos.alias) filas.push(`<div><span class="etiqueta">Alias:</span>${escaparHtmlPublico(datos.alias)}</div>`);
+    if (datos.alias) filas.push(`<div><span class="etiqueta">${T('t_alias', 'Alias:')}</span>${escaparHtmlPublico(datos.alias)}</div>`);
     if (datos.cbu) filas.push(`<div><span class="etiqueta">CBU:</span>${escaparHtmlPublico(datos.cbu)}</div>`);
-    if (datos.titular) filas.push(`<div><span class="etiqueta">Titular:</span>${escaparHtmlPublico(datos.titular)}</div>`);
-    if (datos.banco) filas.push(`<div><span class="etiqueta">Banco:</span>${escaparHtmlPublico(datos.banco)}</div>`);
-    filas.push(`<div><span class="etiqueta">Monto:</span>$${escaparHtmlPublico(String(total))}</div>`);
+    if (datos.titular) filas.push(`<div><span class="etiqueta">${T('t_titular', 'Titular:')}</span>${escaparHtmlPublico(datos.titular)}</div>`);
+    if (datos.banco) filas.push(`<div><span class="etiqueta">${T('t_banco', 'Banco:')}</span>${escaparHtmlPublico(datos.banco)}</div>`);
+    filas.push(`<div><span class="etiqueta">${T('t_monto', 'Monto:')}</span>$${escaparHtmlPublico(String(total))}</div>`);
 
     transferenciaDatosDiv.innerHTML = filas.join('');
   }
 
   const checkoutBox = document.getElementById('checkoutBox');
   const tituloCheckout = document.getElementById('tituloCheckout');
+
+  /* Título, botón de volver y resumen dependen del modo (producto o carrito);
+     se separan en una función para poder repintarlos al cambiar de idioma. */
+  function pintarTextosCheckout(){
+    if (modoCheckoutCarrito) {
+      tituloCheckout.textContent = T('t_finalizar_carrito', 'Finalizar compra (carrito)');
+      btnVolverCheckout.textContent = T('t_volver_carrito', '← Volver al carrito');
+      const items = obtenerCarrito();
+      const total = items.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
+      checkoutResumen.innerHTML = items.map((it) => `
+        <div class="item-resumen-carrito">
+          <span class="nombre">${escaparHtmlPublico(it.nombre)} x${it.cantidad}</span>
+          <span>$${escaparHtmlPublico(String(it.precio * it.cantidad))}</span>
+        </div>
+      `).join('') + `<div class="total-resumen-carrito"><span>${T('t_total', 'Total')}</span><span>$${total}</span></div>`;
+    } else if (productoEnCheckout) {
+      tituloCheckout.textContent = T('t_finalizar', 'Finalizar compra');
+      btnVolverCheckout.textContent = T('t_volver_producto', '← Volver al producto');
+      checkoutResumen.innerHTML = `
+        <div class="nombre">${escaparHtmlPublico(productoEnCheckout.nombre)}</div>
+        <div class="precio">$${escaparHtmlPublico(String(productoEnCheckout.precio))} ${T('t_c_u', 'c/u')}</div>
+      `;
+    }
+  }
 
   /* Campos comunes a ambos modos de checkout (comprador + entrega),
      reseteados siempre que se abre la pantalla. */
@@ -2241,15 +2277,8 @@
     inputCantidadCheckout.value = 1;
     inputCantidadCheckout.max = Number(producto.cantidad) || 1;
     checkoutBox.classList.remove('modo-carrito');
-    tituloCheckout.textContent = 'Finalizar compra';
-    btnVolverCheckout.textContent = '← Volver al producto';
     resetearCamposCompradorCheckout();
-
-    checkoutResumen.innerHTML = `
-      <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
-      <div class="precio">$${escaparHtmlPublico(String(producto.precio))} c/u</div>
-    `;
-
+    pintarTextosCheckout();
     actualizarPanelPago();
     pantallaCheckout.classList.remove('hidden');
   }
@@ -2258,19 +2287,8 @@
     modoCheckoutCarrito = true;
     productoEnCheckout = null;
     checkoutBox.classList.add('modo-carrito');
-    tituloCheckout.textContent = 'Finalizar compra (carrito)';
-    btnVolverCheckout.textContent = '← Volver al carrito';
     resetearCamposCompradorCheckout();
-
-    const items = obtenerCarrito();
-    const total = items.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
-    checkoutResumen.innerHTML = items.map((it) => `
-      <div class="item-resumen-carrito">
-        <span class="nombre">${escaparHtmlPublico(it.nombre)} x${it.cantidad}</span>
-        <span>$${escaparHtmlPublico(String(it.precio * it.cantidad))}</span>
-      </div>
-    `).join('') + `<div class="total-resumen-carrito"><span>Total</span><span>$${total}</span></div>`;
-
+    pintarTextosCheckout();
     actualizarPanelPago();
     pantallaCheckout.classList.remove('hidden');
   }
@@ -2319,8 +2337,10 @@
     if (cantidad > stockDisponible) {
       mensajeCheckout.className = 'checkout-mensaje error';
       mensajeCheckout.textContent = stockDisponible > 0
-        ? `Solo quedan ${stockDisponible} unidad${stockDisponible === 1 ? '' : 'es'} disponibles de este producto.`
-        : 'Este producto ya no tiene stock disponible.';
+        ? (stockDisponible === 1
+          ? T('t_pocas_unidades', 'Solo queda {n} unidad disponible de este producto.', { n: stockDisponible })
+          : T('t_pocas_unidades_pl', 'Solo quedan {n} unidades disponibles de este producto.', { n: stockDisponible }))
+        : T('t_sin_stock_prod', 'Este producto ya no tiene stock disponible.');
       return;
     }
     const nombre = document.getElementById('inputNombreCheckout').value.trim();
@@ -2339,33 +2359,33 @@
 
     if (!nombre) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Ingresá tu nombre y apellido.';
+      mensajeCheckout.textContent = T('t_falta_nombre', 'Ingresá tu nombre y apellido.');
       document.getElementById('inputNombreCheckout').focus();
       return;
     }
     if (!email) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Ingresá tu email — lo necesitamos para mandarte la confirmación del pedido.';
+      mensajeCheckout.textContent = T('t_falta_email', 'Ingresá tu email — lo necesitamos para mandarte la confirmación del pedido.');
       document.getElementById('inputEmailCheckout').focus();
       return;
     }
     if (!telefono || !/^[0-9]+$/.test(telefono)) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Ingresá tu teléfono (solo números).';
+      mensajeCheckout.textContent = T('t_falta_telefono', 'Ingresá tu teléfono (solo números).');
       document.getElementById('inputTelefonoCheckout').focus();
       return;
     }
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Completá al menos dirección y ciudad para el envío.';
+      mensajeCheckout.textContent = T('t_falta_direccion', 'Completá al menos dirección y ciudad para el envío.');
       document.getElementById(!direccion ? 'inputDireccionCheckout' : 'inputCiudadCheckout').focus();
       return;
     }
 
     btnPagarCheckout.disabled = true;
     btnPagarCheckout.textContent = metodoPago === 'payway'
-      ? 'Redirigiendo a Payway...'
-      : (metodoPago === 'mercadopago' ? 'Redirigiendo a Mercado Pago...' : 'Confirmando pedido...');
+      ? T('t_redir_payway', 'Redirigiendo a Payway...')
+      : (metodoPago === 'mercadopago' ? T('t_redir_mp', 'Redirigiendo a Mercado Pago...') : T('t_confirmando', 'Confirmando pedido...'));
 
     try {
       const res = await fetch('/crear-pago', {
@@ -2379,7 +2399,7 @@
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      if (!res.ok) throw new Error(data.error || T('t_err_desconocido', 'Error desconocido'));
 
       if (metodoPago === 'payway' || metodoPago === 'mercadopago') {
         window.location.href = data.redirectUrl;
@@ -2389,16 +2409,16 @@
       // Transferencia: no hay redirect, mostramos la confirmación acá mismo.
       const t = data.transferencia || {};
       mensajeCheckout.className = 'checkout-mensaje ok';
-      mensajeCheckout.textContent = `¡Listo! Tu pedido es ${data.pedidoId}. Transferí $${t.monto} y guardá el número de pedido como referencia. Coordinamos la entrega apenas confirmemos el pago.`;
-      btnPagarCheckout.textContent = 'Pedido creado ✓';
+      mensajeCheckout.textContent = T('t_ok_transf', '¡Listo! Tu pedido es {id}. Transferí ${m} y guardá el número de pedido como referencia. Coordinamos la entrega apenas confirmemos el pago.', { id: data.pedidoId, m: t.monto });
+      btnPagarCheckout.textContent = T('t_pedido_creado', 'Pedido creado ✓');
       btnPagarCheckout.disabled = true;
     } catch (err) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = `No se pudo iniciar el pago: ${err.message}`;
+      mensajeCheckout.textContent = T('t_err_pago', 'No se pudo iniciar el pago: {m}', { m: err.message });
       btnPagarCheckout.disabled = false;
       btnPagarCheckout.textContent = metodoPago === 'payway'
-        ? 'Pagar con Payway'
-        : (metodoPago === 'mercadopago' ? 'Pagar con Mercado Pago' : 'Confirmar pedido (transferencia)');
+        ? T('t_btn_payway', 'Pagar con Payway')
+        : (metodoPago === 'mercadopago' ? T('t_btn_mp', 'Pagar con Mercado Pago') : T('t_btn_transf', 'Confirmar pedido (transferencia)'));
     }
   });
 
@@ -2421,25 +2441,25 @@
 
     if (!nombre) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Ingresá tu nombre y apellido.';
+      mensajeCheckout.textContent = T('t_falta_nombre', 'Ingresá tu nombre y apellido.');
       document.getElementById('inputNombreCheckout').focus();
       return;
     }
     if (!email) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Ingresá tu email — lo necesitamos para mandarte la confirmación del pedido.';
+      mensajeCheckout.textContent = T('t_falta_email', 'Ingresá tu email — lo necesitamos para mandarte la confirmación del pedido.');
       document.getElementById('inputEmailCheckout').focus();
       return;
     }
     if (!telefono || !/^[0-9]+$/.test(telefono)) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Ingresá tu teléfono (solo números).';
+      mensajeCheckout.textContent = T('t_falta_telefono', 'Ingresá tu teléfono (solo números).');
       document.getElementById('inputTelefonoCheckout').focus();
       return;
     }
     if (metodoEnvio === 'Envio a domicilio' && (!direccion || !ciudad)) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = 'Completá al menos dirección y ciudad para el envío.';
+      mensajeCheckout.textContent = T('t_falta_direccion', 'Completá al menos dirección y ciudad para el envío.');
       document.getElementById(!direccion ? 'inputDireccionCheckout' : 'inputCiudadCheckout').focus();
       return;
     }
@@ -2447,8 +2467,8 @@
     const metodoPago = metodoPagoSeleccionado();
     btnPagarCheckout.disabled = true;
     btnPagarCheckout.textContent = metodoPago === 'mercadopago'
-      ? 'Redirigiendo a Mercado Pago...'
-      : 'Confirmando pedido...';
+      ? T('t_redir_mp', 'Redirigiendo a Mercado Pago...')
+      : T('t_confirmando', 'Confirmando pedido...');
 
     try {
       const res = await fetch('/crear-pago-carrito', {
@@ -2462,10 +2482,10 @@
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      if (!res.ok) throw new Error(data.error || T('t_err_desconocido', 'Error desconocido'));
 
       if (metodoPago === 'mercadopago' || metodoPago === 'payway') {
-        if (!data.redirectUrl) throw new Error('No hubo URL de pago.');
+        if (!data.redirectUrl) throw new Error(T('t_sin_url_pago', 'No hubo URL de pago.'));
         guardarCarrito([]);
         window.location.href = data.redirectUrl;
         return;
@@ -2473,23 +2493,50 @@
 
       const tr = data.transferencia || {};
       mensajeCheckout.className = 'checkout-mensaje ok';
-      mensajeCheckout.textContent = `¡Listo! Tu pedido es ${data.pedidoIds.join(', ')}. Transferí $${tr.monto} a ${tr.titular || 'la cuenta indicada'} y guardá esos números como referencia.`;
-      btnPagarCheckout.textContent = 'Pedido creado ✓';
+      mensajeCheckout.textContent = T('t_ok_transf_carrito', '¡Listo! Tu pedido es {id}. Transferí ${m} a {t} y guardá esos números como referencia.', { id: data.pedidoIds.join(', '), m: tr.monto, t: tr.titular || T('t_cuenta_indicada', 'la cuenta indicada') });
+      btnPagarCheckout.textContent = T('t_pedido_creado', 'Pedido creado ✓');
       btnPagarCheckout.disabled = true;
       guardarCarrito([]);
     } catch (err) {
       mensajeCheckout.className = 'checkout-mensaje error';
-      mensajeCheckout.textContent = `No se pudo confirmar el pedido: ${err.message}`;
+      mensajeCheckout.textContent = T('t_err_pedido', 'No se pudo confirmar el pedido: {m}', { m: err.message });
       btnPagarCheckout.disabled = false;
       btnPagarCheckout.textContent = metodoPago === 'mercadopago'
-        ? 'Pagar con Mercado Pago'
-        : 'Confirmar pedido (transferencia)';
+        ? T('t_btn_mp', 'Pagar con Mercado Pago')
+        : T('t_btn_transf', 'Confirmar pedido (transferencia)');
     }
   }
+
+  /* Textos que arma el JS (no el HTML estático): se fijan al cargar y se repintan
+     cuando se cambia de idioma con el selector. */
+  function textosFijosDeInicio(){
+    selectProvinciaCheckout.options[0].textContent = T('t_elegi_provincia', 'Elegí tu provincia...');
+    const wa = document.getElementById('btnAbrirWhatsapp');
+    if (wa) wa.href = 'https://wa.me/5491164032055?text=' + encodeURIComponent(T('t_whatsapp_msg', 'Hola! Tengo una consulta sobre un producto.'));
+  }
+  textosFijosDeInicio();
+
+  window.addEventListener('lon-idioma', () => {
+    textosFijosDeInicio();
+    actualizarUiSesionCliente();
+    if (sesionCliente && !pantallaLoginCliente.classList.contains('hidden')) cargarFidelidadCafe();
+    if (catalogoPublicoProductos.length) renderizarCatalogoPublico();
+    cargarDestacados();
+    if (productoDetalleActual && catalogoDetalleView.style.display === 'block') {
+      mostrarDetalleProductoPublico(productoDetalleActual, false, true);
+    }
+    if (!pantallaCarrito.classList.contains('hidden')) renderizarCarrito();
+    // Con el botón deshabilitado hay un pedido en curso o ya creado: no se toca.
+    if (!pantallaCheckout.classList.contains('hidden') && !btnPagarCheckout.disabled) {
+      pintarTextosCheckout();
+      actualizarEnvioEstimado();
+      actualizarPanelPago();
+    }
+  });
 </script>
 
 <div class="flotantes-contacto">
-  <a class="btn-flotante btn-flotante-whatsapp" id="btnAbrirWhatsapp" href="https://wa.me/5491164032055?text=Hola%21%20Tengo%20una%20consulta%20sobre%20un%20producto." target="_blank" rel="noopener noreferrer" title="Hablar por WhatsApp" aria-label="Hablar por WhatsApp">
+  <a class="btn-flotante btn-flotante-whatsapp" id="btnAbrirWhatsapp" href="https://wa.me/5491164032055?text=Hola%21%20Tengo%20una%20consulta%20sobre%20un%20producto." target="_blank" rel="noopener noreferrer" title="Hablar por WhatsApp" aria-label="Hablar por WhatsApp" data-i18n-attr="title:t_whatsapp,aria-label:t_whatsapp">
     <svg viewBox="0 0 32 32" width="26" height="26" fill="currentColor" aria-hidden="true">
       <path d="M16.004 3C9.106 3 3.5 8.605 3.5 15.5c0 2.294.62 4.44 1.7 6.29L3 29l7.4-2.14a12.44 12.44 0 0 0 5.6 1.34h.004c6.898 0 12.5-5.605 12.5-12.5S22.902 3 16.004 3Zm0 22.77h-.003a10.35 10.35 0 0 1-5.27-1.443l-.378-.224-4.39 1.27 1.293-4.28-.246-.393a10.29 10.29 0 0 1-1.58-5.5c0-5.696 4.634-10.33 10.578-10.33 2.826 0 5.48 1.1 7.478 3.098a10.5 10.5 0 0 1 3.096 7.472c0 5.696-4.634 10.33-10.578 10.33Zm5.796-7.732c-.317-.159-1.877-.927-2.168-1.033-.29-.106-.502-.159-.713.16-.211.317-.818 1.032-1.003 1.244-.185.212-.37.238-.687.08-.317-.16-1.34-.494-2.552-1.575-.943-.841-1.58-1.879-1.765-2.196-.185-.318-.02-.49.139-.648.143-.142.317-.37.476-.556.159-.185.211-.318.317-.53.106-.211.053-.397-.026-.556-.08-.159-.713-1.72-.977-2.354-.257-.617-.518-.534-.713-.544l-.607-.011c-.212 0-.556.08-.847.397-.29.318-1.11 1.085-1.11 2.647s1.136 3.07 1.294 3.283c.159.212 2.235 3.412 5.415 4.785.756.327 1.347.522 1.807.668.759.242 1.45.208 1.996.126.609-.091 1.877-.767 2.14-1.508.264-.741.264-1.376.185-1.508-.08-.132-.29-.212-.607-.37Z"/>
     </svg>
@@ -2516,6 +2563,7 @@
         var valor = contenido[key];
         if (valor == null || String(valor).trim() === '') return;
         valor = String(valor);
+        el.setAttribute('data-i18n-cms', '');
         if (el.tagName === 'IMG') {
           el.src = valor;
           if (key === 'logo') {

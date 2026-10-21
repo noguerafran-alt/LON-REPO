@@ -106,120 +106,122 @@ footer a:hover{color:var(--accent-terracota)}
 <header class="header">
   <div class="header-row">
     <div class="left">
-      <a class="icon-btn" href="/cliente.html" aria-label="Escanear" title="Escanear">
+      <a class="icon-btn" href="/cliente.html" aria-label="Escanear" title="Escanear" data-i18n-attr="aria-label:g_escanear,title:g_escanear">
         <svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
       </a>
-      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" title="Menú">
+      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" title="Menú" data-i18n-attr="aria-label:g_menu_categorias,title:g_menu">
         <svg viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
     </div>
     <a href="/" aria-label="LON Philosophy"><img class="logo" src="/logo-catalogo-white.png" alt="LON" width="120" height="28"></a>
     <div class="right">
-      <a class="icon-btn" href="/tienda" aria-label="Catálogo" title="Catálogo">
+      <div data-selector-idioma></div>
+      <a class="icon-btn" href="/tienda" aria-label="Catálogo" title="Catálogo" data-i18n-attr="aria-label:g_catalogo,title:g_catalogo">
         <svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
       </a>
-      <a class="icon-btn" href="/tienda" aria-label="Cuenta" title="Cuenta">
+      <a class="icon-btn" href="/tienda" aria-label="Cuenta" title="Cuenta" data-i18n-attr="aria-label:g_cuenta,title:g_cuenta">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
       </a>
     </div>
   </div>
 </header>
 
-<nav class="cats" aria-label="Categorías">
+<nav class="cats" aria-label="Categorías" data-i18n-attr="aria-label:g_categorias">
   <div class="cats-inner">
-    <a href="/tienda?cat=ANTIGUEDADES">Antigüedades</a>
-    <a href="/tienda?cat=CERAMICA">Cerámica</a>
-    <a href="/tienda?cat=JOYAS">Joyas</a>
-    <a href="/tienda?cat=LIBROS">Libros</a>
-    <a href="/tienda?cat=MADERA">Madera</a>
-    <a href="/tienda?cat=VELAS">Velas</a>
-    <a href="/carta">Carta del café</a>
+    <a href="/tienda?cat=ANTIGUEDADES" data-i18n="g_cat_antiguedades">Antigüedades</a>
+    <a href="/tienda?cat=CERAMICA" data-i18n="g_cat_ceramica">Cerámica</a>
+    <a href="/tienda?cat=JOYAS" data-i18n="g_cat_joyas">Joyas</a>
+    <a href="/tienda?cat=LIBROS" data-i18n="g_cat_libros">Libros</a>
+    <a href="/tienda?cat=MADERA" data-i18n="g_cat_madera">Madera</a>
+    <a href="/tienda?cat=VELAS" data-i18n="g_cat_velas">Velas</a>
+    <a href="/carta" data-i18n="g_carta_cafe">Carta del café</a>
   </div>
 </nav>
 
 <div class="panel-menu" id="panelMenuLanding" hidden>
   <div class="panel-menu-backdrop" data-cerrar-menu></div>
-  <div class="panel-menu-sheet" role="dialog" aria-label="Menú">
-    <button type="button" class="panel-menu-cerrar" data-cerrar-menu aria-label="Cerrar">×</button>
-    <h2>Categorías</h2>
-    <a href="/tienda?cat=ANTIGUEDADES">Antigüedades</a>
-    <a href="/tienda?cat=CERAMICA">Cerámica</a>
-    <a href="/tienda?cat=JOYAS">Joyas</a>
-    <a href="/tienda?cat=LIBROS">Libros</a>
-    <a href="/tienda?cat=MADERA">Madera</a>
-    <a href="/tienda?cat=VELAS">Velas</a>
-    <a href="/carta">Carta del café</a>
-    <a href="/tienda" style="margin-top:12px;border:none;font-weight:600;">Ver catálogo completo →</a>
+  <div class="panel-menu-sheet" role="dialog" aria-label="Menú" data-i18n-attr="aria-label:g_menu">
+    <button type="button" class="panel-menu-cerrar" data-cerrar-menu aria-label="Cerrar" data-i18n-attr="aria-label:g_cerrar">×</button>
+    <h2 data-i18n="g_categorias">Categorías</h2>
+    <a href="/tienda?cat=ANTIGUEDADES" data-i18n="g_cat_antiguedades">Antigüedades</a>
+    <a href="/tienda?cat=CERAMICA" data-i18n="g_cat_ceramica">Cerámica</a>
+    <a href="/tienda?cat=JOYAS" data-i18n="g_cat_joyas">Joyas</a>
+    <a href="/tienda?cat=LIBROS" data-i18n="g_cat_libros">Libros</a>
+    <a href="/tienda?cat=MADERA" data-i18n="g_cat_madera">Madera</a>
+    <a href="/tienda?cat=VELAS" data-i18n="g_cat_velas">Velas</a>
+    <a href="/carta" data-i18n="g_carta_cafe">Carta del café</a>
+    <a href="/tienda" style="margin-top:12px;border:none;font-weight:600;" data-i18n="l_ver_completo">Ver catálogo completo →</a>
   </div>
 </div>
 
 <main>
-  <section class="hero" aria-label="Presentación LON Philosophy">
+  <section class="hero" aria-label="Presentación LON Philosophy" data-i18n-attr="aria-label:l_presentacion">
     <img class="hero-foto" src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen" data-landing-alt="hero_imagen_alt">
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-copy">
       <p class="eyebrow" data-landing="hero_eyebrow">LON Philosophy</p>
       <h1 data-landing="hero_tagline">Making community</h1>
-      <p class="hero-sub" data-landing="hero_ubicacion">Libros, objetos y café — para estar presente</p>
+      <p class="hero-sub" data-landing="hero_ubicacion" data-i18n="l_ubicacion">Libros, objetos y café — para estar presente</p>
       <div class="cta-row">
-        <a class="btn-solid" href="/tienda" data-landing="cta_primary_label">Ver piezas</a>
-        <a class="btn-link" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label">Seguinos en Instagram</a>
+        <a class="btn-solid" href="/tienda" data-landing="cta_primary_label" data-i18n="l_ver_piezas">Ver piezas</a>
+        <a class="btn-link" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer" data-landing="cta_secondary_label" data-i18n="l_instagram">Seguinos en Instagram</a>
       </div>
     </div>
   </section>
 
-  <section class="lon-sobre" id="sobre" aria-label="Quiénes somos">
+  <section class="lon-sobre" id="sobre" aria-label="Quiénes somos" data-i18n-attr="aria-label:l_quienes">
     <div>
-      <h2 data-landing="sobre_titulo">Quiénes somos</h2>
-      <p class="lon-sobre-lead muted" data-landing="sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
-      <p class="lon-sobre-cuerpo muted" data-landing="sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
+      <h2 data-landing="sobre_titulo" data-i18n="l_quienes">Quiénes somos</h2>
+      <p class="lon-sobre-lead muted" data-landing="sobre_lead" data-i18n="l_sobre_lead">Somos un concept store que junta lecturas, objetos y café en un mismo ritmo: mirar, elegir, quedarse un rato.</p>
+      <p class="lon-sobre-cuerpo muted" data-landing="sobre_cuerpo" data-i18n="l_sobre_cuerpo">LON Philosophy making community. Curamos libros y piezas con la misma atención: ver y apreciar lo que uno está obteniendo es elegir estar presente.</p>
     </div>
     <div class="lon-sobre-fotos">
-      <img src="" alt="LON — el local" data-landing="sobre_foto_a" data-landing-alt="sobre_foto_a_alt" class="lon-foto-oculta" width="600" height="800">
-      <img src="" alt="LON — detalle" data-landing="sobre_foto_b" data-landing-alt="sobre_foto_b_alt" class="lon-foto-oculta" width="600" height="800">
+      <img src="" alt="LON — el local" data-i18n-attr="alt:l_alt_local" data-landing="sobre_foto_a" data-landing-alt="sobre_foto_a_alt" class="lon-foto-oculta" width="600" height="800">
+      <img src="" alt="LON — detalle" data-i18n-attr="alt:l_alt_detalle" data-landing="sobre_foto_b" data-landing-alt="sobre_foto_b_alt" class="lon-foto-oculta" width="600" height="800">
     </div>
   </section>
 
   <div class="pillars-wrap">
-    <h2 data-landing="pilares_titulo">Qué vas a encontrar</h2>
+    <h2 data-landing="pilares_titulo" data-i18n="l_pilares_titulo">Qué vas a encontrar</h2>
     <div class="pillars">
       <div>
-        <h3 data-landing="pilar_1_titulo">Libros</h3>
-        <p class="muted" data-landing="pilar_1_texto">Lecturas para demorarse — club, novedades y anaqueles con criterio.</p>
+        <h3 data-landing="pilar_1_titulo" data-i18n="g_cat_libros">Libros</h3>
+        <p class="muted" data-landing="pilar_1_texto" data-i18n="l_pilar1_texto">Lecturas para demorarse — club, novedades y anaqueles con criterio.</p>
       </div>
       <div>
-        <h3 data-landing="pilar_2_titulo">Objetos</h3>
-        <p class="muted" data-landing="pilar_2_texto">Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.</p>
+        <h3 data-landing="pilar_2_titulo" data-i18n="l_pilar2_titulo">Objetos</h3>
+        <p class="muted" data-landing="pilar_2_texto" data-i18n="l_pilar2_texto">Cerámica, joyas, velas y piezas que habitan la mesa y el cuerpo.</p>
       </div>
       <div>
-        <h3 data-landing="pilar_3_titulo">Café &amp; comunidad</h3>
-        <p class="muted" data-landing="pilar_3_texto">Un espacio para encontrarse. Fidelidad en taza, conversación en el local.</p>
+        <h3 data-landing="pilar_3_titulo" data-i18n="l_pilar3_titulo">Café &amp; comunidad</h3>
+        <p class="muted" data-landing="pilar_3_texto" data-i18n="l_pilar3_texto">Un espacio para encontrarse. Fidelidad en taza, conversación en el local.</p>
       </div>
     </div>
   </div>
 
-  <section class="espacio" aria-label="El espacio">
+  <section class="espacio" aria-label="El espacio" data-i18n-attr="aria-label:l_espacio">
     <figure>
-      <img src="/hero-editorial.webp" alt="El espacio LON" data-landing="espacio_imagen" data-landing-alt="espacio_imagen_alt" width="1280" height="720">
-      <figcaption data-landing="espacio_caption">El local — luz, textura y anaquel.</figcaption>
+      <img src="/hero-editorial.webp" alt="El espacio LON" data-i18n-attr="alt:l_alt_espacio" data-landing="espacio_imagen" data-landing-alt="espacio_imagen_alt" width="1280" height="720">
+      <figcaption data-landing="espacio_caption" data-i18n="l_caption">El local — luz, textura y anaquel.</figcaption>
     </figure>
-    <blockquote class="espacio-quote" data-landing="espacio_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
+    <blockquote class="espacio-quote" data-landing="espacio_quote" data-i18n="l_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
   </section>
 
-  <section class="band" aria-label="Ir al catálogo">
-    <p data-landing="catalogo_cta_texto">Explorá el catálogo y armá tu pedido online.</p>
-    <a class="btn-ink" href="/tienda" data-landing="catalogo_cta_label">Ir al catálogo</a>
+  <section class="band" aria-label="Ir al catálogo" data-i18n-attr="aria-label:l_ir_catalogo_aria">
+    <p data-landing="catalogo_cta_texto" data-i18n="l_band_texto">Explorá el catálogo y armá tu pedido online.</p>
+    <a class="btn-ink" href="/tienda" data-landing="catalogo_cta_label" data-i18n="l_ir_catalogo">Ir al catálogo</a>
   </section>
 </main>
 
 <footer>
   <p><a href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer">Instagram <span data-landing-ig-text>@lonphilosophy</span></a></p>
   <p><span data-landing="footer_texto">© 2026 FLN Data Analysis — LON Philosophy</span></p>
-  <p><a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a> · <a href="/admin.html">Acceso admin →</a></p>
+  <p><a href="/privacidad.html" data-i18n="g_privacidad">Privacidad</a> · <a href="/terminos.html" data-i18n="g_terminos">Términos</a> · <a href="/admin.html" data-i18n="g_acceso_admin">Acceso admin →</a></p>
 </footer>
 <img id="lonLogoCms" src="" alt="" data-landing="logo" class="lon-foto-oculta" width="1" height="1">
 
 <script src="/lon-contenido.js"></script>
+<script src="/idioma.js"></script>
 <script>
 (function () {
   var panel = document.getElementById('panelMenuLanding');
@@ -363,6 +365,7 @@ footer a:hover{color:var(--accent-terracota)}
       var valor = contenido[key];
       if (valor == null || String(valor).trim() === '') return;
       valor = String(valor);
+      el.setAttribute('data-i18n-cms', '');
       if (el.tagName === 'IMG') {
         el.src = valor;
         if (key === 'logo') {
@@ -380,7 +383,7 @@ footer a:hover{color:var(--accent-terracota)}
     // Textos alternativos de las fotos (vacío = el del HTML).
     document.querySelectorAll('[data-landing-alt]').forEach(function (el) {
       var valor = contenido[el.getAttribute('data-landing-alt')];
-      if (valor != null && String(valor).trim() !== '') el.alt = String(valor);
+      if (valor != null && String(valor).trim() !== '') { el.alt = String(valor); el.setAttribute('data-i18n-cms', ''); }
     });
 
     // Links (CTAs, Instagram) fijos en código: el CMS solo cambia el texto visible.

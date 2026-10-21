@@ -17,7 +17,8 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Fraunces,Georgia,serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.volver{background:var(--bg-header);color:var(--header-text);padding:12px 20px;font-size:12px;font-variant-caps:all-small-caps;letter-spacing:.18em}
+.barra{background:var(--bg-header);color:var(--header-text);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.volver{font-size:12px;font-variant-caps:all-small-caps;letter-spacing:.18em}
 main{max-width:640px;margin:0 auto;padding:28px 16px 56px}
 .portada{text-align:center;margin-bottom:28px}
 .portada img{width:min(260px,70%);height:auto}
@@ -60,11 +61,14 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
 </style>
 </head>
 <body>
-<a class="volver" href="/">‹ LON Philosophy</a>
+<div class="barra">
+  <a class="volver" href="/">‹ LON Philosophy</a>
+  <div data-selector-idioma></div>
+</div>
 <main>
   <header class="portada">
     <img src="/logo-catalogo.png" alt="LON" width="260" height="102">
-    <p>Philosophy · Carta</p>
+    <p data-i18n="c_portada">Philosophy · Carta</p>
   </header>
 
   <!-- 1. COFFEE MENU -->
@@ -98,7 +102,7 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
   </section>
 
   <section class="caja" aria-labelledby="t-adicionales">
-    <h3 id="t-adicionales">Adicionales</h3>
+    <h3 id="t-adicionales" data-i18n="c_adicionales">Adicionales</h3>
     <div class="fila uno"><span class="nombre">LECHE DE ALMENDRAS</span><span class="precio">2000</span></div>
     <div class="fila uno"><span class="nombre">LECHE DE AVENA</span><span class="precio">2000</span></div>
     <div class="fila uno"><span class="nombre">EXTRA SHOT</span><span class="precio">2500</span></div>
@@ -115,11 +119,11 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
 
   <section class="caja marca" aria-label="Non - Coffee">
     <div class="item"><div class="linea"><span class="nombre">MATCHA LATTE</span><span class="precio">7100</span></div>
-      <span class="desc">Bebida a base té verde matcha. Emulsionada con leche</span></div>
+      <span class="desc" data-i18n="c_matcha">Bebida a base té verde matcha. Emulsionada con leche</span></div>
     <div class="item"><div class="linea"><span class="nombre">GOLDEN MILK</span><span class="precio">7200</span></div>
-      <span class="desc">Bebida a base de cúrcuma, canela, nuez moscada, miel y pimienta negra. Emulsionada con leche</span></div>
+      <span class="desc" data-i18n="c_golden">Bebida a base de cúrcuma, canela, nuez moscada, miel y pimienta negra. Emulsionada con leche</span></div>
     <div class="item"><div class="linea"><span class="nombre">CHAI LATTE</span><span class="precio">7200</span></div>
-      <span class="desc">Bebida a base té negro, canela, cardamomo, coco en escamas, nuez moscada, clavo de olor, miel y pimienta negra. Emulsionada con leche</span></div>
+      <span class="desc" data-i18n="c_chai">Bebida a base té negro, canela, cardamomo, coco en escamas, nuez moscada, clavo de olor, miel y pimienta negra. Emulsionada con leche</span></div>
   </section>
 
   <section class="caja" aria-labelledby="t-drinks">
@@ -135,11 +139,11 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
   </section>
 
   <section class="caja marca" aria-labelledby="t-infusiones">
-    <h3 id="t-infusiones">Infusiones · Anuá</h3>
-    <div class="item"><div class="linea"><span class="nombre">BROMELIA · INSPIRADO EN CENTRO AMÉRICA</span><span class="precio">6900</span></div>
-      <span class="desc">Ananá, vaina de vainilla molida, coco tostado y anís. (notas dulces, cuerpo avainillado. Efecto nutritivo, carminativo y saciante)</span></div>
-    <div class="item"><div class="linea"><span class="nombre">IRUPÉ · INSPIRADO EN EL LITORAL ARGENTINO</span><span class="precio">6900</span></div>
-      <span class="desc">Mango, hibiscus, lemongrass y flor de azahar. (notas ácidas, verdes y dulces. Efecto refrescante, desinflamante, antioxidante y restaurador)</span></div>
+    <h3 id="t-infusiones" data-i18n="c_infusiones">Infusiones · Anuá</h3>
+    <div class="item"><div class="linea"><span class="nombre">BROMELIA · <span data-i18n="c_inspirado_ca">INSPIRADO EN CENTRO AMÉRICA</span></span><span class="precio">6900</span></div>
+      <span class="desc" data-i18n="c_bromelia">Ananá, vaina de vainilla molida, coco tostado y anís. (notas dulces, cuerpo avainillado. Efecto nutritivo, carminativo y saciante)</span></div>
+    <div class="item"><div class="linea"><span class="nombre">IRUPÉ · <span data-i18n="c_inspirado_lit">INSPIRADO EN EL LITORAL ARGENTINO</span></span><span class="precio">6900</span></div>
+      <span class="desc" data-i18n="c_irupe">Mango, hibiscus, lemongrass y flor de azahar. (notas ácidas, verdes y dulces. Efecto refrescante, desinflamante, antioxidante y restaurador)</span></div>
   </section>
 
   <!-- 3. BRUNCH -->
@@ -147,18 +151,18 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
 
   <section class="caja marca" aria-label="Brunch">
     <div class="item"><div class="linea"><span class="nombre">PALTA · TOAST</span><span class="precio">13500</span></div>
-      <span class="desc">(tostón de pan integral, palta, tomate confitado, queso crema)</span>
-      <span class="desc opc">opcional: huevo poché $2000</span></div>
-    <div class="item"><div class="linea"><span class="nombre">TOAST FOREST (SIN TACC)</span><span class="precio">18500</span></div>
-      <span class="desc">Pan de elaboración propia preparado con fécula de mandioca, almidón de maíz, harina de arroz integral, harina de garbanzos, harina de trigo sarraceno y un mix de semillas. Servido con alioli de almendras, palta fresca y cebollas encurtidas.</span></div>
+      <span class="desc" data-i18n="c_palta">(tostón de pan integral, palta, tomate confitado, queso crema)</span>
+      <span class="desc opc" data-i18n="c_palta_opc">opcional: huevo poché $2000</span></div>
+    <div class="item"><div class="linea"><span class="nombre">TOAST FOREST (<span data-i18n="c_sin_tacc_mayus">SIN TACC</span>)</span><span class="precio">18500</span></div>
+      <span class="desc" data-i18n="c_forest">Pan de elaboración propia preparado con fécula de mandioca, almidón de maíz, harina de arroz integral, harina de garbanzos, harina de trigo sarraceno y un mix de semillas. Servido con alioli de almendras, palta fresca y cebollas encurtidas.</span></div>
     <div class="item"><div class="linea"><span class="nombre">CHIPA DE SETAS</span><span class="precio">15400</span></div>
-      <span class="desc">Relleno de una selección de hongos de pino, portobellos y champiñones salteados con cebolla puerro y tomates secos confitados.</span></div>
+      <span class="desc" data-i18n="c_chipa_setas">Relleno de una selección de hongos de pino, portobellos y champiñones salteados con cebolla puerro y tomates secos confitados.</span></div>
     <div class="item"><div class="linea"><span class="nombre">CHIPA DE TOMATES CONFITADOS X2</span><span class="precio">16500</span></div>
-      <span class="desc">Relleno de cebollas encurtidas y tomates confitados.</span></div>
+      <span class="desc" data-i18n="c_chipa_tomates">Relleno de cebollas encurtidas y tomates confitados.</span></div>
     <div class="item"><div class="linea"><span class="nombre">HANDROLL DE VERDURA</span><span class="precio">15800</span></div>
-      <span class="desc">Panqueque de premezcla sin gluten, relleno de espinaca, cebolla y zanahoria salteadas, ricotta cremosa y queso dambo.</span></div>
+      <span class="desc" data-i18n="c_handroll_verdura">Panqueque de premezcla sin gluten, relleno de espinaca, cebolla y zanahoria salteadas, ricotta cremosa y queso dambo.</span></div>
     <div class="item"><div class="linea"><span class="nombre">HANDROLL DE BONDIOLA BRASEADA</span><span class="precio">15800</span></div>
-      <span class="desc">Panqueque de premezcla sin gluten, relleno de bondiola braseada, cebolla caramelizada y queso dambo fundido.</span></div>
+      <span class="desc" data-i18n="c_handroll_bondiola">Panqueque de premezcla sin gluten, relleno de bondiola braseada, cebolla caramelizada y queso dambo fundido.</span></div>
   </section>
 
   <!-- 4. SWEET BITES / BAKERY / PATISSERIE -->
@@ -183,7 +187,7 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
       <li><span class="nombre">PAIN AU CHOCOLAT</span><i></i><span class="precio">6500</span></li>
       <li><span class="nombre">CHIPA</span><i></i><span class="precio">5200</span></li>
       <li><span class="nombre">BUDIN DE FRUTOS ROJOS
-        <svg class="sintacc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" role="img" aria-label="Sin TACC"><title>Sin TACC</title><path d="M12 21V9"/><path d="M12 9c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 9c2-.5 3-2 3-4-2 .5-3 2-3 4zM12 14c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 14c2-.5 3-2 3-4-2 .5-3 2-3 4z"/><path d="M4 20L20 4"/></svg></span><i></i><span class="precio">8200</span></li>
+        <svg class="sintacc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" role="img" aria-label="Sin TACC" data-i18n-attr="aria-label:c_sin_tacc"><title data-i18n="c_sin_tacc">Sin TACC</title><path d="M12 21V9"/><path d="M12 9c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 9c2-.5 3-2 3-4-2 .5-3 2-3 4zM12 14c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 14c2-.5 3-2 3-4-2 .5-3 2-3 4z"/><path d="M4 20L20 4"/></svg></span><i></i><span class="precio">8200</span></li>
     </ul>
   </section>
 
@@ -198,6 +202,7 @@ footer{text-align:center;font-size:13px;color:var(--ink-muted);padding:0 16px 40
     </ul>
   </section>
 </main>
-<footer>Precios en pesos argentinos.</footer>
+<footer data-i18n="c_precios">Precios en pesos argentinos.</footer>
+<script src="/idioma.js"></script>
 </body>
 </html>
