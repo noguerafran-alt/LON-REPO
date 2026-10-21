@@ -918,6 +918,7 @@
         <a href="#lc_catalogo">Franja catálogo</a>
         <a href="#lc_footer">Footer</a>
         <a href="#lc_tienda">Tienda</a>
+        <a href="#lc_carta">Carta</a>
       </nav>
     </div>
 
@@ -1108,6 +1109,14 @@
           <input type="text" id="landing_footer_terminos" data-landing-field="footer_terminos" data-lc-bi autocomplete="off" placeholder="Términos">
         </div>
       </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_carta">
+      <div class="lc-sec-head">
+        <h3>Carta — fotos de productos</h3>
+        <p class="lc-ayuda">Al tocar un producto en /carta se abre su foto sobre la carta. Los productos sin foto quedan como están. Cuadrada u horizontal, JPG, PNG o WebP. Se publica al tocar Guardar.</p>
+      </div>
+      <div class="lc-grid" id="lcCartaFotos"></div>
     </section>
 
     <section class="lc-seccion" id="lc_tienda">
@@ -1731,6 +1740,52 @@
     agregar('espaciado', 'Espaciado', esp);
   }
   document.querySelectorAll('#panelLanding [data-lc-ajustes]').forEach(armarAjustesTexto);
+
+  /* Fotos de la carta: una clave carta_foto_<slug> por producto. Los slugs tienen que
+     coincidir con los data-foto de carta.html. Se arman acá, antes de enganchar los
+     botones de subir/quitar más abajo. */
+  const CARTA_FOTOS = [
+    ['espresso', 'Espresso'], ['doppio', 'Doppio'], ['macchiato', 'Macchiato'], ['americano', 'Americano'],
+    ['capuccino', 'Capuccino'], ['flat_white', 'Flat White'], ['latte', 'Latte'], ['lagrima', 'Lágrima'],
+    ['coffee_chai', 'Coffee Chai'], ['organic_mocca', 'Organic Mocca'], ['iced_latte', 'Iced Latte'],
+    ['espresso_tonic', 'Espresso Tonic'], ['affogato', 'Affogato'], ['orange_coffe', 'Orange Coffe'],
+    ['caramel_macchiato', 'Caramel Macchiato'],
+    ['leche_almendras', 'Leche de almendras'], ['leche_avena', 'Leche de avena'], ['extra_shot', 'Extra shot'],
+    ['matcha_latte', 'Matcha Latte'], ['golden_milk', 'Golden Milk'], ['chai_latte', 'Chai Latte'],
+    ['matcha_orange', 'Matcha Orange'], ['jugo_naranja', 'Jugo de naranja'], ['limonada_clasica', 'Limonada clásica'],
+    ['limonada_frutos_rojos', 'Limonada frutos rojos'], ['limonada_hibiscus', 'Limonada de hibiscus'], ['agua_gas', 'Agua con gas'],
+    ['bromelia', 'Bromelia (infusión)'], ['irupe', 'Irupé (infusión)'],
+    ['palta_toast', 'Palta toast'], ['toast_forest', 'Toast Forest'], ['chipa_setas', 'Chipa de setas'],
+    ['chipa_tomates', 'Chipa de tomates confitados'], ['handroll_verdura', 'Handroll de verdura'],
+    ['handroll_bondiola', 'Handroll de bondiola braseada'],
+    ['florentinos', 'Florentinos'], ['bocadito_almendra', 'Bocadito de almendra'],
+    ['mini_alfajor_pistacho', 'Mini alfajor de pistacho'], ['mini_alfajor_avellanas', 'Mini alfajor de avellanas'],
+    ['macaron', 'Macaron'], ['datil_relleno', 'Dátil relleno'],
+    ['medialunas', 'Medialunas'], ['pain_au_chocolat', 'Pain au chocolat'], ['chipa', 'Chipa'],
+    ['budin_frutos_rojos', 'Budín de frutos rojos'],
+    ['cookie_mani_chocolate', 'Cookie de maní y chocolate'], ['cookie_frutos_rojos', 'Cookie de frutos rojos'],
+    ['alfajor_pistacho', 'Alfajor de pistacho'], ['alfajor_avellanas', 'Alfajor de avellanas'],
+    ['brownie_chocolate', 'Brownie de chocolate'],
+  ];
+  (function armarFotosCarta() {
+    const cont = document.getElementById('lcCartaFotos');
+    if (!cont) return;
+    CARTA_FOTOS.forEach(([slug, nombre]) => {
+      const clave = 'carta_foto_' + slug;
+      LANDING_CAMPOS_IMG.push(clave);
+      const g = document.createElement('div');
+      g.className = 'lc-foto';
+      g.setAttribute('role', 'group');
+      g.setAttribute('aria-labelledby', 'lc_t_' + clave);
+      g.innerHTML = '<div class="lc-foto-prev"><img id="preview_' + clave + '" alt=""></div>'
+        + '<div class="lc-foto-info"><span class="lc-label" id="lc_t_' + clave + '"></span>'
+        + '<button type="button" class="lc-btn lc-btn-sec" data-landing-upload="' + clave + '">Cambiar foto</button>'
+        + '<button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="' + clave + '">Quitar</button>'
+        + '<input type="hidden" id="landing_' + clave + '" data-landing-field="' + clave + '"></div>';
+      g.querySelector('.lc-label').textContent = nombre;
+      cont.appendChild(g);
+    });
+  })();
 
   /* Doble idioma: cada texto con data-lc-bi suma una casilla <clave>_en. Vacía = el sitio
      usa su traducción automática (diccionario de idioma.js) y, si no hay, el texto de fábrica. */

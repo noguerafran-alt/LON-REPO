@@ -83,6 +83,7 @@
     c_handroll_verdura: 'Gluten-free premix pancake filled with sautéed spinach, onion and carrot, creamy ricotta and dambo cheese.',
     c_handroll_bondiola: 'Gluten-free premix pancake filled with braised pork shoulder, caramelized onion and melted dambo cheese.',
     c_precios: 'Prices in Argentine pesos.',
+    c_cerrar_foto: 'Close photo',
     cn_almendra: 'ALMOND MILK',
     cn_avena: 'OAT MILK',
     cn_extra_shot: 'EXTRA SHOT',
