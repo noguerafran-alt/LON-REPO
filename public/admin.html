@@ -913,8 +913,7 @@
       <nav class="lc-indice" aria-label="Secciones del editor">
         <a href="#lc_tipografia">Tipografía</a>
         <a href="#lc_hero">Hero</a>
-        <a href="#lc_sobre">Quiénes somos</a>
-        <a href="#lc_pilares">Pilares</a>
+        <a href="#lc_sobre">Banda y menú</a>
         <a href="#lc_espacio">El espacio</a>
         <a href="#lc_catalogo">Franja catálogo</a>
         <a href="#lc_footer">Footer</a>
@@ -979,26 +978,26 @@
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_hero_eyebrow">Antetítulo</label>
-          <input type="text" id="landing_hero_eyebrow" data-landing-field="hero_eyebrow" autocomplete="off" placeholder="LON Philosophy">
+          <input type="text" id="landing_hero_eyebrow" data-landing-field="hero_eyebrow" data-lc-bi autocomplete="off" placeholder="LON Philosophy">
           <div class="lc-fuente" data-lc-ajustes="hero_eyebrow"></div>
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_hero_tagline">Título</label>
-          <input type="text" id="landing_hero_tagline" data-landing-field="hero_tagline" autocomplete="off" placeholder="Making community">
+          <input type="text" id="landing_hero_tagline" data-landing-field="hero_tagline" data-lc-bi autocomplete="off" placeholder="Making community">
           <div class="lc-fuente" data-lc-ajustes="hero_tagline"></div>
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_hero_ubicacion">Bajada</label>
-          <input type="text" id="landing_hero_ubicacion" data-landing-field="hero_ubicacion" autocomplete="off" placeholder="Libros, objetos y café — para estar presente">
+          <input type="text" id="landing_hero_ubicacion" data-landing-field="hero_ubicacion" data-lc-bi autocomplete="off" placeholder="Libros, objetos y café — para estar presente">
           <div class="lc-fuente" data-lc-ajustes="hero_ubicacion"></div>
         </div>
         <div class="lc-campo">
           <label class="lc-label" for="landing_cta_primary_label">Botón principal (va al catálogo)</label>
-          <input type="text" id="landing_cta_primary_label" data-landing-field="cta_primary_label" autocomplete="off" placeholder="Ver piezas">
+          <input type="text" id="landing_cta_primary_label" data-landing-field="cta_primary_label" data-lc-bi autocomplete="off" placeholder="Ver piezas">
         </div>
         <div class="lc-campo">
           <label class="lc-label" for="landing_cta_secondary_label">Link secundario (va a Instagram)</label>
-          <input type="text" id="landing_cta_secondary_label" data-landing-field="cta_secondary_label" autocomplete="off" placeholder="Seguinos en Instagram">
+          <input type="text" id="landing_cta_secondary_label" data-landing-field="cta_secondary_label" data-lc-bi autocomplete="off" placeholder="Seguinos en Instagram">
         </div>
         <div class="lc-campo lc-full">
           <span class="lc-label">Botones del hero</span>
@@ -1009,97 +1008,23 @@
 
     <section class="lc-seccion" id="lc_sobre">
       <div class="lc-sec-head">
-        <h3>Quiénes somos</h3>
-        <p class="lc-ayuda">Sin fotos, el texto ocupa todo el ancho.</p>
+        <h3>Banda y menú</h3>
+        <p class="lc-ayuda">La banda bordó de debajo del hero (las fotos salen solas de los productos) y el título del menú lateral. Los nombres de las categorías del menú salen de la hoja Config.</p>
       </div>
       <div class="lc-grid">
         <div class="lc-campo lc-full">
-          <label class="lc-label" for="landing_sobre_titulo">Título</label>
-          <input type="text" id="landing_sobre_titulo" data-landing-field="sobre_titulo" autocomplete="off" placeholder="Quiénes somos">
-          <div class="lc-fuente" data-lc-ajustes="sobre_titulo"></div>
-        </div>
-        <div class="lc-campo lc-full">
-          <label class="lc-label" for="landing_sobre_lead">Primer párrafo</label>
-          <textarea id="landing_sobre_lead" data-landing-field="sobre_lead" rows="3"></textarea>
+          <label class="lc-label" for="landing_sobre_lead">Texto de la banda</label>
+          <textarea id="landing_sobre_lead" data-landing-field="sobre_lead" data-lc-bi rows="3"></textarea>
           <div class="lc-fuente" data-lc-ajustes="sobre_lead"></div>
         </div>
         <div class="lc-campo lc-full">
-          <label class="lc-label" for="landing_sobre_cuerpo">Segundo párrafo</label>
-          <textarea id="landing_sobre_cuerpo" data-landing-field="sobre_cuerpo" rows="3"></textarea>
-          <div class="lc-fuente" data-lc-ajustes="sobre_cuerpo"></div>
-        </div>
-        <div class="lc-foto lc-foto--vert" role="group" aria-labelledby="lc_t_sobre_a">
-          <div class="lc-foto-prev"><img id="preview_sobre_foto_a" alt=""></div>
-          <div class="lc-foto-info">
-            <span class="lc-label" id="lc_t_sobre_a">Foto A</span>
-            <button type="button" class="lc-btn lc-btn-sec" data-landing-upload="sobre_foto_a">Cambiar foto</button>
-            <button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="sobre_foto_a">Quitar</button>
-            <input type="hidden" id="landing_sobre_foto_a" data-landing-field="sobre_foto_a">
-          </div>
-        </div>
-        <div class="lc-foto lc-foto--vert" role="group" aria-labelledby="lc_t_sobre_b">
-          <div class="lc-foto-prev"><img id="preview_sobre_foto_b" alt=""></div>
-          <div class="lc-foto-info">
-            <span class="lc-label" id="lc_t_sobre_b">Foto B (opcional)</span>
-            <button type="button" class="lc-btn lc-btn-sec" data-landing-upload="sobre_foto_b">Cambiar foto</button>
-            <button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="sobre_foto_b">Quitar</button>
-            <input type="hidden" id="landing_sobre_foto_b" data-landing-field="sobre_foto_b">
-          </div>
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_sobre_foto_a_alt">Descripción foto A (alt)</label>
-          <input type="text" id="landing_sobre_foto_a_alt" data-landing-field="sobre_foto_a_alt" autocomplete="off" placeholder="LON — el local">
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_sobre_foto_b_alt">Descripción foto B (alt)</label>
-          <input type="text" id="landing_sobre_foto_b_alt" data-landing-field="sobre_foto_b_alt" autocomplete="off" placeholder="LON — detalle">
-        </div>
-        <p class="lc-ayuda lc-full">Fotos verticales 3:4, 1200 × 1600 px o más. JPG, PNG o WebP.</p>
-      </div>
-    </section>
-
-    <section class="lc-seccion" id="lc_pilares">
-      <div class="lc-sec-head">
-        <h3>Pilares</h3>
-        <p class="lc-ayuda">«Qué vas a encontrar»: título y tres columnas.</p>
-      </div>
-      <div class="lc-grid">
-        <div class="lc-campo lc-full">
-          <label class="lc-label" for="landing_pilares_titulo">Título de la sección</label>
-          <input type="text" id="landing_pilares_titulo" data-landing-field="pilares_titulo" autocomplete="off" placeholder="Qué vas a encontrar">
-          <div class="lc-fuente" data-lc-ajustes="pilares_titulo"></div>
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_pilar_1_titulo">Pilar 1 — título</label>
-          <input type="text" id="landing_pilar_1_titulo" data-landing-field="pilar_1_titulo" autocomplete="off" placeholder="Libros">
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_pilar_1_texto">Pilar 1 — texto</label>
-          <textarea id="landing_pilar_1_texto" data-landing-field="pilar_1_texto" rows="2"></textarea>
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_pilar_2_titulo">Pilar 2 — título</label>
-          <input type="text" id="landing_pilar_2_titulo" data-landing-field="pilar_2_titulo" autocomplete="off" placeholder="Objetos">
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_pilar_2_texto">Pilar 2 — texto</label>
-          <textarea id="landing_pilar_2_texto" data-landing-field="pilar_2_texto" rows="2"></textarea>
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_pilar_3_titulo">Pilar 3 — título</label>
-          <input type="text" id="landing_pilar_3_titulo" data-landing-field="pilar_3_titulo" autocomplete="off" placeholder="Café &amp; comunidad">
-        </div>
-        <div class="lc-campo">
-          <label class="lc-label" for="landing_pilar_3_texto">Pilar 3 — texto</label>
-          <textarea id="landing_pilar_3_texto" data-landing-field="pilar_3_texto" rows="2"></textarea>
+          <label class="lc-label" for="landing_banda_etiqueta">Etiqueta vertical (solo en pantallas anchas)</label>
+          <input type="text" id="landing_banda_etiqueta" data-landing-field="banda_etiqueta" data-lc-bi autocomplete="off" placeholder="Making community">
+          <div class="lc-fuente" data-lc-ajustes="banda_etiqueta" data-lc-sin-alineacion></div>
         </div>
         <div class="lc-campo lc-full">
-          <span class="lc-label">Títulos de los pilares</span>
-          <div class="lc-fuente" data-lc-ajustes="pilares_items_titulo"></div>
-        </div>
-        <div class="lc-campo lc-full">
-          <span class="lc-label">Textos de los pilares</span>
-          <div class="lc-fuente" data-lc-ajustes="pilares_items_texto"></div>
+          <label class="lc-label" for="landing_menu_categorias">Título del menú lateral</label>
+          <input type="text" id="landing_menu_categorias" data-landing-field="menu_categorias" data-lc-bi autocomplete="off" placeholder="Categorías">
         </div>
       </div>
     </section>
@@ -1124,12 +1049,12 @@
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_espacio_caption">Epígrafe</label>
-          <input type="text" id="landing_espacio_caption" data-landing-field="espacio_caption" autocomplete="off" placeholder="El local — luz, textura y anaquel.">
+          <input type="text" id="landing_espacio_caption" data-landing-field="espacio_caption" data-lc-bi autocomplete="off" placeholder="El local — luz, textura y anaquel.">
           <div class="lc-fuente" data-lc-ajustes="espacio_caption"></div>
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_espacio_quote">Cita</label>
-          <textarea id="landing_espacio_quote" data-landing-field="espacio_quote" rows="2"></textarea>
+          <textarea id="landing_espacio_quote" data-landing-field="espacio_quote" data-lc-bi rows="2"></textarea>
           <div class="lc-fuente" data-lc-ajustes="espacio_quote"></div>
         </div>
       </div>
@@ -1143,12 +1068,12 @@
       <div class="lc-grid">
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_catalogo_cta_texto">Texto</label>
-          <input type="text" id="landing_catalogo_cta_texto" data-landing-field="catalogo_cta_texto" autocomplete="off" placeholder="Explorá el catálogo y armá tu pedido online.">
+          <input type="text" id="landing_catalogo_cta_texto" data-landing-field="catalogo_cta_texto" data-lc-bi autocomplete="off" placeholder="Explorá el catálogo y armá tu pedido online.">
           <div class="lc-fuente" data-lc-ajustes="catalogo_cta_texto"></div>
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_catalogo_cta_label">Botón</label>
-          <input type="text" id="landing_catalogo_cta_label" data-landing-field="catalogo_cta_label" autocomplete="off" placeholder="Ir al catálogo">
+          <input type="text" id="landing_catalogo_cta_label" data-landing-field="catalogo_cta_label" data-lc-bi autocomplete="off" placeholder="Ir al catálogo">
           <div class="lc-fuente" data-lc-ajustes="catalogo_cta_boton" data-lc-sin-alineacion></div>
         </div>
       </div>
@@ -1157,18 +1082,30 @@
     <section class="lc-seccion" id="lc_footer">
       <div class="lc-sec-head">
         <h3>Footer</h3>
-        <p class="lc-ayuda">El link a Instagram y los de Privacidad, Términos y Acceso admin son fijos.</p>
+        <p class="lc-ayuda">Los links (Instagram, Privacidad, Términos, Acceso admin) son fijos: acá solo se cambia el texto que se ve.</p>
       </div>
       <div class="lc-grid">
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_footer_texto">Texto del pie</label>
-          <textarea id="landing_footer_texto" data-landing-field="footer_texto" rows="2"></textarea>
+          <textarea id="landing_footer_texto" data-landing-field="footer_texto" data-lc-bi rows="2"></textarea>
           <div class="lc-fuente" data-lc-ajustes="footer"></div>
         </div>
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_footer_ig_texto">Texto junto a «Instagram»</label>
           <input type="text" id="landing_footer_ig_texto" data-landing-field="footer_ig_texto" autocomplete="off" placeholder="@lonphilosophy">
           <p class="lc-ayuda">Solo el texto que se ve. Vacío = el usuario de Instagram de siempre.</p>
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_footer_instagram">Palabra «Instagram» del link</label>
+          <input type="text" id="landing_footer_instagram" data-landing-field="footer_instagram" data-lc-bi autocomplete="off" placeholder="Instagram">
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_footer_privacidad">Link «Privacidad»</label>
+          <input type="text" id="landing_footer_privacidad" data-landing-field="footer_privacidad" data-lc-bi autocomplete="off" placeholder="Privacidad">
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_footer_terminos">Link «Términos»</label>
+          <input type="text" id="landing_footer_terminos" data-landing-field="footer_terminos" data-lc-bi autocomplete="off" placeholder="Términos">
         </div>
       </div>
     </section>
@@ -1180,7 +1117,7 @@
       <div class="lc-grid">
         <div class="lc-campo lc-full">
           <label class="lc-label" for="landing_destacados_titulo">Título de destacados</label>
-          <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" autocomplete="off" placeholder="Piezas que miramos dos veces">
+          <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" data-lc-bi autocomplete="off" placeholder="Piezas que miramos dos veces">
         </div>
       </div>
     </section>
@@ -1668,7 +1605,7 @@
    * Subir foto/video solo deja la URL en el formulario: no se publica hasta Guardar.
    * Links, menú, carrito y estructura NO son campos: viven fijos en landing.html.
    * ------------------------------------------------------------ */
-  const LANDING_CAMPOS_IMG = ['hero_imagen', 'sobre_foto_a', 'sobre_foto_b', 'espacio_imagen'];
+  const LANDING_CAMPOS_IMG = ['hero_imagen', 'espacio_imagen'];
   // Lo que muestra la landing cuando la clave está vacía (para que la vista previa no mienta).
   const LANDING_IMG_DEFAULTS = { hero_imagen: '/hero-editorial.webp', espacio_imagen: '/hero-editorial.webp' };
 
@@ -1741,12 +1678,12 @@
       control.id = id;
       control.setAttribute('data-landing-field', bloque + '_' + sufijo);
       cont.appendChild(label);
-      if (sufijo === 'tamano') {
+      if (['tamano', 'interlineado', 'espaciado'].includes(sufijo)) {
         const envoltura = document.createElement('span');
         envoltura.className = 'lc-tam';
         const px = document.createElement('span');
         px.className = 'lc-px';
-        px.textContent = 'px';
+        px.textContent = { tamano: 'px', interlineado: '×', espaciado: 'em' }[sufijo];
         envoltura.appendChild(control);
         envoltura.appendChild(px);
         cont.appendChild(envoltura);
@@ -1773,8 +1710,49 @@
     const estilo = document.createElement('select');
     crearOpciones(estilo, [['', 'Por defecto'], ['normal', 'Normal'], ['bold', 'Negrita'], ['italic', 'Cursiva'], ['bolditalic', 'Negrita y cursiva']]);
     agregar('estilo', 'Estilo', estilo);
+    const may = document.createElement('select');
+    crearOpciones(may, [['', 'Tal cual se escribe'], ['uppercase', 'TODO EN MAYÚSCULAS'], ['lowercase', 'todo en minúsculas'], ['capitalize', 'Primera Letra De Cada Palabra']]);
+    agregar('mayusculas', 'Mayúsculas', may);
+    const inter = document.createElement('input');
+    inter.type = 'number';
+    inter.min = '1';
+    inter.max = '3';
+    inter.step = '0.05';
+    inter.placeholder = 'Auto';
+    inter.title = 'Entre 1 y 3; fuera de rango se ignora';
+    agregar('interlineado', 'Interlineado', inter);
+    const esp = document.createElement('input');
+    esp.type = 'number';
+    esp.min = '-0.05';
+    esp.max = '0.5';
+    esp.step = '0.01';
+    esp.placeholder = 'Auto';
+    esp.title = 'Entre -0,05 y 0,5 em; fuera de rango se ignora';
+    agregar('espaciado', 'Espaciado', esp);
   }
   document.querySelectorAll('#panelLanding [data-lc-ajustes]').forEach(armarAjustesTexto);
+
+  /* Doble idioma: cada texto con data-lc-bi suma una casilla <clave>_en. Vacía = el sitio
+     usa su traducción automática (diccionario de idioma.js) y, si no hay, el texto de fábrica. */
+  document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
+    const clave = es.getAttribute('data-landing-field');
+    const label = document.querySelector('label[for="' + es.id + '"]');
+    if (label) label.textContent += ' — Español';
+    const lab = document.createElement('label');
+    lab.className = 'lc-label';
+    lab.htmlFor = 'landing_' + clave + '_en';
+    lab.textContent = (label ? label.textContent.replace(/ — Español$/, '') : clave) + ' — English';
+    const en = es.cloneNode(false);
+    en.removeAttribute('data-lc-bi');
+    en.id = 'landing_' + clave + '_en';
+    en.setAttribute('data-landing-field', clave + '_en');
+    en.value = '';
+    en.placeholder = '';
+    const ayuda = document.createElement('p');
+    ayuda.className = 'lc-ayuda';
+    ayuda.textContent = 'Si se deja vacío se usa la traducción automática.';
+    es.after(lab, en, ayuda);
+  });
 
   document.querySelectorAll('#panelLanding select[data-fuente-select]').forEach((sel) => {
     poblarSelectFuente(sel, '');

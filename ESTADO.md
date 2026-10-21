@@ -277,13 +277,68 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   la tienda) con `foto`; carrusel infinito con el patrón de `index.html`
   (3 copias + recentrado). Con 3 o menos fotos quedan quietas; sin fotos la
   banda queda solo con el texto. Autoavance apagado con reduced-motion.
-- **Campos del admin que ya no se usan en la landing**: `sobre_titulo`,
-  `sobre_cuerpo`, `sobre_foto_a/b` y los `pilar_*`/`pilares_titulo`. Siguen
-  en el editor y en la hoja; falta sacarlos de `admin.html` si molesta.
+- **Campos huérfanos**: `sobre_titulo`, `sobre_cuerpo`, `sobre_foto_a/b`
+  (+ `_alt`), `pilares_titulo`, `pilar_N_titulo/texto`: ya se sacaron del
+  panel (ver «CMS completo» abajo).
 - `/catalogo-destacados` solo trae productos con consultas/visitas y stock:
   si es un sitio nuevo puede venir vacío y la banda sin fotos.
 - **Sin verificar en navegador** (solo `node --check` del script): ni a
   375px, ni el comportamiento del scroll.
+
+## CMS completo de la landing (2026-10-21)
+
+- **Se sacaron del panel y de `LANDING_DEFAULTS`** (la landing rediseñada ya no
+  dibuja esas secciones; editarlos no cambiaba nada): `sobre_titulo`,
+  `sobre_cuerpo`, `sobre_foto_a`, `sobre_foto_b`, `sobre_foto_a_alt`,
+  `sobre_foto_b_alt`, `pilares_titulo`, `pilar_1..3_titulo`,
+  `pilar_1..3_texto`, `cta_secondary_href`, `logo`, y todos sus
+  `_fuente/_alineacion/_tamano/_estilo` (incl. `pilares_items_*`). **Las filas
+  de la hoja Landing NO se borraron**: si había algo cargado, queda. `ig_handle`
+  se conserva (lo lee /tienda y es respaldo del @ del footer).
+- **Doble idioma por texto**: cada texto editable lleva `<clave>` (español) y
+  `<clave>_en`. Lista en `LANDING_TEXTOS_BILINGUES` (googleSheets.js):
+  hero_eyebrow, hero_tagline, hero_ubicacion, cta_primary_label,
+  cta_secondary_label, sobre_lead, espacio_caption, espacio_quote,
+  catalogo_cta_texto, catalogo_cta_label, footer_texto, destacados_titulo y los
+  nuevos de abajo. Las alt de fotos y `footer_ig_texto` (es un @) NO son
+  bilingües: la alt sigue en español si el CMS la pisa.
+  - Cómo decide qué mostrar (`idioma.js`, función `aplicarDom`): el elemento
+    lleva `data-i18n-cms` (ahora significa «lo pisó el CMS») y en el dataset
+    `lonEs`/`lonEn` (valores del CMS, '' si no hay) y `lonBase` (texto del HTML).
+    Español → `lonEs` o, si está vacío, `lonBase`. Inglés → `lonEn`; si está
+    vacío, el diccionario `EN` (por su `data-i18n`); si no hay, `lonBase`.
+    Cambia en vivo al tocar la bandera (aplicarDom corre en cada cambio) y
+    `aplicarContenido` llama a `LONi18n.repintar()` al terminar el fetch.
+    Mismo esquema en `landing.html` y en `index.html` (footer_texto); el título
+    de destacados de /tienda usa `data-destacados-titulo[-en]` en el contenedor y
+    se repinta con el evento `lon-idioma` que ya existía.
+  - Ojo: con el inglés vacío y un español editado, en inglés se ve el diccionario
+    (o el HTML), no el español nuevo. Es lo pedido; para que no pase hay que
+    cargar el inglés.
+  - Panel: cada texto muestra «… — Español» y «… — English» (la de inglés indica
+    que vacía = traducción automática). La casilla `_en` se arma por JS desde
+    `data-lc-bi` en admin.html.
+- **Claves nuevas (todas vacías en `LANDING_DEFAULTS`)**: `banda_etiqueta`
+  (etiqueta vertical «Making community»), `menu_categorias` (título «Categorías»
+  del menú lateral), `footer_instagram` (la palabra «Instagram»),
+  `footer_privacidad`, `footer_terminos`, todas con su `_en`; más los
+  `<bloque>_mayusculas/_interlineado/_espaciado` de abajo. Seed: ~60 filas vacías
+  nuevas en la hoja la primera vez que alguien abre el panel.
+- **Estilo nuevo por bloque** (`lon-contenido.js`, mismo `<style>` con
+  `!important`, valores validados; nunca se interpola el crudo):
+  `_mayusculas` (lista blanca `uppercase|lowercase|capitalize`; vacío = tal cual),
+  `_interlineado` (`line-height` sin unidad, 1 a 3), `_espaciado`
+  (`letter-spacing` en em, -0.05 a 0.5). Fuera de rango se **ignora** (no se
+  recorta). Sin control de color a propósito (decisión del dueño). Bloques con
+  estilo: los 10 de antes + `banda_etiqueta` (`.lon-banda-etiqueta`; su CSS trae
+  `text-transform:uppercase`, el valor del CMS lo pisa).
+- **Fijo a propósito**: los `href` de los CTAs y de Instagram, el logo del
+  header, y los nombres de las categorías del menú (salen de Sheets, hoja
+  Config; tampoco se traducen).
+- **Sin verificar en navegador**: ni el panel (casillas `_en`, nueva fila de
+  ajustes), ni el repintado en vivo al tocar la bandera, ni contra Sheets real.
+  Probado solo: `node --check` de los scripts y los saneadores de
+  `lon-contenido.js` en Node (rangos, valor basura, coma decimal).
 
 ## Carta del café online (/carta, 2026-10-20)
 
@@ -334,10 +389,9 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 - **Qué NO se traduce (a propósito, decisión del dueño)**: lo que viene de
   Sheets (nombres/descripciones/categorías de productos, tarifas por
   provincia, datos de transferencia) y el contenido editable de la landing
-  (`/landing-contenido`). En la landing, los textos con `data-landing` tienen
-  también `data-i18n` para su texto de respaldo; si el CMS les pone valor,
-  `aplicarContenido` les agrega `data-i18n-cms` y idioma.js los deja en
-  paz (queda el español del CMS). Tampoco: mensajes de error que devuelve el
+  salvo lo que el dueño traduce a mano en Admin › Contenido (casilla English de
+  cada texto, ver «CMS completo»; antes un texto pisado quedaba en español para
+  siempre). Tampoco: mensajes de error que devuelve el
   servidor (`data.error`), `<title>`/meta/SEO (los crawlers ven español), los
   nombres que ya están en inglés en la carta impresa (ESPRESSO, FLAT WHITE...,
   con sus erratas: `ORANGE COFFE`, `CAPUCCINO`), el valor

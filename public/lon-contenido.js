@@ -4,6 +4,10 @@
      <clave>_alineacion → left|center|right|justify; vacío = la de siempre
      <clave>_tamano     → px (6–120); vacío = el de siempre
      <clave>_estilo     → normal|bold|italic|bolditalic; vacío = el de siempre
+     <clave>_mayusculas → uppercase|lowercase|capitalize; vacío = tal cual se escribe
+     <clave>_interlineado → line-height, número sin unidad (1–3); vacío = el del CSS
+     <clave>_espaciado  → letter-spacing en em (-0.05–0.5); vacío = el del CSS
+   Sin control de color a propósito (decisión del dueño).
    Todo se valida con lista blanca y se escribe en un único <style> propio con
    !important, para ganarle a los clamp()/media queries de la página. Nunca se
    reescribe el dato guardado: se corrige al renderizar. */
@@ -60,6 +64,23 @@
     return Object.prototype.hasOwnProperty.call(ESTILOS, v) ? v : '';
   }
 
+  var MAYUSCULAS = { uppercase: 1, lowercase: 1, capitalize: 1 };
+  function sanitizarMayusculas(valor) {
+    var v = String(valor == null ? '' : valor).trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(MAYUSCULAS, v) ? v : '';
+  }
+
+  /* Número dentro de [min, max] o null: fuera de rango se ignora (no se recorta),
+     para que un 15 de interlineado no quede como un 3 que nadie pidió. */
+  function sanitizarRango(valor, min, max) {
+    var m = /^(-?\d+(?:\.\d+)?)$/.exec(String(valor == null ? '' : valor).trim().replace(',', '.'));
+    if (!m) return null;
+    var n = parseFloat(m[1]);
+    return n >= min && n <= max ? n : null;
+  }
+  function sanitizarInterlineado(valor) { return sanitizarRango(valor, 1, 3); }
+  function sanitizarEspaciado(valor) { return sanitizarRango(valor, -0.05, 0.5); }
+
   var hoja = null;
   function escribirReglas(reglas) {
     if (!hoja) {
@@ -90,6 +111,12 @@
       if (t != null) decl += 'font-size: ' + t + 'px !important; ';
       var e = sanitizarEstilo(contenido[clave + '_estilo']);
       if (e) decl += ESTILOS[e];
+      var m = sanitizarMayusculas(contenido[clave + '_mayusculas']);
+      if (m) decl += 'text-transform: ' + m + ' !important; ';
+      var li = sanitizarInterlineado(contenido[clave + '_interlineado']);
+      if (li != null) decl += 'line-height: ' + li + ' !important; ';
+      var es = sanitizarEspaciado(contenido[clave + '_espaciado']);
+      if (es != null) decl += 'letter-spacing: ' + es + 'em !important; ';
       if (decl) reglas.push(sel + ' { ' + decl + '}');
     });
     escribirReglas(reglas);
@@ -100,6 +127,9 @@
     sanitizarAlineacion: sanitizarAlineacion,
     sanitizarTamano: sanitizarTamano,
     sanitizarEstilo: sanitizarEstilo,
+    sanitizarMayusculas: sanitizarMayusculas,
+    sanitizarInterlineado: sanitizarInterlineado,
+    sanitizarEspaciado: sanitizarEspaciado,
     aplicar: aplicar,
   };
 })();

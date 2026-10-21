@@ -1172,9 +1172,14 @@
         ? tarjetasHtml.join('') + tarjetasHtml.join('') + tarjetasHtml.join('')
         : tarjetasHtml.join('');
 
-      const tituloDest = (catalogoDestacados.getAttribute('data-destacados-titulo') || T('t_destacados', 'Piezas que miramos dos veces')).trim();
+      const enIngles = window.LONi18n && window.LONi18n.idioma() === 'en';
+      const tituloDest = escaparHtmlPublico((
+        (enIngles && catalogoDestacados.getAttribute('data-destacados-titulo-en'))
+        || (!enIngles && catalogoDestacados.getAttribute('data-destacados-titulo'))
+        || T('t_destacados', 'Piezas que miramos dos veces')
+      ).trim());
       catalogoDestacados.innerHTML = `
-        <h2 class="titulo-seccion-destacados" data-landing="destacados_titulo">${tituloDest}</h2>
+        <h2 class="titulo-seccion-destacados">${tituloDest}</h2>
         <div class="carrusel-destacados">
           <button type="button" class="btn-carrusel izquierda" aria-label="${T('t_ver_anterior', 'Ver anterior')}">‹</button>
           <div class="carrusel-pista">${htmlPista}</div>
@@ -2560,24 +2565,25 @@
       document.querySelectorAll('[data-landing]').forEach(function (el) {
         var key = el.getAttribute('data-landing');
         if (!key) return;
-        var valor = contenido[key];
-        if (valor == null || String(valor).trim() === '') return;
-        valor = String(valor);
-        el.setAttribute('data-i18n-cms', '');
+        var valor = contenido[key] == null ? '' : String(contenido[key]);
         if (el.tagName === 'IMG') {
+          if (valor.trim() === '') return;
+          el.setAttribute('data-i18n-cms', '');
           el.src = valor;
-          if (key === 'logo') {
-            // Header usa wordmark blanco fijo (v3); CMS logo no pisa burgundy.
-            el.classList.add('lon-foto-oculta');
-          } else {
-            mostrarSiTieneSrc(el);
-          }
-        } else if (el.tagName === 'A' && key.indexOf('cta_') === 0 && key.indexOf('_label') !== -1) {
-          el.textContent = valor;
-        } else {
-          el.textContent = valor;
+          // Header usa wordmark blanco fijo (v3); CMS logo no pisa burgundy.
+          if (key === 'logo') el.classList.add('lon-foto-oculta');
+          else mostrarSiTieneSrc(el);
+          return;
         }
+        // Mismo esquema que landing.html: idioma.js elige español/inglés según la bandera.
+        var en = contenido[key + '_en'] == null ? '' : String(contenido[key + '_en']);
+        if (valor.trim() === '' && en.trim() === '') return;
+        if (el.dataset.lonBase === undefined) el.dataset.lonBase = el._lonEs !== undefined ? el._lonEs : el.textContent;
+        el.dataset.lonEs = valor.trim() === '' ? '' : valor;
+        el.dataset.lonEn = en.trim() === '' ? '' : en;
+        el.setAttribute('data-i18n-cms', '');
       });
+      if (window.LONi18n) window.LONi18n.repintar();
 
       document.querySelectorAll('[data-landing-href]').forEach(function (el) {
         var key = el.getAttribute('data-landing-href');
@@ -2603,12 +2609,16 @@
         });
       }
 
-      if (contenido.destacados_titulo && String(contenido.destacados_titulo).trim()) {
-        var box = document.getElementById('catalogoDestacados');
-        if (box) {
-          box.setAttribute('data-destacados-titulo', String(contenido.destacados_titulo).trim());
-          var h2 = box.querySelector('.titulo-seccion-destacados');
-          if (h2) h2.textContent = String(contenido.destacados_titulo).trim();
+      var tituloEs = String(contenido.destacados_titulo || '').trim();
+      var tituloEn = String(contenido.destacados_titulo_en || '').trim();
+      var box = document.getElementById('catalogoDestacados');
+      if (box && (tituloEs || tituloEn)) {
+        box.setAttribute('data-destacados-titulo', tituloEs);
+        box.setAttribute('data-destacados-titulo-en', tituloEn);
+        var h2 = box.querySelector('.titulo-seccion-destacados');
+        if (h2) {
+          var enActivo = window.LONi18n && window.LONi18n.idioma() === 'en';
+          h2.textContent = (enActivo ? tituloEn : tituloEs) || (window.LONi18n ? window.LONi18n.t('t_destacados', 'Piezas que miramos dos veces') : 'Piezas que miramos dos veces');
         }
       }
 
