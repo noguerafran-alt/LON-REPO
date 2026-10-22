@@ -289,23 +289,80 @@
   .fila-buscador-categorias{
     display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;
   }
-  .btn-mostrar-buscador{
-    display:inline-flex; align-items:center; gap:6px; background:none; border:1px solid var(--line);
-    color:var(--ink-muted); border-radius:var(--radius); padding:0 14px; height:40px; box-sizing:border-box;
-    font-size:14px; font-family:'Fraunces', serif; font-style:italic; font-weight:600; cursor:pointer; flex:0 0 auto;
-    transition:border-color 150ms ease, color 150ms ease;
+  .menu-header-catalogo{
+    position:absolute; left:var(--catalogo-gutter, 24px); top:100%; min-width:200px; z-index:101;
+    background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:0 8px 24px rgba(59,18,32,0.18); padding:6px 0;
   }
-  .btn-mostrar-buscador:hover, .btn-mostrar-buscador.activo{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
+  .menu-header-catalogo[hidden]{ display:none; }
+  .menu-header-catalogo a{
+    display:block; padding:12px 16px; color:var(--ink); text-decoration:none;
+    font-family:'Fraunces', serif; font-size:14px;
+  }
+  .menu-header-catalogo a:hover{ background:var(--bg-alt); }
+  .menu-idioma{ border-top:1px solid var(--line); margin-top:6px; padding:12px 16px 8px; }
+  .rotulo-menu-idioma{
+    display:block; margin-bottom:8px; font-family:'IBM Plex Mono', monospace; font-size:11px;
+    letter-spacing:0.16em; text-transform:uppercase; color:var(--ink-muted);
+  }
+  .menu-header-catalogo .lon-idioma{ margin-left:0; gap:6px; }
+  .menu-header-catalogo .lon-idioma button.lon-idioma-btn{ padding:3px; }
+  .menu-header-catalogo .lon-idioma button.lon-idioma-btn svg{ width:24px; height:16px; }
+  .menu-header-catalogo .lon-idioma button.lon-idioma-btn[aria-pressed="true"]{ border-color:var(--ink); }
+  .menu-header-catalogo .lon-idioma button.lon-idioma-btn:focus-visible{ outline-color:var(--ink); }
+  .encabezado-catalogo{ margin:0 0 8px; }
+  .miga-catalogo{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--ink-muted); margin:0 0 6px;
+  }
+  .titulo-catalogo{
+    font-family:'Fraunces', serif; font-weight:500; font-size:30px; line-height:1.1;
+    color:var(--ink); margin:0 0 14px;
+  }
+  .titulo-catalogo .conteo{ font-size:.5em; vertical-align:super; color:var(--ink-muted); margin-left:6px; font-family:'IBM Plex Mono', monospace; }
+  .selector-grilla{ display:flex; gap:2px; flex:0 0 auto; align-items:center; height:36px; }
+  .btn-grilla{
+    background:none; border:none; padding:6px; width:34px; height:34px; margin:0;
+    color:var(--ink-muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .btn-grilla svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.3; stroke-linejoin:round; }
+  .btn-grilla[aria-pressed="true"]{ color:var(--ink); }
   #catalogoTabsCategoria{ flex:1; min-width:0; }
   #catalogoTabsCategoria .tabs-categorias-catalogo{ margin-bottom:0; }
 
-  .buscador-catalogo{
-    width:100%; max-width:420px; padding:12px 14px; font-size:14px; font-family:'Fraunces', serif;
-    border-radius:var(--radius); border:1px solid var(--line); background:var(--field-bg);
-    color:var(--field-text); margin:0 0 18px; text-transform:uppercase;
+  /* Buscador desplegable: cubre la parte de arriba (encima del header) y deja ver el resto con un velo. */
+  .velo-buscador{ position:fixed; inset:0; z-index:199; background:rgba(59,18,32,0.28); }
+  .panel-buscador{
+    position:fixed; top:0; left:0; right:0; z-index:200; background:var(--bg);
+    padding:18px var(--catalogo-gutter, 24px) 26px; max-height:85vh; overflow-y:auto;
   }
-  .buscador-catalogo::placeholder{ color:#9a9488; text-transform:none; }
-  .buscador-catalogo:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .velo-buscador[hidden], .panel-buscador[hidden]{ display:none; }
+  .panel-buscador .fila-buscador-panel{ display:flex; align-items:center; gap:12px; margin:0; }
+  .panel-buscador .fila-buscador-panel svg{
+    width:20px; height:20px; flex:0 0 auto; stroke:var(--ink); fill:none;
+    stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round;
+  }
+  .panel-buscador #inputBuscarCatalogo{
+    flex:1; min-width:0; width:auto; margin:0; padding:8px 0; border:0; border-bottom:1px solid var(--ink);
+    border-radius:0; background:transparent; box-shadow:none; outline:none;
+    font-family:'Fraunces', serif; font-size:16px; color:var(--ink);
+  }
+  .panel-buscador #inputBuscarCatalogo::placeholder{ color:var(--ink-muted); opacity:.7; }
+  .panel-buscador .btn-cerrar-buscador{
+    background:none; border:0; padding:4px; margin:0; width:auto; height:auto; cursor:pointer;
+    color:var(--ink); display:inline-flex; line-height:0;
+  }
+  .rotulo-sugerencias{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--ink-muted); margin:26px 0 8px;
+  }
+  .lista-sugerencias{ list-style:none; margin:0; padding:0; }
+  .panel-buscador .lista-sugerencias button{
+    display:block; width:100%; text-align:left; background:none; border:0; margin:0; padding:7px 0;
+    font-family:'Fraunces', serif; font-size:15px; line-height:1.6; color:var(--ink); cursor:pointer;
+  }
+  .panel-buscador .lista-sugerencias button:hover, .panel-buscador .lista-sugerencias button:focus-visible{ text-decoration:underline; outline:none; }
+  .lista-sugerencias .sin-sugerencias{ font-size:14px; color:var(--ink-muted); padding:7px 0; }
   .seccion-categoria-catalogo{ margin-bottom:28px; }
   .titulo-categoria-catalogo{
     font-family:'Fraunces', serif; font-style:italic; font-weight:600; font-size:19px;
@@ -328,36 +385,33 @@
   .fila-tabs-categorias-scroll::-webkit-scrollbar{ display:none; }
   .btn-flecha-categorias{
     flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:1px solid var(--line);
-    background:var(--field-bg); color:var(--ink); cursor:pointer; display:flex;
+    background:none; border-color:transparent; color:var(--ink); cursor:pointer; display:flex;
     align-items:center; justify-content:center; font-size:15px; line-height:1; padding:0;
   }
   .btn-flecha-categorias:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
   .tab-categoria-catalogo{
     display:inline-flex; align-items:center; flex:0 0 auto; white-space:nowrap;
-    background:none; border:1px solid transparent; color:var(--ink-muted);
-    border-radius:999px; padding:0 14px; height:40px; box-sizing:border-box;
-    font-family:'Archivo', sans-serif; font-style:normal; font-weight:500; font-size:12px; letter-spacing:0.14em;
+    background:none; border:none; border-bottom:2px solid transparent; color:var(--ink-muted);
+    border-radius:0; padding:0 10px; height:36px; box-sizing:border-box; margin:0;
+    font-family:'Archivo', sans-serif; font-style:normal; font-weight:500; font-size:13px; letter-spacing:0.08em;
     text-transform:uppercase; cursor:pointer;
-    transition:border-color 150ms ease, color 150ms ease, background 150ms ease;
+    transition:border-color 150ms ease, color 150ms ease;
   }
-  .tab-categoria-catalogo:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
-  .tab-categoria-catalogo.activo{
-    background:var(--accent-terracota-soft); color:var(--accent-terracota); border-color:var(--accent-terracota);
-  }
+  .tab-categoria-catalogo:hover{ color:var(--ink); }
+  .tab-categoria-catalogo.activo{ color:var(--ink); border-bottom-color:var(--ink); }
   .tab-categoria-catalogo .flecha-subcategoria{ font-style:normal; font-size:11px; margin-left:4px; }
   .caja-subcategorias{
     flex-basis:100%; display:flex; flex-wrap:wrap; gap:8px;
     padding:10px 0 0 2px; margin-top:-4px;
   }
   .tab-subcategoria-catalogo{
-    background:none; border:1px solid var(--line); color:var(--ink-muted);
-    border-radius:var(--radius); padding:6px 12px; font-size:13px; font-family:'Fraunces', serif;
-    cursor:pointer; transition:border-color 150ms ease, color 150ms ease, background 150ms ease;
+    background:none; border:none; border-bottom:2px solid transparent; color:var(--ink-muted);
+    border-radius:0; padding:4px 10px; margin:0; font-size:13px; font-family:'Archivo', sans-serif;
+    letter-spacing:0.08em; text-transform:uppercase;
+    cursor:pointer; transition:border-color 150ms ease, color 150ms ease;
   }
-  .tab-subcategoria-catalogo:hover{ border-color:var(--accent-terracota); color:var(--accent-terracota); }
-  .tab-subcategoria-catalogo.activo{
-    background:var(--accent); color:#FFFFFF; border-color:var(--accent); font-weight:600;
-  }
+  .tab-subcategoria-catalogo:hover{ color:var(--ink); }
+  .tab-subcategoria-catalogo.activo{ color:var(--ink); border-bottom-color:var(--ink); }
   .item-catalogo-publico{
     border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
     display:flex; flex-direction:column; cursor:pointer; background:var(--bg-card);
@@ -728,6 +782,28 @@
     .hero-editorial{ min-height:56vh; margin:0 -16px 24px; }
     .hero-editorial-copy{ padding:36px 20px 44px; }
     .hero-editorial-copy h2{ font-size:32px; }
+    .titulo-catalogo{ font-size:26px; }
+    .barra-superior-catalogo{ gap:0; }
+    .acciones-header-catalogo{ gap:0; }
+    .btn-icono-header{ width:30px; }
+    .logo-barra-catalogo{ height:34px; }
+    .menu-header-catalogo{ left:16px; }
+  }
+
+  /* Selector de grilla: 2 = tarjetas grandes, 3 = compactas. En desktop
+     eso es 3 o 4 columnas; en celular/tablet, 2 o 3. */
+  #catalogoListaView[data-grilla="2"] .grilla-catalogo-publico{ grid-template-columns:repeat(3, 1fr); }
+  #catalogoListaView[data-grilla="3"] .grilla-catalogo-publico{ grid-template-columns:repeat(4, 1fr); }
+  @media (max-width: 900px){
+    #catalogoListaView[data-grilla="2"] .grilla-catalogo-publico{ grid-template-columns:repeat(2, 1fr); }
+    #catalogoListaView[data-grilla="3"] .grilla-catalogo-publico{ grid-template-columns:repeat(3, 1fr); gap:8px; }
+  }
+  @media (max-width: 600px){
+    #catalogoListaView[data-grilla="3"] .info-item{ padding:6px 6px 8px; gap:4px; }
+    #catalogoListaView[data-grilla="3"] .info-item .nombre{ font-size:11.5px; }
+    #catalogoListaView[data-grilla="3"] .info-item .precio-item{ font-size:11.5px; }
+    #catalogoListaView[data-grilla="3"] .info-item .estado-stock{ display:none; }
+    #catalogoListaView[data-grilla="3"] .info-item button{ font-size:10px !important; padding:6px 2px !important; letter-spacing:0; }
   }
 
 </style>
@@ -736,13 +812,25 @@
 
 <h1 style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;" data-i18n="t_h1">LON Philosophy — Libros, velas y objetos de diseño, hechos a pedido</h1>
 
+<div class="velo-buscador" id="veloBuscador" hidden></div>
+<div class="panel-buscador" id="panelBuscador" role="dialog" aria-modal="true" aria-label="Buscar" data-i18n-attr="aria-label:t_buscar" hidden>
+  <form class="fila-buscador-panel" id="formBuscador" role="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M14.6 14.6 19 19"/></svg>
+    <input type="text" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." data-i18n-attr="placeholder:t_ph_buscar" autocomplete="off" enterkeyhint="search">
+    <button type="button" class="btn-cerrar-buscador" id="btnCerrarBuscador" aria-label="Cerrar" data-i18n-attr="aria-label:g_cerrar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+    </button>
+  </form>
+  <p class="rotulo-sugerencias" data-i18n="t_sugerencias">Sugerencias de búsqueda</p>
+  <ul class="lista-sugerencias" id="listaSugerencias"></ul>
+</div>
+
 <div class="fullscreen hidden" id="pantallaCarrito">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo">←</button>
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <div data-selector-idioma style="justify-self:end;"></div>
   </div>
   <div class="login-box" style="max-width:380px;">
     <p class="eyebrow" data-i18n="t_tu_carrito">Tu carrito</p>
@@ -759,7 +847,6 @@
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <div data-selector-idioma style="justify-self:end;"></div>
   </div>
   <div class="login-box">
     <p class="eyebrow" data-i18n="t_mi_cuenta">Mi cuenta</p>
@@ -788,7 +875,6 @@
     <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
-    <div data-selector-idioma style="justify-self:end;"></div>
   </div>
   <div class="login-box checkout-box" id="checkoutBox">
     <p class="eyebrow" id="tituloCheckout">Finalizar compra</p>
@@ -859,36 +945,49 @@
 <div id="vistaCatalogo">
     <div class="barra-superior-catalogo">
     <div style="justify-self:start; display:flex; align-items:center; gap:4px;">
-      <a class="btn-icono-header" id="btnIrCliente" href="/cliente.html" title="Escanear producto" aria-label="Escanear producto" data-i18n-attr="title:t_escanear_producto,aria-label:t_escanear_producto">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
-      </a>
-      <button type="button" class="btn-icono-header" id="btnBuscarHeader" title="Menú / Categorías" aria-label="Menú categorías" data-i18n-attr="title:t_menu_categorias,aria-label:g_menu_categorias">
+      <button type="button" class="btn-icono-header" id="btnBuscarHeader" aria-expanded="false" aria-controls="menuHeaderCatalogo" title="Menú / Categorías" aria-label="Menú categorías" data-i18n-attr="title:t_menu_categorias,aria-label:g_menu_categorias">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
+      <button type="button" class="btn-icono-header" id="btnMostrarBuscadorCatalogo" title="Buscar" aria-label="Buscar" data-i18n-attr="title:t_buscar,aria-label:t_buscar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M14.6 14.6 19 19"/></svg>
+      </button>
+      <div class="menu-header-catalogo" id="menuHeaderCatalogo" hidden>
+        <a id="btnIrCliente" href="/cliente.html" data-i18n="t_escanear_producto">Escanear producto</a>
+        <div class="menu-idioma">
+          <span class="rotulo-menu-idioma" data-i18n="g_idioma">Idioma</span>
+          <div data-selector-idioma></div>
+        </div>
+      </div>
       <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo" style="display:none;">←</button>
     </div>
     <a href="/" class="enlace-logo-header" title="LON Philosophy" aria-label="LON Philosophy" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
     <div class="acciones-header-catalogo">
-      <div data-selector-idioma></div>
+      <button type="button" class="btn-icono-header btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar" data-i18n-attr="aria-label:t_ingresar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
+      </button>
       <button type="button" class="btn-icono-header btn-carrito-header" id="btnAbrirCarrito" title="Carrito" aria-label="Carrito" data-i18n-attr="title:t_carrito,aria-label:t_carrito">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
         <span class="badge-carrito oculto" id="badgeCarrito">0</span>
-      </button>
-      <button type="button" class="btn-icono-header btn-login-cliente" id="btnLoginCliente" title="Ingresar" aria-label="Ingresar" data-i18n-attr="aria-label:t_ingresar">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
       </button>
     </div>
   </div>
 
   <div id="catalogoListaView">
 
+    <div id="catalogoEncabezado" class="encabezado-catalogo"></div>
     <div id="catalogo" class="fila-buscador-categorias">
-      <button type="button" class="btn-mostrar-buscador" id="btnMostrarBuscadorCatalogo">🔍 <span data-i18n="t_buscar">Buscar</span></button>
       <div id="catalogoTabsCategoria"></div>
+      <div class="selector-grilla" role="group">
+        <button type="button" class="btn-grilla" data-grilla="2" aria-pressed="false" aria-label="Ver de a 2" title="Ver de a 2" data-i18n-attr="aria-label:t_grilla_2,title:t_grilla_2">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg>
+        </button>
+        <button type="button" class="btn-grilla" data-grilla="3" aria-pressed="false" aria-label="Ver de a 3" title="Ver de a 3" data-i18n-attr="aria-label:t_grilla_3,title:t_grilla_3">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="4.5" height="4.5"/><rect x="9.75" y="3.5" width="4.5" height="4.5"/><rect x="16" y="3.5" width="4.5" height="4.5"/><rect x="3.5" y="9.75" width="4.5" height="4.5"/><rect x="9.75" y="9.75" width="4.5" height="4.5"/><rect x="16" y="9.75" width="4.5" height="4.5"/><rect x="3.5" y="16" width="4.5" height="4.5"/><rect x="9.75" y="16" width="4.5" height="4.5"/><rect x="16" y="16" width="4.5" height="4.5"/></svg>
+        </button>
+      </div>
     </div>
-    <input type="text" class="buscador-catalogo" id="inputBuscarCatalogo" placeholder="BUSCAR PRODUCTO POR NOMBRE..." data-i18n-attr="placeholder:t_ph_buscar" style="display:none;">
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
@@ -958,10 +1057,15 @@
   let modoCheckoutCarrito = false;
   let productoDetalleActual = null;
 
+  // Sin tildes ni mayúsculas, para que "ceramica" encuentre "Cerámica".
+  function normalizarBusqueda(texto){
+    return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
   function productosCatalogoFiltrados(){
     if (!terminoBusquedaCatalogo) return catalogoPublicoProductos;
-    const termino = terminoBusquedaCatalogo.toLowerCase();
-    return catalogoPublicoProductos.filter((p) => (p.nombre || '').toLowerCase().includes(termino));
+    const termino = normalizarBusqueda(terminoBusquedaCatalogo);
+    return catalogoPublicoProductos.filter((p) => normalizarBusqueda(p.nombre).includes(termino));
   }
 
   // Los productos sin stock se muestran, pero siempre al final de la
@@ -1098,8 +1202,15 @@
     mostrarVistaListaCatalogo();
   });
 
+  function renderizarEncabezadoCatalogo(miga, titulo, cantidad){
+    document.getElementById('catalogoEncabezado').innerHTML = `
+      <div class="miga-catalogo">${escaparHtmlPublico(miga)}</div>
+      <h2 class="titulo-catalogo">${escaparHtmlPublico(titulo)}<span class="conteo">[${cantidad}]</span></h2>`;
+  }
+
   function renderizarCatalogoPublico(){
     if (catalogoPublicoProductos.length === 0) {
+      renderizarEncabezadoCatalogo(T('t_catalogo_miga', 'Catálogo'), T('t_catalogo_miga', 'Catálogo'), 0);
       catalogoTabsCategoria.innerHTML = '';
       catalogoPublicoLista.innerHTML = `<p style="color:var(--ink-muted); font-size:13px;">${T('t_sin_productos', 'Todavía no hay productos cargados.')}</p>`;
       return;
@@ -1113,6 +1224,7 @@
       const encontrados = ordenarPorDisponibilidad(
         productosCatalogoFiltrados().map((p) => ({ ...p, indiceGlobal: catalogoPublicoProductos.indexOf(p) }))
       );
+      renderizarEncabezadoCatalogo(T('t_buscar', 'Buscar'), terminoBusquedaCatalogo, encontrados.length);
 
       if (encontrados.length === 0) {
         catalogoPublicoLista.innerHTML = `<p style="color:var(--ink-muted); font-size:13px;">${T('t_sin_resultados', 'No encontramos productos que coincidan con "{q}".', { q: escaparHtmlPublico(terminoBusquedaCatalogo) })}</p>`;
@@ -1209,6 +1321,12 @@
       subcategoriaCatalogoActiva
         ? productosDeCategoriaSinFiltrar.filter((p) => (p.subcategoria || '').trim().toUpperCase() === subcategoriaCatalogoActiva)
         : productosDeCategoriaSinFiltrar
+    );
+    const nombreCategoriaActiva = nombreVisiblePorCategoria.get(categoriaCatalogoActiva);
+    renderizarEncabezadoCatalogo(
+      subcategoriaCatalogoActiva ? `${nombreCategoriaActiva} | ${subcategoriaCatalogoActiva}` : nombreCategoriaActiva,
+      subcategoriaCatalogoActiva || nombreCategoriaActiva,
+      productosDeCategoria.length
     );
     const gridHtml = `
       <div class="grilla-catalogo-publico">
@@ -1483,46 +1601,148 @@
 
   const btnMostrarBuscadorCatalogo = document.getElementById('btnMostrarBuscadorCatalogo');
   const inputBuscarCatalogo = document.getElementById('inputBuscarCatalogo');
-  let debounceBusquedaCatalogo = null;
+  const panelBuscador = document.getElementById('panelBuscador');
+  const veloBuscador = document.getElementById('veloBuscador');
+  const listaSugerencias = document.getElementById('listaSugerencias');
+  const MAX_SUGERENCIAS = 6;
+  let sugerenciasActuales = [];
 
-  function abrirBuscadorCatalogo(){
-    inputBuscarCatalogo.style.display = 'block';
-    btnMostrarBuscadorCatalogo.classList.add('activo');
-    const ancla = document.getElementById('catalogo');
-    if (ancla) ancla.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(() => inputBuscarCatalogo.focus(), 280);
-  }
-  btnMostrarBuscadorCatalogo.addEventListener('click', () => {
-    const mostrando = inputBuscarCatalogo.style.display !== 'none';
-    if (mostrando) {
-      inputBuscarCatalogo.style.display = 'none';
-      btnMostrarBuscadorCatalogo.classList.remove('activo');
-    } else {
-      abrirBuscadorCatalogo();
-    }
-  });
-  const btnBuscarHeader = document.getElementById('btnBuscarHeader');
-  if (btnBuscarHeader) {
-    btnBuscarHeader.addEventListener('click', () => {
-      if (typeof mostrarListaCatalogo === 'function') mostrarListaCatalogo();
-      abrirBuscadorCatalogo();
+  // Categorías y subcategorías con su conteo, agrupadas igual que las pestañas
+  // (en mayúsculas). Todo sale del catálogo ya cargado: sin pedidos al server.
+  function categoriasParaSugerir(){
+    const cats = new Map();
+    catalogoPublicoProductos.forEach((p) => {
+      const clave = (p.categoria || '(Sin categoría)').trim().toUpperCase();
+      if (!cats.has(clave)) cats.set(clave, { clave, nombre: (p.categoriaVisible || '').trim() || clave, n: 0, subs: new Map() });
+      const c = cats.get(clave);
+      c.n++;
+      const sub = (p.subcategoria || '').trim().toUpperCase();
+      if (sub) c.subs.set(sub, (c.subs.get(sub) || 0) + 1);
     });
+    return Array.from(cats.values());
   }
 
-  // Este buscador se escribe en MAYÚSCULAS (a diferencia del resto de
-  // los campos públicos, que quedan tal cual los tipea el cliente).
-  inputBuscarCatalogo.addEventListener('input', () => {
-    const inicio = inputBuscarCatalogo.selectionStart;
-    const fin = inputBuscarCatalogo.selectionEnd;
-    inputBuscarCatalogo.value = inputBuscarCatalogo.value.toUpperCase();
-    if (inicio !== null && fin !== null) inputBuscarCatalogo.setSelectionRange(inicio, fin);
+  function calcularSugerencias(texto){
+    const q = normalizarBusqueda(texto).trim();
+    const deCategorias = [];
+    categoriasParaSugerir().forEach((c) => {
+      deCategorias.push({ tipo: 'cat', cat: c.clave, sub: null, n: c.n, texto: `${c.nombre} (${c.n})`, buscable: c.nombre + ' ' + c.clave });
+      c.subs.forEach((n, sub) => deCategorias.push({
+        tipo: 'sub', cat: c.clave, sub, n,
+        texto: T('t_sug_sub_en', '{s} en {c} ({n})', { s: sub, c: c.nombre, n }),
+        buscable: sub,
+      }));
+    });
+    if (!q) return deCategorias.sort((a, b) => b.n - a.n).slice(0, MAX_SUGERENCIAS);
+    const coinciden = deCategorias.filter((s) => normalizarBusqueda(s.buscable).includes(q)).slice(0, 3);
+    const productos = catalogoPublicoProductos
+      .filter((p) => normalizarBusqueda(p.nombre).includes(q))
+      .slice(0, MAX_SUGERENCIAS - coinciden.length)
+      .map((p) => ({ tipo: 'prod', producto: p, texto: p.nombre }));
+    return coinciden.concat(productos);
+  }
 
-    clearTimeout(debounceBusquedaCatalogo);
-    debounceBusquedaCatalogo = setTimeout(() => {
-      terminoBusquedaCatalogo = inputBuscarCatalogo.value.trim();
-      renderizarCatalogoPublico();
-    }, 200);
+  function pintarSugerencias(){
+    sugerenciasActuales = calcularSugerencias(inputBuscarCatalogo.value);
+    listaSugerencias.innerHTML = sugerenciasActuales.length
+      ? sugerenciasActuales.map((s, i) => `<li><button type="button" data-sug="${i}">${escaparHtmlPublico(s.texto)}</button></li>`).join('')
+      : `<li class="sin-sugerencias">${T('t_sin_sugerencias', 'Sin sugerencias')}</li>`;
+  }
+
+  let focoPrevioBuscador = null;
+  function abrirBuscadorCatalogo(){
+    focoPrevioBuscador = document.activeElement;
+    inputBuscarCatalogo.value = terminoBusquedaCatalogo;
+    pintarSugerencias();
+    panelBuscador.hidden = false;
+    veloBuscador.hidden = false;
+    inputBuscarCatalogo.focus();
+  }
+  function cerrarBuscadorCatalogo(){
+    if (panelBuscador.hidden) return;
+    panelBuscador.hidden = true;
+    veloBuscador.hidden = true;
+    if (focoPrevioBuscador && focoPrevioBuscador.focus) focoPrevioBuscador.focus();
+  }
+  // Desde el detalle de un producto, cualquier acción del buscador vuelve al listado.
+  function volverAlListadoSiHaceFalta(){
+    if (catalogoDetalleView.style.display === 'block') btnVolverDeDetalle.click();
+  }
+  function aplicarBusquedaTexto(texto){
+    terminoBusquedaCatalogo = texto.trim();
+    volverAlListadoSiHaceFalta();
+    renderizarCatalogoPublico();
+  }
+  function elegirSugerencia(s){
+    cerrarBuscadorCatalogo();
+    if (s.tipo === 'prod') { mostrarDetalleProductoPublico(s.producto); return; }
+    // Misma selección que las pestañas; elegir una categoría deja atrás la búsqueda por texto.
+    terminoBusquedaCatalogo = '';
+    categoriaCatalogoActiva = s.cat;
+    subcategoriaCatalogoActiva = s.sub;
+    mostrarDesplegableSubcategorias = false;
+    try {
+      const u = new URL(window.location);
+      u.searchParams.set('cat', s.cat);
+      u.searchParams.delete('producto');
+      history.replaceState({}, '', u);
+    } catch (e) {}
+    volverAlListadoSiHaceFalta();
+    renderizarCatalogoPublico();
+  }
+
+  btnMostrarBuscadorCatalogo.addEventListener('click', abrirBuscadorCatalogo);
+  veloBuscador.addEventListener('click', cerrarBuscadorCatalogo);
+  // La X con el campo vacío limpia la búsqueda; con texto, cierra y deja el filtro como estaba
+  // (el texto solo se aplica con Enter).
+  document.getElementById('btnCerrarBuscador').addEventListener('click', () => {
+    if (!inputBuscarCatalogo.value.trim() && terminoBusquedaCatalogo) aplicarBusquedaTexto('');
+    cerrarBuscadorCatalogo();
   });
+  inputBuscarCatalogo.addEventListener('input', pintarSugerencias);
+  document.getElementById('formBuscador').addEventListener('submit', (e) => {
+    e.preventDefault();
+    cerrarBuscadorCatalogo();
+    aplicarBusquedaTexto(inputBuscarCatalogo.value);
+  });
+  listaSugerencias.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-sug]');
+    if (b) elegirSugerencia(sugerenciasActuales[Number(b.dataset.sug)]);
+  });
+  panelBuscador.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cerrarBuscadorCatalogo(); return; }
+    if (e.key !== 'Tab') return;
+    const f = Array.from(panelBuscador.querySelectorAll('input, button'));
+    const primero = f[0], ultimo = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+  });
+  window.addEventListener('lon-idioma', () => { if (!panelBuscador.hidden) pintarSugerencias(); });
+  // El ☰ abre un menú chico (hoy solo trae Escanear, que antes era un
+  // ícono suelto en el header); se cierra al tocar afuera.
+  const btnBuscarHeader = document.getElementById('btnBuscarHeader');
+  const menuHeaderCatalogo = document.getElementById('menuHeaderCatalogo');
+  function alternarMenuHeader(abrir){
+    menuHeaderCatalogo.hidden = !abrir;
+    btnBuscarHeader.setAttribute('aria-expanded', String(abrir));
+  }
+  btnBuscarHeader.addEventListener('click', (e) => { e.stopPropagation(); alternarMenuHeader(menuHeaderCatalogo.hidden); });
+  document.addEventListener('click', (e) => { if (!menuHeaderCatalogo.contains(e.target)) alternarMenuHeader(false); });
+
+  // Selector de grilla 2/3. Sin elección guardada: 2 en celular, 3 en
+  // desktop (que equivale a las 4 columnas de siempre).
+  const CLAVE_GRILLA = 'lon_grilla_catalogo';
+  function aplicarGrilla(valor){
+    catalogoListaView.setAttribute('data-grilla', valor);
+    document.querySelectorAll('.btn-grilla').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.grilla === valor)));
+  }
+  let grillaGuardada = null;
+  try { grillaGuardada = localStorage.getItem(CLAVE_GRILLA); } catch (e) {}
+  aplicarGrilla(grillaGuardada === '2' || grillaGuardada === '3' ? grillaGuardada : (window.matchMedia('(max-width: 900px)').matches ? '2' : '3'));
+  document.querySelectorAll('.btn-grilla').forEach((b) => b.addEventListener('click', () => {
+    aplicarGrilla(b.dataset.grilla);
+    try { localStorage.setItem(CLAVE_GRILLA, b.dataset.grilla); } catch (e) {}
+  }));
 
   cargarCatalogoPublico();
 
@@ -1888,6 +2108,16 @@
     pantallaCarrito.classList.add('hidden');
     abrirCheckoutDesdeCarrito();
   });
+
+  // Links directos desde la landing: /tienda?cuenta=1 y /tienda?carrito=1 reusan los botones del header.
+  (function(){
+    const u = new URL(window.location);
+    const cuenta = u.searchParams.has('cuenta'), carrito = u.searchParams.has('carrito');
+    if (!cuenta && !carrito) return;
+    u.searchParams.delete('cuenta'); u.searchParams.delete('carrito');
+    history.replaceState({}, '', u);
+    (cuenta ? btnLoginCliente : btnAbrirCarrito).click();
+  })();
 
   /* ------------------------------------------------------------
    * CHECKOUT (Payway + Mercado Pago + Transferencia bancaria)
