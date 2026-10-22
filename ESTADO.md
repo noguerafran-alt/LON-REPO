@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-10-21**
+> Última actualización: **2026-10-22**
 
 ## Qué hace la app hoy
 
@@ -276,6 +276,45 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 - Nunca se guarda solo: solo rellena casillas; se publica con Guardar.
 - No verificado: el admin con login de Google ni la llamada real a OpenRouter
   (sin credenciales); la lógica del front se revisó por código.
+
+## Pasada 2 de /tienda: buscador desplegable, idioma en el ☰, links directos (2026-10-22)
+
+- **Buscador desplegable** (`#panelBuscador` + `#veloBuscador`, `index.html`): la lupa abre un panel arriba de todo (encima del header, fondo crema, input con solo una línea de 1px, X a la derecha, velo suave). Debajo, «Sugerencias de búsqueda»: con el campo vacío, categorías y subcategorías con conteo (máx 6); al tipear, categorías/subcategorías + nombres de productos (máx 6), comparando sin tildes ni mayúsculas (`normalizarBusqueda`) sobre el catálogo ya cargado (cero pedidos al server). Categoría/subcategoría = misma selección que las pestañas; producto = detalle `?producto=SKU`; Enter = filtra la grilla por texto; X, Esc y velo cierran. Sigue siendo `#inputBuscarCatalogo` (mismo `terminoBusquedaCatalogo`). Claves `t_sugerencias`, `t_sin_sugerencias`, `t_sug_sub_en` en EN/FR/PT.
+- **Idioma solo en landing, en el ☰ de /tienda y (por ahora, decisión provisoria) en la carta `/carta`** por los turistas del QR. Se sacó `data-selector-idioma` de los headers de catálogo, carrito, login, checkout y detalle; vive dentro de `#menuHeaderCatalogo` con rótulo «Idioma». El menú está en el HTML estático, así que `armarSelectores` de `idioma.js` lo arma sin cambios.
+- **Links directos**: `/tienda?cuenta=1` hace click en `#btnLoginCliente` (Mi cuenta o login) y `/tienda?carrito=1` en `#btnAbrirCarrito`; después se borra el parámetro con `history.replaceState`.
+- **Landing**: en el ☰, Mi cuenta -> `/tienda?cuenta=1` y Carrito -> `/tienda?carrito=1`. En desktop (>=800px) el header agranda ☰ (botón 48px, ícono 28px), logo (40px) y banderas (32x22, gap 10px) con selectores más específicos (`.header .lon-idioma ...`) para no tocar tienda/carta; mobile sin cambios.
+
+## Navegación del catálogo /tienda (2026-10-22)
+
+Patrón de interfaz de tienda de lujo, con identidad propia de LON (íconos de
+línea, Fraunces, crema/bordó). Solo `public/index.html` + claves en `idioma.js`.
+
+- **Header** (`.barra-superior-catalogo`): izquierda ☰ (`#btnBuscarHeader`) y
+  lupa (`#btnMostrarBuscadorCatalogo`, abre/cierra `#inputBuscarCatalogo` y
+  lo enfoca); centro logo; derecha idiomas, usuario (`#btnLoginCliente`) y
+  bolsa (`#btnAbrirCarrito` + `#badgeCarrito`). El botón «🔍 Buscar» de la
+  fila de categorías ya no existe.
+- **Escanear** (`#btnIrCliente`, `/cliente.html`) pasó al menú del ☰
+  (`#menuHeaderCatalogo`, desplegable que se cierra al tocar afuera). Antes el
+  ☰ solo abría el buscador (llamaba a un `mostrarListaCatalogo` que no
+  existe); ahora solo abre ese menú. Al abrir el detalle de un producto
+  sigue ocultándose Escanear.
+- **Breadcrumb + título + conteo** (`#catalogoEncabezado`, lo pinta
+  `renderizarEncabezadoCatalogo`): «CATEGORÍA | SUBCATEGORÍA» en mono con
+  tracking y debajo «Nombre [n]» con la cantidad visible. En búsqueda:
+  «BUSCAR» / término. Claves nuevas EN/FR/PT: `t_catalogo_miga`,
+  `t_grilla_2`, `t_grilla_3`.
+- **Pestañas**: texto plano, gris las no elegidas, tinta y subrayado de 2px
+  la elegida; las subcategorías (desplegable ▼ de siempre) usan el mismo
+  estilo. La lógica de selección y el carrusel en 3 copias no cambió.
+- **Selector de grilla** 2/3 a la derecha de las pestañas
+  (`data-grilla` en `#catalogoListaView`, clave localStorage
+  `lon_grilla_catalogo`). Celular/tablet (<=900px): 2 o 3 columnas (default
+  2). Desktop: 3 o 4 columnas (el botón 3×3 = 4 columnas, default, como
+  antes). En celular con 3 columnas se oculta «En stock» y se achican
+  nombre/precio/botón Agregar.
+- Probado con Chrome headless y catálogo simulado (375px y 1280px). No se
+  tocaron carrito, login, checkout ni detalle.
 
 ## Se quitan los «Destacados» de /tienda (2026-10-21)
 
