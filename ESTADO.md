@@ -296,6 +296,15 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 
 ## Rediseño de la landing (2026-10-21)
 
+- **Hero sin tinte bordó (decisión del dueño, 2026-10-21)**: foto y video a
+  opacidad 1, fondo `#111` solo mientras carga y overlay negro neutro
+  (transparente → `.6` abajo) para que se lea el texto.
+- **Anti-parpadeo de fotos**: el `<img>` del hero y el de «espacio» ya no traen
+  `src`; llevan `data-respaldo="/hero-editorial.webp"` y nacen con opacity 0.
+  Con el CMS se pone `hero_imagen`/`espacio_imagen` y se hace fade-in en
+  `onload`; el respaldo solo se carga si el fetch falla, la clave viene vacía
+  o la foto del CMS da error. Nunca se ve la foto vieja antes (`cargarFoto` /
+  `respaldoFotos` en landing.html).
 - **Hero a `100dvh`** (con `100vh` de respaldo): al abrir solo se ve el hero.
 - **Barra de categorías eliminada**; las categorías y `/carta` viven solo en
   el menú de las tres barras (ya los tenía).

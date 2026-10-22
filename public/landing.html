@@ -42,15 +42,15 @@ a{color:inherit;text-decoration:none}
 .icon-btn{background:none;border:none;color:var(--header-text);width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
 .logo{height:28px;width:auto;display:block}
-.hero{position:relative;height:100vh;height:100dvh;display:flex;align-items:flex-end;background:#2a1518;overflow:hidden}
-.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.hero{position:relative;height:100vh;height:100dvh;display:flex;align-items:flex-end;background:#111;overflow:hidden}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hero .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease;pointer-events:none}
-.hero .hero-video.reproduciendo{opacity:.55}
+.hero .hero-video.reproduciendo{opacity:1}
 .hero-video::-webkit-media-controls-start-playback-button{display:none !important;-webkit-appearance:none}
 .hero-video::-webkit-media-controls-overlay-play-button{display:none !important;-webkit-appearance:none}
 .hero-video::-webkit-media-controls{display:none !important}
 @media (prefers-reduced-motion: reduce){.hero .hero-video{transition:none}}
-.hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(94,30,43,.2) 0%,rgba(59,18,32,.45) 55%,rgba(59,18,32,.72) 100%);pointer-events:none}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.6) 100%);pointer-events:none}
 .hero-copy{position:relative;z-index:1;padding:48px 24px 56px;max-width:720px;color:#FFFBF5}
 .eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.9;margin:0 0 12px;font-weight:500}
 .hero h1{font-family:var(--lon-font-titulos, Fraunces, serif);font-weight:300;font-style:italic;font-size:clamp(36px,6vw,64px);margin:0 0 12px;line-height:1.1}
@@ -63,6 +63,10 @@ a{color:inherit;text-decoration:none}
 .section h2{font-family:Fraunces,serif;font-weight:300;font-style:italic;font-size:clamp(28px,4vw,36px);margin:0 0 20px}
 .muted{color:var(--ink-muted);font-weight:300;line-height:1.65}
 .lon-foto-oculta{display:none !important}
+/* Las fotos del CMS nacen sin src e invisibles; el fade-in corre recién en onload (nunca se ve la de respaldo antes) */
+img[data-respaldo]{opacity:0;transition:opacity .5s ease}
+img[data-respaldo].lista{opacity:1}
+@media (prefers-reduced-motion: reduce){img[data-respaldo]{transition:none}}
 .lon-banda{background:var(--bg-header);color:var(--header-text);padding:72px 24px 40px;text-align:center}
 .lon-banda-texto{width:60%;max-width:760px;min-width:min(100%,280px);margin:0 auto;font-family:var(--lon-font-titulos, Fraunces, serif);font-weight:300;font-size:clamp(18px,2.2vw,24px);line-height:1.8}
 .lon-banda-fotos{padding:0 24px;background:linear-gradient(180deg,var(--bg-header) 50%,transparent 50%) no-repeat;background-size:100% 100%}
@@ -150,7 +154,7 @@ footer a:hover{color:var(--accent-terracota)}
 
 <main>
   <section class="hero" aria-label="Presentación LON Philosophy" data-i18n-attr="aria-label:l_presentacion">
-    <img class="hero-foto" src="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen" data-landing-alt="hero_imagen_alt">
+    <img class="hero-foto" data-respaldo="/hero-editorial.webp" alt="" width="1280" height="1600" data-landing="hero_imagen" data-landing-alt="hero_imagen_alt">
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-copy">
       <p class="eyebrow" data-landing="hero_eyebrow">LON Philosophy</p>
@@ -174,7 +178,7 @@ footer a:hover{color:var(--accent-terracota)}
 
   <section class="espacio" aria-label="El espacio" data-i18n-attr="aria-label:l_espacio">
     <figure>
-      <img src="/hero-editorial.webp" alt="El espacio LON" data-i18n-attr="alt:l_alt_espacio" data-landing="espacio_imagen" data-landing-alt="espacio_imagen_alt" width="1280" height="720">
+      <img data-respaldo="/hero-editorial.webp" alt="El espacio LON" data-i18n-attr="alt:l_alt_espacio" data-landing="espacio_imagen" data-landing-alt="espacio_imagen_alt" width="1280" height="720">
       <figcaption data-landing="espacio_caption" data-i18n="l_caption">El local — luz, textura y anaquel.</figcaption>
     </figure>
     <blockquote class="espacio-quote" data-landing="espacio_quote" data-i18n="l_quote">Ver y apreciar lo que uno está obteniendo es elegir estar presente.</blockquote>
@@ -336,6 +340,23 @@ footer a:hover{color:var(--accent-terracota)}
     else img.classList.add('lon-foto-oculta');
   }
 
+  /* La foto se muestra recién al cargar; si la del CMS falla, una sola vez se
+     prueba el respaldo. */
+  function cargarFoto(img, url) {
+    img.onload = function () { img.classList.add('lista'); };
+    img.onerror = function () {
+      img.onerror = null;
+      var r = img.getAttribute('data-respaldo');
+      if (r && img.getAttribute('src') !== r) img.src = r;
+    };
+    img.src = url;
+  }
+  function respaldoFotos() {
+    document.querySelectorAll('img[data-respaldo]').forEach(function (img) {
+      if (!img.getAttribute('src')) cargarFoto(img, img.getAttribute('data-respaldo'));
+    });
+  }
+
   /* Bloques de texto con fuente/alineación/tamaño/estilo propios (claves
      <bloque>_fuente, _alineacion, _tamano, _estilo). Mismos nombres en admin.html. */
   var BLOQUES_TEXTO = {
@@ -446,6 +467,7 @@ footer a:hover{color:var(--accent-terracota)}
       if (el.tagName === 'IMG') {
         if (valor.trim() === '') return;
         el.setAttribute('data-i18n-cms', '');
+        if (el.hasAttribute('data-respaldo')) { cargarFoto(el, valor); return; }
         el.src = valor;
         if (key === 'logo') el.classList.add('lon-foto-oculta');
         else mostrarSiTieneSrc(el);
@@ -497,18 +519,15 @@ footer a:hover{color:var(--accent-terracota)}
 
     aplicarHeroVideo(contenido);
 
-    ['espacio_imagen', 'hero_imagen'].forEach(function (k) {
-      document.querySelectorAll('[data-landing="' + k + '"]').forEach(mostrarSiTieneSrc);
-    });
   }
 
   fetch('/landing-contenido')
     .then(function (res) { return res.ok ? res.json() : null; })
     .then(function (data) {
-      if (!data || !data.ok || !data.contenido) return;
-      aplicarContenido(data.contenido);
+      if (data && data.ok && data.contenido) aplicarContenido(data.contenido);
     })
-    .catch(function () { /* fallback hardcodeado */ });
+    .catch(function () { /* respaldo abajo */ })
+    .then(respaldoFotos);
 })();
 </script>
 </body>
