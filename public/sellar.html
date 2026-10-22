@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sellar mi café — LON Philosophy</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LON Café">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#5E1E2B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="/idioma.js"></script>
+<script src="/tarjeta.js"></script>
+<style>
+  :root{ --bg:#F6EFE4; --bg-card:#FFFBF5; --ink:#3B1220; --ink-muted:#6B3A45; --line:rgba(59,18,32,.14); --bordo:#5E1E2B; --crema:#FFF3E5; }
+  body{ margin:0; font-family:Fraunces,Georgia,serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; min-height:100vh; }
+  .barra{ background:var(--bordo); display:flex; align-items:center; justify-content:space-between; padding:12px 20px; }
+  .barra img{ height:28px; display:block; }
+  .barra .lon-idioma button.lon-idioma-btn[aria-pressed="true"]{ border-color:rgba(255,243,229,.8); }
+  main{ max-width:420px; margin:0 auto; padding:32px 20px; text-align:center; }
+  h1{ font-weight:400; font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-muted); margin:0 0 24px; }
+  #sellarMensaje{ font-size:20px; line-height:1.35; margin:0 0 20px; }
+  #sellarMensaje.error{ color:#9b2c2c; }
+  #sellarCantidad{ display:flex; gap:14px; justify-content:center; margin:0 0 22px; }
+  #sellarCantidad button{ width:76px; height:76px; border-radius:50%; border:2px solid var(--bordo); background:var(--bg-card); color:var(--bordo); font:400 32px Fraunces,Georgia,serif; cursor:pointer; }
+  #sellarCantidad button:active{ background:var(--bordo); color:var(--crema); }
+  #sellarTarjeta{ margin:0 0 22px; }
+  #sellarTarjeta:empty{ display:none; }
+  #sellarAviso{ margin:0 0 18px; padding:10px 12px; border-radius:8px; background:var(--bg-card); border:1px solid var(--line); font-size:13px; color:var(--ink-muted); position:relative; text-align:left; padding-right:34px; }
+  #sellarAviso button{ position:absolute; top:4px; right:6px; border:0; background:none; font-size:18px; color:var(--ink-muted); cursor:pointer; }
+  #sellarMain .oculto{ display:none !important; }
+  #sellarMain a.sellar-btn{ display:inline-block; margin:6px 0; padding:11px 22px; border-radius:6px; background:var(--bordo); color:var(--crema); text-decoration:none; font-size:15px; }
+  #sellarMain a.sellar-btn.sec{ background:none; color:var(--bordo); border:1px solid var(--bordo); }
+  #sellarGoogle{ display:flex; justify-content:center; min-height:44px; }
+</style>
+</head>
+<body>
+<header class="barra">
+  <a href="/tienda"><img src="/logo-catalogo-white.png" alt="LON"></a>
+  <div data-selector-idioma></div>
+</header>
+<main id="sellarMain">
+  <h1 data-i18n="s_titulo">Sellar mi café</h1>
+  <p id="sellarMensaje">Sellando tu café...</p>
+  <div id="sellarCantidad" class="oculto">
+    <button type="button" data-n="1">1</button>
+    <button type="button" data-n="2">2</button>
+    <button type="button" data-n="3">3</button>
+  </div>
+  <div id="sellarTarjeta"></div>
+  <div id="sellarGoogle" class="oculto"></div>
+  <a id="sellarWallet" class="sellar-btn oculto" href="#" target="_blank" rel="noopener" data-i18n="t_wallet_agregar">Agregar a Google Wallet</a><br>
+  <div id="sellarAviso" class="oculto"><span data-i18n="s_inicio_aviso">Agregala a tu pantalla de inicio: tocá Compartir (□↑) → Agregar a inicio</span><button type="button" id="sellarAvisoX" aria-label="×">×</button></div>
+  <a class="sellar-btn sec" href="/tienda" data-i18n="s_ir_tienda">Ir a la tienda</a>
+</main>
+<script>
+(function(){
+  const CLAVE_SESION = 'lon_cliente_sesion'; // la misma de «Mi cuenta» en /tienda
+  const CLAVE_T = 'lon_sello_t';
+  const CLAVE_AVISO = 'lon_aviso_inicio';
+  const SOLO_VER = location.pathname.replace(/\/$/, '') === '/mi-tarjeta';
+  const IOS = LONTarjeta.esIOS();
+  if (SOLO_VER) document.querySelector('h1').hidden = true;
+  const T = (c, es, v) => window.LONi18n ? window.LONi18n.t(c, es, v) : es.replace(/\{(\w+)\}/g, (m, k) => (v && v[k] != null ? v[k] : m));
+  const $ = (id) => document.getElementById(id);
+
+  // El token solo vive en sessionStorage por si la pagina se recarga tras el login.
+  let t = new URLSearchParams(location.search).get('t') || '';
+  try { if (t) sessionStorage.setItem(CLAVE_T, t); else t = sessionStorage.getItem(CLAVE_T) || ''; } catch (e) {}
+
+  let vista = null; // para repintar al cambiar de idioma: () => void
+
+  function sesion(){
+    try {
+      const d = JSON.parse(localStorage.getItem(CLAVE_SESION));
+      if (d && d.token && d.exp && Date.now() < d.exp) return d;
+      localStorage.removeItem(CLAVE_SESION);
+    } catch (e) {}
+    return null;
+  }
+
+  function mostrar({ clave, es, vars, error, sellos, qr, google, wallet, cantidad, nombre }){
+    $('sellarCantidad').classList.toggle('oculto', !cantidad);
+    vista = () => {
+      const m = $('sellarMensaje');
+      m.textContent = T(clave, es, vars);
+      m.classList.toggle('error', Boolean(error));
+    };
+    vista();
+    const caja = $('sellarTarjeta');
+    caja.innerHTML = '';
+    if (sellos) caja.appendChild(LONTarjeta.tarjeta({ nombre: nombre || (sesion() || {}).nombre, llenos: sellos.llenos, total: sellos.total, qr }));
+    // Google Wallet no existe en iPhone/iPad: ahí la protagonista es la tarjeta de la página.
+    wallet = IOS ? null : wallet;
+    aviso(Boolean(sellos));
+    $('sellarGoogle').classList.toggle('oculto', !google);
+    const w = $('sellarWallet');
+    w.classList.toggle('oculto', !wallet);
+    if (wallet) w.href = wallet;
+  }
+  function aviso(hay){
+    let cerrado = false;
+    try { cerrado = localStorage.getItem(CLAVE_AVISO) === '1'; } catch (e) {}
+    $('sellarAviso').classList.toggle('oculto', !(SOLO_VER && hay && IOS && !LONTarjeta.esApp() && !cerrado));
+  }
+  $('sellarAvisoX').addEventListener('click', () => {
+    try { localStorage.setItem(CLAVE_AVISO, '1'); } catch (e) {}
+    $('sellarAviso').classList.add('oculto');
+  });
+  window.addEventListener('lon-idioma', () => { if (vista) vista(); });
+
+  // Pregunta cuantos cafes y recien con el toque en 1/2/3 llama al servidor.
+  function preguntar(){
+    const s = sesion();
+    if (!s) return pedirLogin();
+    mostrar({ clave: 's_cuantos', es: '¿Cuántos cafés?', cantidad: true });
+  }
+  $('sellarCantidad').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-n]');
+    if (b) sellar(Number(b.dataset.n));
+  });
+
+  async function sellar(cantidad){
+    const s = sesion();
+    if (!s) return pedirLogin();
+    mostrar({ clave: 's_cargando', es: 'Sellando tu café...' });
+    try {
+      const res = await fetch('/cliente/sellar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: s.token, t, cantidad }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.status === 403) return tokenInvalido();
+      if (res.status === 401) { try { localStorage.removeItem(CLAVE_SESION); } catch (e) {} return pedirLogin(); }
+      if (!res.ok || !d.ok) return mostrar({ clave: 's_error', es: 'No se pudo sellar tu café. Probá de nuevo.', error: true });
+
+      const sellos = { llenos: d.cafesContador, total: d.cafesParaGratis };
+      const nombre = d.nombre;
+      if (d.estado === 'sumado') {
+        const vars = { n: d.cafesContador, m: d.cafesParaGratis };
+        if (d.topeParcial) mostrar({ clave: 's_sumado_parcial', es: 'Hoy podías sumar {k} más: sumamos {k}. Llevás {n} de {m}.', vars: { ...vars, k: d.sumados }, sellos, wallet: d.walletUrl, qr: d.qrDataUrl, nombre });
+        else mostrar({ clave: 's_sumado', es: '☕ Café sumado: llevás {n} de {m}', vars, sellos, wallet: d.walletUrl, qr: d.qrDataUrl, nombre });
+      } else if (d.estado === 'pendiente' && d.sobrantes > 0) {
+        mostrar({ clave: 's_pendiente_sobrantes', es: '¡Uno de estos cafés es gratis! Mostrale este QR al personal: canjea el gratis y suma los {k} que quedan.', vars: { k: d.sobrantes }, sellos, wallet: d.walletUrl, qr: d.qrDataUrl, nombre });
+      } else if (d.estado === 'pendiente') {
+        mostrar({ clave: 's_pendiente', es: '¡Tu próximo café es gratis! Mostrale este QR al personal', sellos, wallet: d.walletUrl, qr: d.qrDataUrl, nombre });
+      } else if (d.motivo === 'dia') {
+        mostrar({ clave: 's_frenado_dia', es: 'Llegaste al máximo de sellos de hoy. Volvé mañana.', sellos, wallet: d.walletUrl, qr: d.qrDataUrl, nombre });
+      } else {
+        const hora = new Date(d.puedeVolverEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' });
+        mostrar({ clave: 's_frenado_min', es: 'Ya sellaste hace poco. Podés volver a sellar a las {h}.', vars: { h: hora }, sellos, wallet: d.walletUrl, qr: d.qrDataUrl, nombre });
+      }
+    } catch (e) {
+      mostrar({ clave: 's_error', es: 'No se pudo sellar tu café. Probá de nuevo.', error: true });
+    }
+  }
+
+  function tokenInvalido(){
+    mostrar({ clave: 's_token_invalido', es: 'Este link no es válido, apoyá el celular en la tarjeta del local.', error: true });
+  }
+
+  let googleListo = false;
+  async function pedirLogin(){
+    mostrar({ clave: 's_ingresar', es: 'Ingresá con Google para sumar tu café.', google: true });
+    if (googleListo) return;
+    try {
+      const cfg = await (await fetch('/config-publico')).json();
+      if (!cfg.googleClientId) return;
+      if (typeof google === 'undefined' || !google.accounts) return setTimeout(pedirLogin, 300);
+      google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: alRecibirCredencial });
+      google.accounts.id.renderButton($('sellarGoogle'), { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill' });
+      googleListo = true;
+    } catch (e) {}
+  }
+
+  async function alRecibirCredencial(r){
+    try {
+      const res = await fetch('/cliente-login-google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: r.credential }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) return mostrar({ clave: 's_error', es: 'No se pudo sellar tu café. Probá de nuevo.', error: true, google: true });
+      localStorage.setItem(CLAVE_SESION, JSON.stringify({ token: d.token, email: d.email, nombre: d.nombre, exp: d.exp }));
+      SOLO_VER ? verTarjeta() : preguntar();
+    } catch (e) {
+      mostrar({ clave: 's_error', es: 'No se pudo sellar tu café. Probá de nuevo.', error: true, google: true });
+    }
+  }
+
+  // Modo /mi-tarjeta: solo muestra la tarjeta, sin token ni sellado.
+  async function verTarjeta(){
+    const s = sesion();
+    if (!s) return pedirLogin();
+    try {
+      const res = await fetch('/cliente/mi-cuenta?token=' + encodeURIComponent(s.token));
+      if (res.status === 401) { try { localStorage.removeItem(CLAVE_SESION); } catch (e) {} return pedirLogin(); }
+      const d = await res.json();
+      if (!res.ok) throw new Error();
+      mostrar({ clave: 's_tu_tarjeta', es: 'Tu tarjeta de café', sellos: { llenos: d.cafesContador, total: d.cafesParaGratis }, qr: d.qrDataUrl, wallet: d.walletUrl, nombre: d.nombre });
+    } catch (e) {
+      mostrar({ clave: 's_error_tarjeta', es: 'No se pudo cargar tu tarjeta de café.', error: true });
+    }
+  }
+
+  (async function iniciar(){
+    if (SOLO_VER) return verTarjeta();
+    try {
+      const e = await (await fetch('/sellar/estado?t=' + encodeURIComponent(t))).json();
+      if (!e.tokenOk) return tokenInvalido();
+    } catch (e) {}
+    preguntar();
+  })();
+})();
+</script>
+</body>
+</html>

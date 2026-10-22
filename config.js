@@ -208,6 +208,9 @@ module.exports = {
     fechaAlta: 2,         // C
     codigoFidelidad: 3,   // D
     cafesContador: 4,     // E
+    // Sellado NFC (/sellar). Encabezados a escribir A MANO en la fila 1.
+    ultimoSello: 5,       // F: "Ultimo sello" (fecha-hora ISO UTC del ultimo sello por NFC)
+    selloDia: 6,          // G: "Sellos del dia" ("AAAA-MM-DD|N", dia calendario de Argentina)
   },
 
   // Columnas de la hoja CIERRE_CAJA (planilla de VENTAS). Una fila por
@@ -388,6 +391,20 @@ module.exports = {
   // (en la proxima visita) es el que entrega el regalo y recien ahi
   // vuelve a 0. Ver registrarCafeCliente() en googleSheets.js.
   CAFES_PARA_GRATIS: Number(process.env.CAFES_PARA_GRATIS || 3),
+
+  // Sellado del cafe con la tarjeta NFC del mostrador (/sellar). El tag
+  // lleva /sellar?t=<SELLO_NFC_TOKEN>; sin token configurado /sellar anda
+  // abierto (menos seguro). Antifraude del lado del servidor.
+  SELLO_NFC_TOKEN: (process.env.SELLO_NFC_TOKEN || '').trim(),
+  SELLO_MINUTOS_ENTRE: Number(process.env.SELLO_MINUTOS_ENTRE || 30),
+  SELLO_MAX_POR_DIA: Number(process.env.SELLO_MAX_POR_DIA || 3),
+
+  // Google Wallet (opcional): tarjeta de fidelidad. Sin issuer o sin
+  // credenciales el boton no aparece. Por defecto usa la MISMA cuenta de
+  // servicio que Sheets (GOOGLE_CREDENTIALS_JSON); GOOGLE_WALLET_CREDENTIALS_JSON
+  // permite una aparte.
+  GOOGLE_WALLET_ISSUER_ID: (process.env.GOOGLE_WALLET_ISSUER_ID || '').trim(),
+  GOOGLE_WALLET_CREDENTIALS_JSON: process.env.GOOGLE_WALLET_CREDENTIALS_JSON || process.env.GOOGLE_CREDENTIALS_JSON || '',
 
   // Longitud del bloque de numero de serie (unidad) del SKU. Con 6,
   // "1" se transforma en "000001".

@@ -32,6 +32,7 @@ const {
   crearClienteSiNoExiste,
   buscarClientePorCodigoFidelidad,
   registrarCafeCliente,
+  sellarCafeNfc,
   crearProductoNuevo,
   agregarFotoProducto,
   eliminarFotoProducto,
@@ -68,6 +69,8 @@ const {
 } = require('./googleSheets');
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
 const QRCode = require('qrcode');
+const { tokenValido, CANTIDAD_MAX } = require('./sello');
+const wallet = require('./wallet');
 const payway = require('./payway');
 const mercadopago = require('./mercadopago');
 const emailService = require('./email');
@@ -191,6 +194,8 @@ const limiteLecturaPublica = crearLimitador({ windowMs: 60 * 1000, max: 60 });
 const limiteEscrituraPublica = crearLimitador({ windowMs: 15 * 60 * 1000, max: 20 });
 const limiteLogin = crearLimitador({ windowMs: 15 * 60 * 1000, max: 15 });
 const limiteAdmin = crearLimitador({ windowMs: 60 * 1000, max: 120 });
+// Extra al antifraude por cliente (Sheets): corta el martilleo por IP.
+const limiteSello = crearLimitador({ windowMs: 60 * 1000, max: 10 });
 
 // Red de seguridad general primero (se aplica a todo); los límites más
 // específicos de abajo, montados sobre rutas puntuales, son ADEMÁS de
@@ -201,6 +206,15 @@ app.use(limiteGeneral);
 app.get('/cliente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cliente.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/carta', (req, res) => res.sendFile(path.join(__dirname, 'public', 'carta.html')));
+// Acceso directo a la tarjeta (pantalla de inicio del iPhone): sellar.html en modo «solo ver».
+app.get('/mi-tarjeta', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'public', 'sellar.html'));
+});
+app.get('/sellar', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'public', 'sellar.html'));
+});
 app.get('/ticketCierre.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'ticketCierre.js'));
@@ -239,6 +253,14 @@ if (!config.WHATSAPP_TOKEN || !config.WHATSAPP_PHONE_NUMBER_ID) {
 }
 if (!config.GOOGLE_RESENA_URL) {
   console.warn('⚠️  No configuraste GOOGLE_RESENA_URL — la tarjeta NFC de reseñas (/resena) manda a una búsqueda de Google Maps en vez del formulario de reseña.');
+}
+if (!config.SELLO_NFC_TOKEN) {
+  console.warn('⚠️  No configuraste SELLO_NFC_TOKEN — /sellar funciona sin código secreto: cualquiera que conozca el link puede sellar (con el límite de tiempo por cliente igual).');
+}
+if (!config.GOOGLE_WALLET_ISSUER_ID) {
+  console.warn('⚠️  No configuraste GOOGLE_WALLET_ISSUER_ID — el botón «Agregar a Google Wallet» no aparece.');
+} else if (!wallet.habilitado()) {
+  console.warn('⚠️  GOOGLE_WALLET_ISSUER_ID está pero faltan credenciales válidas (GOOGLE_WALLET_CREDENTIALS_JSON o GOOGLE_CREDENTIALS_JSON) — Google Wallet queda apagado.');
 }
 if (config.OPENROUTER_API_KEY) {
   console.log('Cierre de caja: IA gratis via OpenRouter (' + config.OPENROUTER_MODEL + ').');
@@ -504,10 +526,66 @@ app.get('/cliente/mi-cuenta', limiteLecturaPublica, async (req, res) => {
       cafesContador: cliente.cafesContador,
       cafesParaGratis: config.CAFES_PARA_GRATIS,
       qrDataUrl,
+      walletUrl: wallet.urlGuardar(cliente),
     });
   } catch (err) {
     console.error('Error leyendo la cuenta del cliente:', err.message);
     res.status(500).json({ error: 'No se pudo cargar tu cuenta.' });
+  }
+});
+
+/* Sellado del café con la tarjeta NFC del mostrador (/sellar?t=...). La
+   página pide primero /sellar/estado para avisar de un link inválido sin
+   obligar a loguearse. El token y todo el antifraude se validan acá. */
+app.get('/sellar/estado', limiteLecturaPublica, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ tokenOk: tokenValido(req.query.t, config.SELLO_NFC_TOKEN) });
+});
+
+app.post('/cliente/sellar', limiteSello, async (req, res) => {
+  try {
+    if (!tokenValido(req.body && req.body.t, config.SELLO_NFC_TOKEN)) {
+      return res.status(403).json({ error: 'token', mensaje: 'Este link no es válido, apoyá el celular en la tarjeta del local.' });
+    }
+    const sesion = requiereSesionCliente(req, res);
+    if (!sesion) return;
+
+    const cantidad = req.body && req.body.cantidad;
+    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > CANTIDAD_MAX) {
+      return res.status(400).json({ error: `La cantidad tiene que ser un entero de 1 a ${CANTIDAD_MAX}.` });
+    }
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const resultado = await sellarCafeNfc(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, sesion.email, cantidad);
+    if (!resultado) {
+      return res.status(404).json({ error: 'No se encontró tu cuenta.' });
+    }
+    const { cliente, decision } = resultado;
+
+    const respuesta = {
+      ok: true,
+      estado: decision.accion === 'sumar' ? 'sumado' : decision.accion,
+      nombre: cliente.nombre || sesion.nombre,
+      cafesContador: cliente.cafesContador,
+      cafesParaGratis: config.CAFES_PARA_GRATIS,
+      walletUrl: wallet.urlGuardar(cliente),
+    };
+    if (decision.accion === 'frenado') {
+      respuesta.motivo = decision.motivo;
+      respuesta.puedeVolverEn = decision.puedeVolverEn;
+    }
+    respuesta.sumados = decision.sumados || 0;
+    respuesta.sobrantes = decision.sobrantes || 0;
+    respuesta.topeParcial = Boolean(decision.topeParcial);
+    if (decision.accion === 'pendiente' || decision.pendiente) respuesta.estado = 'pendiente';
+    // El QR va siempre: la tarjeta visual de la página lo dibuja en cualquier estado.
+    respuesta.qrDataUrl = await QRCode.toDataURL(cliente.codigoFidelidad, { width: 220, margin: 1 });
+    if (decision.accion === 'sumar') wallet.actualizarEnSegundoPlano(cliente, cliente.cafesContador);
+
+    res.json(respuesta);
+  } catch (err) {
+    console.error('Error sellando café por NFC:', err.message);
+    res.status(500).json({ error: 'No se pudo sellar tu café. Probá de nuevo.' });
   }
 });
 
@@ -535,6 +613,7 @@ app.get('/admin/cliente-por-codigo-fidelidad', limiteAdmin, async (req, res) => 
       nombre: cliente.nombre,
       cafesContador: cliente.cafesContador,
       cafesParaGratis: config.CAFES_PARA_GRATIS,
+      ultimoSello: cliente.ultimoSello,
     });
   } catch (err) {
     console.error('Error consultando cliente por código de fidelidad:', err.message);
@@ -568,6 +647,8 @@ app.post('/admin/cafe-escaneado', limiteAdmin, async (req, res) => {
     if (!resultado) {
       return res.status(404).json({ error: 'Ese código no corresponde a ninguna cuenta. Pedile al cliente que abra "Mi cuenta" en LON.' });
     }
+
+    wallet.actualizarEnSegundoPlano(resultado.cliente, resultado.cafesContador);
 
     res.json({
       ok: true,
