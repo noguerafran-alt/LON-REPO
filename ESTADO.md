@@ -445,7 +445,10 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
     parpadeo. El link solo se respeta si empieza con `/` (no `//`) o `https://`;
     si no, la foto va sin link.
   - **`espacio_imagen`** (sección «El espacio» del admin) es la foto grande de
-    abajo de la banda; la ayuda del admin ahora lo dice.
+    abajo de la banda; la ayuda del admin ahora lo dice. Se muestra **entera,
+    sin recorte** (2026-10-22, pedido del dueño): antes iba con
+    `max-height:480px` + `object-fit:cover` y cortaba arriba y abajo. Ahora
+    escala dentro del ancho y de `85vh`, centrada; no volver a `cover`.
 - **THE CLASSICS en mobile**: tabla de grilla CSS (nombre + 3 columnas de
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
