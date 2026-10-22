@@ -49,6 +49,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/idioma.js"></script>
+<script src="/precio-lon.js"></script>
 <script src="/menu-lon.js"></script>
 <script src="/tarjeta.js"></script>
 <style>
@@ -278,8 +279,13 @@
     padding:0 14px; font-weight:700; cursor:pointer;
   }
 
+  /* Grilla de borde a borde: sin tarjetas, solo una línea de 1px entre columnas
+     (el border-left de la primera se esconde con margen negativo + overflow). */
   .grilla-catalogo-publico{
-    display:grid; grid-template-columns:repeat(4, 1fr); gap:22px;
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:0; overflow:hidden;
+  }
+  #catalogoPublicoLista .grilla-catalogo-publico{
+    margin:0 calc(-1 * var(--catalogo-gutter, 24px)) 0 calc(-1 * var(--catalogo-gutter, 24px) - 1px);
   }
   .fila-buscador-categorias{
     display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;
@@ -387,52 +393,34 @@
   .tab-subcategoria-catalogo:hover{ color:var(--ink); }
   .tab-subcategoria-catalogo.activo{ color:var(--ink); border-bottom-color:var(--ink); }
   .item-catalogo-publico{
-    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
-    display:flex; flex-direction:column; cursor:pointer; background:var(--bg-card);
-    transition:border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+    display:block; color:inherit; text-decoration:none; cursor:pointer;
+    border-left:1px solid var(--line); min-width:0;
   }
-  .item-catalogo-publico:hover{
-    border-color:var(--accent-terracota); box-shadow:0 4px 14px rgba(59,18,32,0.08); transform:translateY(-1px);
-  }
-  @media (prefers-reduced-motion: reduce){
-    .item-catalogo-publico{ transition:none; }
-    .item-catalogo-publico:hover{ transform:none; }
-  }
+  .item-catalogo-publico:focus-visible{ outline:2px solid var(--ink); outline-offset:-2px; }
   .item-catalogo-publico .foto-item{
-    width:100%; aspect-ratio:3/4; background:var(--bg); position:relative;
+    width:100%; aspect-ratio:3/4; background:#f2f1ef; position:relative;
     display:flex; align-items:center; justify-content:center;
     color:var(--ink-muted); font-size:11px; font-family:'Fraunces', serif;
     overflow:hidden;
   }
-  .item-catalogo-publico .foto-item img{ width:100%; height:100%; object-fit:contain; display:block; }
+  .item-catalogo-publico .foto-item img{
+    width:100%; height:100%; object-fit:cover; display:block; transition:transform 500ms ease;
+  }
+  @media (hover:hover){ .item-catalogo-publico:hover .foto-item img{ transform:scale(1.03); } }
+  @media (prefers-reduced-motion: reduce){
+    .item-catalogo-publico .foto-item img{ transition:none; }
+    .item-catalogo-publico:hover .foto-item img{ transform:none; }
+  }
   .mockup-placeholder{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   }
   .mockup-icono{ color:var(--ink-muted); opacity:.55; display:block; width:60%; max-width:120px; }
   .mockup-icono svg{ width:100%; height:auto; display:block; }
-  .item-catalogo-publico .info-item{ padding:10px 12px; flex:1; display:flex; flex-direction:column; gap:6px; }
-  .item-catalogo-publico .info-item .nombre{
-    font-family:'Fraunces', serif; font-weight:600; color:var(--ink); font-size:14.5px; line-height:1.25;
+  .item-catalogo-publico .info-item{ padding:10px 10px 22px; }
+  .item-catalogo-publico .nombre, .item-catalogo-publico .precio-item{
+    display:block; font-family:'Archivo', sans-serif; font-weight:400; font-size:13px; line-height:1.4; color:var(--ink);
   }
-  .item-catalogo-publico .info-item .meta{
-    display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap;
-  }
-  .item-catalogo-publico .info-item .precio-item{
-    font-family:'Fraunces', serif; font-size:14px; font-weight:700; color:var(--accent);
-    font-variant-numeric:tabular-nums;
-  }
-  .item-catalogo-publico .info-item .estado-stock{
-    font-family:'Fraunces', serif; font-size:11px; white-space:nowrap; letter-spacing:0.02em;
-  }
-  .item-catalogo-publico .info-item .estado-stock.disponible{ color:var(--stamp-green); }
-  .item-catalogo-publico .info-item .estado-stock.agotado{ color:var(--stamp-red); }
-  .item-catalogo-publico button{
-    background:none; border:1px solid var(--accent); color:var(--accent); border-radius:var(--radius);
-    padding:8px 10px; font-size:12.5px; font-family:'Fraunces', serif; cursor:pointer; margin-top:auto;
-  }
-  .item-catalogo-publico button:disabled{
-    border-color:var(--line); color:var(--ink-muted); cursor:not-allowed;
-  }
+  .item-catalogo-publico .precio-item{ margin-top:4px; font-variant-numeric:tabular-nums; }
   .detalle-producto .foto-detalle{
     width:100%; max-width:320px; aspect-ratio:1/1; border-radius:var(--radius); overflow:hidden;
     background:var(--bg); display:flex; align-items:center; justify-content:center; position:relative;
@@ -472,12 +460,9 @@
   .detalle-producto .btn-agregar-carrito:disabled{ opacity:.5; cursor:default; }
   .detalle-producto .sin-stock-aviso{ margin-top:14px; font-size:13px; color:var(--stamp-red); }
   #catalogoDetalleContenido{ max-width:900px; margin:0 auto; text-align:center; }
-  .seccion-relacionados{ margin-top:36px; max-width:900px; text-align:left; }
+  .seccion-relacionados{ margin:36px auto 0; max-width:900px; text-align:left; }
   .seccion-relacionados h3{
     font-family:'Fraunces', serif; font-weight:600; font-size:18px; color:var(--ink); margin:0 0 12px; text-align:center;
-  }
-  .grilla-relacionados{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:14px;
   }
 
   .btn-contacto{
@@ -743,16 +728,12 @@
 
   #catalogo{ scroll-margin-top:80px; }
 
-  @media (max-width: 900px){
-    .grilla-catalogo-publico{ grid-template-columns:repeat(2, 1fr); gap:14px; }
-  }
   @media (max-width: 600px){
     #vistaCatalogo{ padding:14px 16px 32px; }
     .barra-superior-catalogo{ gap:6px; margin:-14px -16px 16px; padding:12px 16px; min-height:56px; }
     #vistaCatalogo .volver{ font-size:22px; }
     .logo-barra-catalogo{ height:40px; }
     .btn-icono-simetrico{ font-size:22px; }
-    .grilla-catalogo-publico{ grid-template-columns:repeat(2, 1fr); gap:12px; }
     .hero-editorial{ min-height:56vh; margin:0 -16px 24px; }
     .hero-editorial-copy{ padding:36px 20px 44px; }
     .hero-editorial-copy h2{ font-size:32px; }
@@ -768,16 +749,22 @@
   #catalogoListaView[data-grilla="2"] .grilla-catalogo-publico{ grid-template-columns:repeat(3, 1fr); }
   #catalogoListaView[data-grilla="3"] .grilla-catalogo-publico{ grid-template-columns:repeat(4, 1fr); }
   @media (max-width: 900px){
+    .grilla-catalogo-publico{ grid-template-columns:repeat(2, 1fr); }
     #catalogoListaView[data-grilla="2"] .grilla-catalogo-publico{ grid-template-columns:repeat(2, 1fr); }
-    #catalogoListaView[data-grilla="3"] .grilla-catalogo-publico{ grid-template-columns:repeat(3, 1fr); gap:8px; }
+    #catalogoListaView[data-grilla="3"] .grilla-catalogo-publico{ grid-template-columns:repeat(3, 1fr); }
+    .item-catalogo-publico{ border-bottom:1px solid var(--line); }
   }
   @media (max-width: 600px){
-    #catalogoListaView[data-grilla="3"] .info-item{ padding:6px 6px 8px; gap:4px; }
-    #catalogoListaView[data-grilla="3"] .info-item .nombre{ font-size:11.5px; }
-    #catalogoListaView[data-grilla="3"] .info-item .precio-item{ font-size:11.5px; }
-    #catalogoListaView[data-grilla="3"] .info-item .estado-stock{ display:none; }
-    #catalogoListaView[data-grilla="3"] .info-item button{ font-size:10px !important; padding:6px 2px !important; letter-spacing:0; }
+    #catalogoPublicoLista .grilla-catalogo-publico{ margin:0 -16px 0 -17px; }
+    #catalogoListaView[data-grilla="3"] .info-item{ padding:6px 6px 14px; }
+    #catalogoListaView[data-grilla="3"] .item-catalogo-publico .nombre,
+    #catalogoListaView[data-grilla="3"] .item-catalogo-publico .precio-item{ font-size:11.5px; }
   }
+
+  .nota-precios{ margin:28px 0 0; font-size:12px; color:var(--ink-muted); text-align:center; }
+  .nota-precios[hidden]{ display:none; }
+  .aviso-cobro{ font-size:12.5px; color:var(--ink-muted); margin:0 0 12px; line-height:1.4; }
+  .aviso-cobro[hidden]{ display:none; }
 
 </style>
 </head>
@@ -809,6 +796,7 @@
     <p class="eyebrow" data-i18n="t_tu_carrito">Tu carrito</p>
     <div id="listaItemsCarrito"></div>
     <div class="total-carrito oculto" id="totalCarrito"></div>
+    <p class="aviso-cobro" id="avisoCobroCarrito" hidden></p>
     <button type="button" id="btnIrAPagarCarrito" data-i18n="t_continuar">Continuar compra</button>
     <button class="acceso-admin-link" id="btnCerrarCarrito" style="width:100%;" data-i18n="t_seguir_viendo">Seguir viendo el catálogo</button>
   </div>
@@ -853,6 +841,7 @@
   <div class="login-box checkout-box" id="checkoutBox">
     <p class="eyebrow" id="tituloCheckout">Finalizar compra</p>
     <div class="checkout-resumen" id="checkoutResumen"></div>
+    <p class="aviso-cobro" id="avisoCobroCheckout" hidden></p>
 
     <div id="campoCantidadCheckout">
       <label for="inputCantidadCheckout" data-i18n="t_cantidad">Cantidad</label>
@@ -960,6 +949,7 @@
   <div id="catalogoDetalleView" style="display:none;">
     <div id="catalogoDetalleContenido" style="margin-top:0;"></div>
   </div>
+  <p class="nota-precios" id="notaPrecios" hidden></p>
 </div>
 
 <div class="footer-legal">
@@ -1040,11 +1030,52 @@
     return [...productos].sort((a, b) => (a.disponible ? 0 : 1) - (b.disponible ? 0 : 1));
   }
 
-  function metaProductoHtml(p){
-    const precioHtml = p.precio ? `<span class="precio-item">$${escaparHtmlPublico(String(p.precio))}</span>` : '';
-    const estadoClase = p.disponible ? 'estado-stock disponible' : 'estado-stock agotado';
-    const estadoTexto = p.disponible ? T('t_en_stock', 'En stock') : T('t_sin_stock', 'Sin stock');
-    return `<div class="meta">${precioHtml}<span class="${estadoClase}">${estadoTexto}</span></div>`;
+  /* Precios: siempre pesos argentinos. En EN/FR/PT se muestran en US$ (dólar
+     blue, venta) SOLO para mirar: el cobro lo calcula el servidor en pesos.
+     Sin cotización disponible se muestran pesos. Todo pasa por precioTxt. */
+  let cotizacionDolar = null; // { venta, fecha }
+  let cotizacionPedida = false;
+  const idiomaActual = () => (window.LONi18n && window.LONi18n.idioma()) || 'es';
+  const precioTxt = (pesos) => LONPrecio.formatear(pesos, idiomaActual(), cotizacionDolar && cotizacionDolar.venta);
+  const enDolares = () => idiomaActual() !== 'es' && Boolean(cotizacionDolar);
+  const fechaCotizacion = () => new Date(cotizacionDolar.fecha).toLocaleDateString(LONPrecio.locale(idiomaActual()));
+
+  async function asegurarCotizacion(){
+    if (idiomaActual() === 'es' || cotizacionDolar || cotizacionPedida) return;
+    cotizacionPedida = true;
+    try {
+      const res = await fetch('/cotizacion-dolar');
+      const d = await res.json();
+      if (!res.ok || !Number.isFinite(d.venta) || d.venta <= 0) throw new Error('sin cotización');
+      cotizacionDolar = { venta: d.venta, fecha: d.fecha };
+      repintarTodo();
+    } catch (err) {
+      cotizacionPedida = false; // se reintenta al próximo cambio de idioma; mientras tanto, pesos
+    }
+  }
+
+  // Aclaración de cobro (carrito/checkout) y nota de pie: solo si se está mostrando US$.
+  function pintarAvisoCobro(el, totalPesos){
+    const ver = enDolares() && totalPesos > 0;
+    el.hidden = !ver;
+    if (ver) el.textContent = T('t_cobro_pesos', 'Precios en US$ solo de referencia (dólar blue, {f}). Se cobra en pesos argentinos: {m}.', { f: fechaCotizacion(), m: LONPrecio.formatear(totalPesos, 'es') });
+  }
+  function pintarNotaPrecios(){
+    const nota = document.getElementById('notaPrecios');
+    nota.hidden = !enDolares();
+    if (!nota.hidden) nota.textContent = T('t_precios_nota', 'Precios en US$ al dólar blue del {f}; el pago es en pesos argentinos.', { f: fechaCotizacion() });
+  }
+
+  // Una sola tarjeta para grilla, búsqueda y recomendados: todo el bloque es el link al detalle.
+  function tarjetaProductoHtml(p){
+    const slug = slugProducto(p);
+    return `<a class="item-catalogo-publico" href="/tienda?producto=${encodeURIComponent(slug)}">
+      <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
+      <div class="info-item">
+        <span class="nombre">${escaparHtmlPublico(p.nombre)}</span>
+        ${p.precio ? `<span class="precio-item">${escaparHtmlPublico(precioTxt(p.precio))}</span>` : ''}
+      </div>
+    </a>`;
   }
 
   function escaparHtmlPublico(texto){
@@ -1209,25 +1240,11 @@
       const gridHtmlBusqueda = `
         <h3 class="titulo-categoria-catalogo">${T('t_resultados', 'Resultados para "{q}" ({n})', { q: escaparHtmlPublico(terminoBusquedaCatalogo), n: encontrados.length })}</h3>
         <div class="grilla-catalogo-publico">
-          ${encontrados.map((p) => `
-            <div class="item-catalogo-publico">
-              <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
-              <div class="info-item">
-                <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
-                ${metaProductoHtml(p)}
-                <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
-              </div>
-            </div>
-          `).join('')}
+          ${encontrados.map(tarjetaProductoHtml).join('')}
         </div>
       `;
 
       catalogoPublicoLista.innerHTML = `<div class="seccion-categoria-catalogo">${gridHtmlBusqueda}</div>`;
-
-      catalogoPublicoLista.querySelectorAll('button[data-indice]').forEach((boton) => {
-        const indice = Number(boton.getAttribute('data-indice'));
-        conectarTarjetaProducto(boton, catalogoPublicoProductos[indice]);
-      });
       return;
     }
 
@@ -1305,16 +1322,7 @@
     );
     const gridHtml = `
       <div class="grilla-catalogo-publico">
-        ${productosDeCategoria.map((p) => `
-          <div class="item-catalogo-publico">
-            <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
-            <div class="info-item">
-              <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
-              ${metaProductoHtml(p)}
-              <button type="button" data-indice="${p.indiceGlobal}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
-            </div>
-          </div>
-        `).join('')}
+        ${productosDeCategoria.map(tarjetaProductoHtml).join('')}
       </div>
     `;
 
@@ -1408,11 +1416,6 @@
         renderizarCatalogoPublico();
       });
     });
-
-    catalogoPublicoLista.querySelectorAll('button[data-indice]').forEach((boton) => {
-      const indice = Number(boton.getAttribute('data-indice'));
-      conectarTarjetaProducto(boton, catalogoPublicoProductos[indice]);
-    });
   }
 
   function fotosDelProducto(producto){
@@ -1471,7 +1474,7 @@
         <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
         <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
         <div class="meta">${producto.disponible ? T('t_en_stock', 'En stock') : T('t_sin_stock', 'Sin stock')}</div>
-        ${producto.precio ? `<div class="precio">$${escaparHtmlPublico(String(producto.precio))}</div>` : ''}
+        ${producto.precio ? `<div class="precio">${escaparHtmlPublico(precioTxt(producto.precio))}</div>` : ''}
         <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>${T('t_comprar_ahora', 'Comprar ahora')}</button>
         <button type="button" class="btn-agregar-carrito" id="btnAgregarCarrito" ${puedeComprar ? '' : 'disabled'}>${T('t_agregar_carrito', 'Agregar al carrito')}</button>
         <div id="mensajeAgregarCarrito" style="font-size:12.5px; margin-top:6px; min-height:1em;"></div>
@@ -1544,25 +1547,11 @@
     contenedor.innerHTML = `
       <div class="seccion-relacionados">
         <h3>${escaparHtmlPublico(titulo)}</h3>
-        <div class="grilla-relacionados">
-          ${relacionados.map((p, indice) => `
-            <div class="item-catalogo-publico">
-              <div class="foto-item">${fotoOPlaceholder(p.foto, p.categoria, p.nombre)}</div>
-              <div class="info-item">
-                <div class="nombre">${escaparHtmlPublico(p.nombre)}</div>
-                ${metaProductoHtml(p)}
-                <button type="button" data-relacionado-indice="${indice}" ${puedeComprarProducto(p) ? '' : 'disabled'}>${T('t_agregar', 'Agregar')}</button>
-              </div>
-            </div>
-          `).join('')}
+        <div class="grilla-catalogo-publico">
+          ${relacionados.map(tarjetaProductoHtml).join('')}
         </div>
       </div>
     `;
-
-    contenedor.querySelectorAll('button[data-relacionado-indice]').forEach((boton) => {
-      const indice = Number(boton.getAttribute('data-relacionado-indice'));
-      conectarTarjetaProducto(boton, relacionados[indice]);
-    });
   }
 
   btnVolverDeDetalle.addEventListener('click', () => {
@@ -1905,7 +1894,7 @@
     }
     envioEstimadoCheckout.classList.remove('oculto');
     envioEstimadoCheckout.textContent = costo
-      ? T('t_envio_estimado', 'Envío estimado a {p}: ${c} (es solo un estimado, se paga por separado — coordinamos el costo final por WhatsApp)', { p: selectProvinciaCheckout.value, c: costo })
+      ? T('t_envio_estimado', 'Envío estimado a {p}: {c} (es solo un estimado, se paga por separado — coordinamos el costo final por WhatsApp)', { p: selectProvinciaCheckout.value, c: precioTxt(costo) })
       : T('t_envio_sin_costo', 'Todavía no tenemos un costo estimado para esa provincia. El envío se paga por separado, lo coordinamos por WhatsApp.');
   }
 
@@ -1919,6 +1908,7 @@
   const badgeCarrito = document.getElementById('badgeCarrito');
   const listaItemsCarrito = document.getElementById('listaItemsCarrito');
   const totalCarritoDiv = document.getElementById('totalCarrito');
+  const avisoCobroCarrito = document.getElementById('avisoCobroCarrito');
   const btnIrAPagarCarrito = document.getElementById('btnIrAPagarCarrito');
 
   function obtenerCarrito(){
@@ -1975,39 +1965,16 @@
     return Boolean(p.precio) && Boolean(p.disponible);
   }
 
-  /* Feedback del botón "Agregar al carrito" en las tarjetas de las
-     grillas (destacados, búsqueda, categoría, relacionados): confirma
-     en el propio botón sin abrir el detalle ni recargar nada. */
-  function manejarClickAgregarCarrito(boton, producto){
-    const agregado = agregarAlCarrito(producto);
-    const textoOriginal = boton.textContent;
-    boton.disabled = true;
-    boton.textContent = agregado ? T('t_agregado', 'Agregado ✓') : T('t_sin_stock', 'Sin stock');
-    setTimeout(() => {
-      boton.textContent = textoOriginal;
-      boton.disabled = !puedeComprarProducto(producto);
-    }, 1100);
-  }
-
-  /* Conecta una tarjeta de producto (en cualquiera de las 4 grillas):
-     el botón agrega al carrito sin navegar, y tocar el resto de la
-     tarjeta (foto, nombre, precio) abre el detalle — antes todo el
-     botón decía "Ver más" y llevaba al detalle; ahora "Ver más" pasó a
-     ser la tarjeta entera. */
-  function conectarTarjetaProducto(boton, producto){
+  /* Las tarjetas son <a href="?producto=slug">: un clic normal abre el detalle sin
+     recargar; con Ctrl/Cmd/medio clic el navegador abre el link (deep-link) solo. */
+  document.addEventListener('click', (e) => {
+    const tarjeta = e.target.closest && e.target.closest('a.item-catalogo-publico');
+    if (!tarjeta || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    const producto = buscarProductoPorValorUrl(new URL(tarjeta.href).searchParams.get('producto'));
     if (!producto) return;
-    boton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      manejarClickAgregarCarrito(boton, producto);
-    });
-    const tarjeta = boton.closest('.item-catalogo-publico');
-    if (tarjeta) {
-      tarjeta.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        mostrarDetalleProductoPublico(producto);
-      });
-    }
-  }
+    e.preventDefault();
+    mostrarDetalleProductoPublico(producto);
+  });
 
   function cambiarCantidadCarrito(skuGeneral, delta){
     const items = obtenerCarrito();
@@ -2030,6 +1997,7 @@
     if (items.length === 0) {
       listaItemsCarrito.innerHTML = `<div class="carrito-vacio">${T('t_carrito_vacio', 'Todavía no agregaste nada.')}</div>`;
       totalCarritoDiv.classList.add('oculto');
+      pintarAvisoCobro(avisoCobroCarrito, 0);
       btnIrAPagarCarrito.disabled = true;
       return;
     }
@@ -2040,7 +2008,7 @@
         <div class="foto-item-carrito">${it.foto ? `<img src="${escaparHtmlPublico(it.foto)}" alt="">` : ''}</div>
         <div class="info-item-carrito">
           <div class="nombre-item-carrito">${escaparHtmlPublico(it.nombre)}</div>
-          <div class="precio-item-carrito">$${escaparHtmlPublico(String(it.precio))} ${T('t_c_u', 'c/u')}</div>
+          <div class="precio-item-carrito">${escaparHtmlPublico(precioTxt(it.precio))} ${T('t_c_u', 'c/u')}</div>
         </div>
         <div class="controles-item-carrito">
           <div class="selector-cantidad-carrito">
@@ -2055,7 +2023,8 @@
 
     const total = items.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
     totalCarritoDiv.classList.remove('oculto');
-    totalCarritoDiv.innerHTML = `<span>${T('t_total', 'Total')}</span><span>$${total}</span>`;
+    totalCarritoDiv.innerHTML = `<span>${T('t_total', 'Total')}</span><span>${escaparHtmlPublico(precioTxt(total))}</span>`;
+    pintarAvisoCobro(avisoCobroCarrito, total);
 
     listaItemsCarrito.querySelectorAll('.item-carrito').forEach((fila) => {
       const sku = fila.getAttribute('data-sku');
@@ -2098,6 +2067,7 @@
    * ------------------------------------------------------------ */
   const pantallaCheckout = document.getElementById('pantallaCheckout');
   const checkoutResumen = document.getElementById('checkoutResumen');
+  const avisoCobroCheckout = document.getElementById('avisoCobroCheckout');
   const inputCantidadCheckout = document.getElementById('inputCantidadCheckout');
   const camposDomicilio = document.getElementById('camposDomicilio');
   const panelTransferencia = document.getElementById('panelTransferencia');
@@ -2178,6 +2148,7 @@
   }
 
   async function actualizarPanelPago(){
+    pintarAvisoCobro(avisoCobroCheckout, calcularTotalCheckout());
     const metodo = metodoPagoSeleccionado();
     const esTransferencia = metodo === 'transferencia';
     const esMercadoPago = metodo === 'mercadopago';
@@ -2191,7 +2162,7 @@
       const totalConRecargo = aplicarRecargoMP(totalBase, porcentaje);
       avisoRecargoMP.classList.toggle('oculto', porcentaje <= 0);
       if (porcentaje > 0) {
-        avisoRecargoMP.textContent = T('t_recargo_mp', 'El precio sube {p}% si pagás con Mercado Pago: ${a} en vez de ${b}.', { p: porcentaje, a: totalConRecargo, b: totalBase });
+        avisoRecargoMP.textContent = T('t_recargo_mp', 'El precio sube {p}% si pagás con Mercado Pago: {a} en vez de {b}.', { p: porcentaje, a: LONPrecio.formatear(totalConRecargo, 'es'), b: LONPrecio.formatear(totalBase, 'es') });
       }
     } else {
       avisoRecargoMP.classList.add('oculto');
@@ -2217,7 +2188,7 @@
     if (datos.cbu) filas.push(`<div><span class="etiqueta">CBU:</span>${escaparHtmlPublico(datos.cbu)}</div>`);
     if (datos.titular) filas.push(`<div><span class="etiqueta">${T('t_titular', 'Titular:')}</span>${escaparHtmlPublico(datos.titular)}</div>`);
     if (datos.banco) filas.push(`<div><span class="etiqueta">${T('t_banco', 'Banco:')}</span>${escaparHtmlPublico(datos.banco)}</div>`);
-    filas.push(`<div><span class="etiqueta">${T('t_monto', 'Monto:')}</span>$${escaparHtmlPublico(String(total))}</div>`);
+    filas.push(`<div><span class="etiqueta">${T('t_monto', 'Monto:')}</span>${escaparHtmlPublico(precioTxt(total))}</div>`);
 
     transferenciaDatosDiv.innerHTML = filas.join('');
   }
@@ -2236,15 +2207,15 @@
       checkoutResumen.innerHTML = items.map((it) => `
         <div class="item-resumen-carrito">
           <span class="nombre">${escaparHtmlPublico(it.nombre)} x${it.cantidad}</span>
-          <span>$${escaparHtmlPublico(String(it.precio * it.cantidad))}</span>
+          <span>${escaparHtmlPublico(precioTxt(it.precio * it.cantidad))}</span>
         </div>
-      `).join('') + `<div class="total-resumen-carrito"><span>${T('t_total', 'Total')}</span><span>$${total}</span></div>`;
+      `).join('') + `<div class="total-resumen-carrito"><span>${T('t_total', 'Total')}</span><span>${escaparHtmlPublico(precioTxt(total))}</span></div>`;
     } else if (productoEnCheckout) {
       tituloCheckout.textContent = T('t_finalizar', 'Finalizar compra');
       btnVolverCheckout.textContent = T('t_volver_producto', '← Volver al producto');
       checkoutResumen.innerHTML = `
         <div class="nombre">${escaparHtmlPublico(productoEnCheckout.nombre)}</div>
-        <div class="precio">$${escaparHtmlPublico(String(productoEnCheckout.precio))} ${T('t_c_u', 'c/u')}</div>
+        <div class="precio">${escaparHtmlPublico(precioTxt(productoEnCheckout.precio))} ${T('t_c_u', 'c/u')}</div>
       `;
     }
   }
@@ -2529,6 +2500,13 @@
     textosFijosDeInicio();
     actualizarUiSesionCliente();
     if (sesionCliente && !pantallaLoginCliente.classList.contains('hidden')) cargarFidelidadCafe();
+    asegurarCotizacion();
+    repintarTodo();
+  });
+  asegurarCotizacion();
+
+  function repintarTodo(){
+    pintarNotaPrecios();
     if (catalogoPublicoProductos.length) renderizarCatalogoPublico();
     if (productoDetalleActual && catalogoDetalleView.style.display === 'block') {
       mostrarDetalleProductoPublico(productoDetalleActual, false, true);
@@ -2540,7 +2518,7 @@
       actualizarEnvioEstimado();
       actualizarPanelPago();
     }
-  });
+  }
 </script>
 
 <div class="flotantes-contacto">
