@@ -747,3 +747,20 @@ línea* **no sirve**.
   hoja correspondiente (nunca insertando en el medio), para no correr
   las columnas de datos ya cargados. Los encabezados de fila 1 los
   escribe el usuario a mano — la app nunca los gestiona.
+
+## Flecha de volver unificada (2026-10-22)
+
+Todas las flechas de volver del sitio usan la misma flecha SVG (30px, trazo
+1.4, área táctil 44x44, sin fondo ni animación, color `--header-text`; en el
+admin, `--ink` porque su barra es clara). **Modelo: `public/cliente.html`
+(`.btn-volver-flecha`).** Aplicada en `index.html` (carrito, login/Mi cuenta,
+checkout y detalle de producto; en las barras de pantalla completa va con
+`justify-self:start`, en la esquina izquierda) y en `admin.html`
+(`.volver-catalogo-header`). En el detalle de producto la flecha va primera
+del grupo izquierdo del header, antes del ☰ y la lupa (se muestra solo en el
+detalle). No volver al carácter «←» ni a la animación flotante. Las «←» que
+son parte de un texto («← Volver al producto», «← Volver a la aplicación» en
+privacidad/términos, «← Volver al catálogo» del login admin) se dejaron.
+Gotcha: `#vistaCatalogo .volver` (ID, gris `--ink-muted`) le ganaba al color de
+la flecha en el detalle; por eso existe `#vistaCatalogo .btn-volver-flecha`
+con `--header-text`.
