@@ -1787,26 +1787,32 @@
     });
   })();
 
-  /* Doble idioma: cada texto con data-lc-bi suma una casilla <clave>_en. Vacía = el sitio
+  /* Doble idioma: cada texto con data-lc-bi suma casillas <clave>_en, _fr y _pt. Vacía = el sitio
      usa su traducción automática (diccionario de idioma.js) y, si no hay, el texto de fábrica. */
   document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
     const clave = es.getAttribute('data-landing-field');
     const label = document.querySelector('label[for="' + es.id + '"]');
     if (label) label.textContent += ' — Español';
-    const lab = document.createElement('label');
-    lab.className = 'lc-label';
-    lab.htmlFor = 'landing_' + clave + '_en';
-    lab.textContent = (label ? label.textContent.replace(/ — Español$/, '') : clave) + ' — English';
-    const en = es.cloneNode(false);
-    en.removeAttribute('data-lc-bi');
-    en.id = 'landing_' + clave + '_en';
-    en.setAttribute('data-landing-field', clave + '_en');
-    en.value = '';
-    en.placeholder = '';
+    const base = label ? label.textContent.replace(/ — Español$/, '') : clave;
+    const extra = [];
+    [['en', 'English'], ['fr', 'Français'], ['pt', 'Português']].forEach(([cod, nombre]) => {
+      const lab = document.createElement('label');
+      lab.className = 'lc-label';
+      lab.htmlFor = 'landing_' + clave + '_' + cod;
+      lab.textContent = base + ' — ' + nombre;
+      const inp = es.cloneNode(false);
+      inp.removeAttribute('data-lc-bi');
+      inp.id = 'landing_' + clave + '_' + cod;
+      inp.setAttribute('data-landing-field', clave + '_' + cod);
+      inp.value = '';
+      inp.placeholder = '';
+      extra.push(lab, inp);
+    });
     const ayuda = document.createElement('p');
     ayuda.className = 'lc-ayuda';
     ayuda.textContent = 'Si se deja vacío se usa la traducción automática.';
-    es.after(lab, en, ayuda);
+    extra.push(ayuda);
+    es.after(...extra);
   });
 
   document.querySelectorAll('#panelLanding select[data-fuente-select]').forEach((sel) => {

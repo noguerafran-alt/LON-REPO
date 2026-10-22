@@ -382,11 +382,29 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
 
-## Selector de idioma ES/EN (sitio público, 2026-10-20)
+## Selector de idioma ES/EN/FR/PT (sitio público, 2026-10-20; FR y PT 2026-10-21)
 
+- **Cuatro idiomas (2026-10-21)**: es, en, fr, pt (`<html lang>` = es / en /
+  fr / pt-BR). `idioma.js` tiene un diccionario por idioma (`EN`, `FR`, `PT`,
+  mismas ~207 claves, mismas `{variables}`; expuestos en
+  `LONi18n.diccionarios`, `LONi18n.claves` sigue siendo EN); si falta una clave
+  se cae al español. **Las traducciones FR y PT las hizo una IA: conviene que
+  alguien nativo las revise.** Banderas SVG de Francia (tricolor) y Brasil
+  (rombo y círculo simplificados); en <=480px las banderas bajan a 18x12 y gap
+  1px para que entren las cuatro (probado a 375px en landing, carta y tienda;
+  a 320px el header de la tienda se desborda un poco).
+  - Agregar un texto: marcarlo y sumar la clave en **los tres** diccionarios
+    (EN, FR y PT).
+  - CMS: cada texto de `LANDING_TEXTOS_BILINGUES` tiene además `<clave>_fr` y
+    `<clave>_pt` (casillas «— Français» / «— Português» en Admin › Contenido;
+    `LANDING_DEFAULTS` en googleSheets.js las crea en la hoja Landing, el
+    backend filtra por esas claves). Vacío = diccionario y, si no, español.
+    `dataset.lonFr` / `lonPt` los llenan landing.html e index.html; el título de
+    destacados usa `data-destacados-titulo-<idioma>`.
+  - Todo lo de abajo, dicho para «inglés», aplica igual a francés y portugués.
 - **Qué es**: `public/idioma.js`, compartido por `landing.html`, `carta.html`
-  y `index.html` (la tienda). Dos banderas arriba a la derecha fuerzan
-  español o inglés; la elección se guarda en `localStorage` (`lon_idioma`,
+  y `index.html` (la tienda). Banderas arriba a la derecha fuerzan
+  el idioma; la elección se guarda en `localStorage` (`lon_idioma`,
   en `try/catch` por la navegación privada) y persiste entre páginas y
   visitas. Cambia también `<html lang>`. Default: español. Un solo
   `<script src="/idioma.js">`, sin build ni dependencias.

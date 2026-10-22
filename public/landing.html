@@ -454,10 +454,14 @@ footer a:hover{color:var(--accent-terracota)}
       // Texto: el CMS puede traer español, inglés o ambos; idioma.js decide cuál
       // mostrar según la bandera activa (y repinta en vivo al cambiarla).
       var en = contenido[key + '_en'] == null ? '' : String(contenido[key + '_en']);
-      if (valor.trim() === '' && en.trim() === '') return;
+      var fr = contenido[key + '_fr'] == null ? '' : String(contenido[key + '_fr']);
+      var pt = contenido[key + '_pt'] == null ? '' : String(contenido[key + '_pt']);
+      if (valor.trim() === '' && en.trim() === '' && fr.trim() === '' && pt.trim() === '') return;
       if (el.dataset.lonBase === undefined) el.dataset.lonBase = el._lonEs !== undefined ? el._lonEs : el.textContent; // _lonEs: español original guardado por idioma.js
       el.dataset.lonEs = valor.trim() === '' ? '' : valor;
       el.dataset.lonEn = en.trim() === '' ? '' : en;
+      el.dataset.lonFr = fr.trim() === '' ? '' : fr;
+      el.dataset.lonPt = pt.trim() === '' ? '' : pt;
       el.setAttribute('data-i18n-cms', '');
     });
     if (window.LONi18n) window.LONi18n.repintar();

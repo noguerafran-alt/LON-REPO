@@ -2305,7 +2305,7 @@ const LANDING_DEFAULTS = {
   footer_instagram: '',
 };
 
-/* Doble idioma: cada texto editable lleva <clave>_en (inglés). Vacío = se usa el
+/* Multi idioma: cada texto editable lleva <clave>_en, _fr y _pt. Vacío = se usa el
    diccionario de idioma.js y, si tampoco hay, el texto del HTML. */
 const LANDING_TEXTOS_BILINGUES = [
   'hero_eyebrow', 'hero_tagline', 'hero_ubicacion', 'cta_primary_label', 'cta_secondary_label',
@@ -2313,7 +2313,9 @@ const LANDING_TEXTOS_BILINGUES = [
   'footer_texto', 'destacados_titulo', 'banda_etiqueta', 'menu_categorias',
   'footer_privacidad', 'footer_terminos', 'footer_instagram',
 ];
-for (const clave of LANDING_TEXTOS_BILINGUES) LANDING_DEFAULTS[clave + '_en'] = '';
+for (const clave of LANDING_TEXTOS_BILINGUES) {
+  for (const cod of ['en', 'fr', 'pt']) LANDING_DEFAULTS[clave + '_' + cod] = '';
+}
 
 /* Estilo por bloque (mismos nombres que BLOQUES_TEXTO en landing.html y los
    data-lc-ajustes de admin.html). Vacío = como lo dice el CSS. Rangos: tamano px 6–120,
