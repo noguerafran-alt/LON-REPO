@@ -72,6 +72,7 @@ const payway = require('./payway');
 const mercadopago = require('./mercadopago');
 const emailService = require('./email');
 const ticketCierre = require('./ticketCierre');
+const traduccionLanding = require('./traduccionLanding');
 const imagenes = require('./imagenes');
 const whatsapp = require('./whatsapp');
 const helmet = require('helmet');
@@ -1683,6 +1684,39 @@ app.put('/admin/landing', limiteAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error guardando landing (admin):', err.message);
     res.status(500).json({ error: 'No se pudo guardar el contenido de la landing.' });
+  }
+});
+
+/* Admin nivel 2: traduce textos en español a en/fr/pt en UNA sola llamada a OpenRouter (modelos
+   gratis). Solo devuelve; no guarda nada: el admin rellena las casillas y se publica con Guardar. */
+app.post('/admin/landing/traducir', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    if (!config.OPENROUTER_API_KEY) {
+      return res.status(503).json({ error: 'Falta OPENROUTER_API_KEY para traducir automáticamente' });
+    }
+    const textos = traduccionLanding.validarPedido(req.body && req.body.textos);
+    if (!textos) return res.status(400).json({ error: 'Mandá { textos: { clave: "texto en español" } } (hasta 80, de hasta 1500 caracteres).' });
+
+    const messages = [
+      { role: 'system', content: traduccionLanding.PROMPT_SISTEMA },
+      { role: 'user', content: JSON.stringify(textos) },
+    ];
+    const extras = { max_tokens: 8000 };
+    let r = await llamarOpenRouter(config.OPENROUTER_MODEL, messages, extras);
+    let v = traduccionLanding.validarTraducciones(r && r.content, textos);
+    if (v.error && config.OPENROUTER_MODEL !== 'openrouter/free') {
+      r = await llamarOpenRouter('openrouter/free', messages, extras);
+      v = traduccionLanding.validarTraducciones(r && r.content, textos);
+    }
+    if (v.error) {
+      return res.status(502).json({ error: 'No se pudo traducir: ' + ((r && r.error) ? 'el servicio gratuito no respondió' : v.error) + ' Probá de nuevo en un rato.' });
+    }
+    res.json({ ok: true, traducciones: v.traducciones });
+  } catch (err) {
+    console.error('Error traduciendo landing:', err.message);
+    res.status(500).json({ error: 'No se pudo traducir.' });
   }
 });
 

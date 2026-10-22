@@ -910,6 +910,11 @@
     <div class="lc-titulo">
       <h2>Contenido</h2>
       <p class="lc-ayuda">Textos, fotos, video, fuentes, alineación, tamaño y estilo de la página de inicio (/). Las fotos y el video que subas no se publican hasta que tocás <strong>Guardar</strong>. Los links, el menú, el carrito y el orden de las secciones son fijos.</p>
+      <p class="lc-ayuda">
+        <button type="button" class="lc-btn lc-btn-sec" id="btnTraducirLanding">Traducir todo lo vacío</button>
+        <span id="estadoTraducirLanding"></span>
+        Las traducciones son automáticas: revisalas antes de Guardar. Al cambiar un texto en español se rellenan solas las casillas vacías o ya traducidas automáticamente; las que editaste a mano no se tocan.
+      </p>
       <nav class="lc-indice" aria-label="Secciones del editor">
         <a href="#lc_tipografia">Tipografía</a>
         <a href="#lc_hero">Hero</a>
@@ -1873,6 +1878,7 @@
         return;
       }
       el.value = src[key] != null ? String(src[key]) : '';
+      el.removeAttribute('data-auto');
     });
     // Compatibilidad: sin footer_ig_texto propio, se ve el @ de la vieja clave ig_handle.
     const igTexto = document.getElementById('landing_footer_ig_texto');
@@ -1927,6 +1933,92 @@
       if (btn) btn.disabled = false;
     }
   }
+
+  /* Traducción automática: solo RELLENA casillas (marcadas data-auto); se publica con Guardar. */
+  const IDIOMAS_LANDING = ['en', 'fr', 'pt'];
+  const cajaIdioma = (clave, cod) => document.getElementById('landing_' + clave + '_' + cod);
+  let traduciendoLanding = false;
+
+  function estadoTraduccion(texto, error) {
+    const el = document.getElementById('estadoTraducirLanding');
+    if (!el) return;
+    el.textContent = texto ? texto + ' ' : '';
+    el.style.color = error ? 'var(--stamp-red)' : 'var(--ink-muted)';
+  }
+
+  async function pedirTraducciones(textos) {
+    const res = await fetch('/admin/landing/traducir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: adminToken, textos }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.traducciones) throw new Error(data.error || 'No se pudo traducir');
+    return data.traducciones;
+  }
+
+  // incluirAuto: pisa también lo rellenado automáticamente antes; lo escrito a mano nunca.
+  async function traducirLanding(claves, incluirAuto) {
+    if (traduciendoLanding || !claves.length) return;
+    const btn = document.getElementById('btnTraducirLanding');
+    const guardar = document.getElementById('btnGuardarLanding');
+    const textos = {};
+    claves.forEach((c) => { textos[c] = document.getElementById('landing_' + c).value; });
+    traduciendoLanding = true;
+    if (btn) btn.disabled = true;
+    if (guardar) guardar.disabled = true;
+    estadoTraduccion('Traduciendo…', false);
+    try {
+      const tr = await pedirTraducciones(textos);
+      let rellenadas = 0;
+      claves.forEach((c) => {
+        IDIOMAS_LANDING.forEach((cod) => {
+          const caja = cajaIdioma(c, cod);
+          if (!caja || !tr[c] || !tr[c][cod]) return;
+          if (caja.value.trim() && !(incluirAuto && caja.hasAttribute('data-auto'))) return;
+          caja.value = tr[c][cod];
+          caja.setAttribute('data-auto', '1');
+          rellenadas++;
+        });
+      });
+      if (rellenadas) marcarCambiosLanding('Traducciones automáticas rellenadas: revisalas y tocá Guardar para publicar.');
+      estadoTraduccion(rellenadas ? '' : 'No había nada para rellenar.', false);
+    } catch (err) {
+      estadoTraduccion('No se pudo traducir: ' + (err.message || 'error'), true);
+    } finally {
+      traduciendoLanding = false;
+      if (btn) btn.disabled = false;
+      if (guardar) guardar.disabled = false;
+    }
+  }
+
+  document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
+    const clave = es.getAttribute('data-landing-field');
+    es.addEventListener('change', () => {
+      if (!es.value.trim()) return;
+      const hayLugar = IDIOMAS_LANDING.some((cod) => {
+        const c = cajaIdioma(clave, cod);
+        return c && (!c.value.trim() || c.hasAttribute('data-auto'));
+      });
+      if (hayLugar) traducirLanding([clave], true);
+    });
+    IDIOMAS_LANDING.forEach((cod) => {
+      const c = cajaIdioma(clave, cod);
+      if (c) c.addEventListener('input', () => c.removeAttribute('data-auto'));
+    });
+  });
+
+  const btnTraducirLanding = document.getElementById('btnTraducirLanding');
+  if (btnTraducirLanding) btnTraducirLanding.addEventListener('click', () => {
+    const claves = [];
+    document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
+      const clave = es.getAttribute('data-landing-field');
+      if (!es.value.trim()) return;
+      if (IDIOMAS_LANDING.some((cod) => { const c = cajaIdioma(clave, cod); return c && !c.value.trim(); })) claves.push(clave);
+    });
+    if (!claves.length) return estadoTraduccion('No hay traducciones vacías.', false);
+    traducirLanding(claves, false);
+  });
 
   async function subirFotoLanding(archivo) {
     const formData = new FormData();
