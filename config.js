@@ -461,6 +461,10 @@ module.exports = {
   // Lo usa /resena (tarjeta NFC); la tarjeta lleva /resena, no este link.
   GOOGLE_RESENA_URL: (process.env.GOOGLE_RESENA_URL || '').trim(),
 
+  // Cotización del dólar blue que /tienda usa SOLO para mostrar precios en
+  // US$ cuando el idioma no es español (GET /cotizacion-dolar). Opcional.
+  DOLAR_API_URL: (process.env.DOLAR_API_URL || 'https://dolarapi.com/v1/dolares/blue').trim(),
+
   /* ------------------------------------------------------------
    * 5) PAGOS — dos opciones para el comprador: Payway (link de pago
    *    hospedado — el comprador carga la tarjeta en una pagina de

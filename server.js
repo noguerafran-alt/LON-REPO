@@ -1296,6 +1296,38 @@ app.get('/catalogo-publico', limiteLecturaPublica, async (req, res) => {
   }
 });
 
+/* Dólar blue (venta) para mostrar precios en US$ en EN/FR/PT. Solo visual:
+   los cobros siguen en pesos con precios del servidor. Cache de 1 h; si la
+   API falla se devuelve la última buena (con su fecha) o 503 si no hubo. */
+let cotizacionDolar = null; // { venta, fecha, obtenidaEn }
+app.get('/cotizacion-dolar', limiteLecturaPublica, async (req, res) => {
+  try {
+    if (!cotizacionDolar || Date.now() - cotizacionDolar.obtenidaEn > 60 * 60 * 1000) {
+      try {
+        const r = await fetch(config.DOLAR_API_URL, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const venta = Number(d && d.venta);
+        if (!Number.isFinite(venta) || venta < 100 || venta > 100000) throw new Error('cotización fuera de rango');
+        const f = new Date(d.fechaActualizacion);
+        cotizacionDolar = {
+          venta,
+          fecha: Number.isNaN(f.getTime()) ? new Date().toISOString() : f.toISOString(),
+          obtenidaEn: Date.now(),
+        };
+      } catch (err) {
+        console.warn('No se pudo actualizar el dólar blue:', err.message);
+        // Reintenta en 1 minuto, no en cada visita, y sigue sirviendo la última buena.
+        if (cotizacionDolar) cotizacionDolar.obtenidaEn = Date.now() - 59 * 60 * 1000;
+      }
+    }
+    if (!cotizacionDolar) return res.status(503).json({ error: 'Cotización no disponible.' });
+    res.json({ venta: cotizacionDolar.venta, fecha: cotizacionDolar.fecha });
+  } catch (err) {
+    res.status(503).json({ error: 'Cotización no disponible.' });
+  }
+});
+
 /* Categorías PÚBLICAS para el menú ☰ de la landing: las mismas que arman las
    pestañas de /tienda (clave en mayúsculas, nombre visible del primer producto,
    solo con productos públicos con stock). Liviano: sin fotos ni descripciones.
