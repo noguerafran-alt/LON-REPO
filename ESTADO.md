@@ -8,8 +8,9 @@
 
 ## Qué hace la app hoy
 
-- **Catálogo público** (`public/index.html`): grilla de productos con
-  destacados (carrusel infinito con swipe), filtro por categoría/
+- **Catálogo público** (`public/index.html`): grilla de productos (sin
+  sección de destacados desde 2026-10-21; los «recomendados» del detalle sí
+  quedan), filtro por categoría/
   subcategoría con scroll infinito, buscador, detalle de producto con
   deep-link (`?producto=SKU`), carrito, checkout de un producto o del
   carrito, login de cliente con Google ("Mi cuenta"), programa de
@@ -225,7 +226,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   reescriben valores guardados. Guardar manda solo los campos del
   formulario.
 - Editable: textos de cada sección (hero, quiénes somos, pilares, el
-  espacio, franja catálogo, footer, título de destacados de /tienda),
+  espacio, franja catálogo, footer),
   fotos + alt, video de fondo opcional del hero (`hero_video`,
   `POST /admin/landing/video`, hasta `VIDEO_MAX_BYTES` = 40 MB, sin
   transcodificar), fuente general (`landing_fuente`) y de títulos
@@ -276,6 +277,23 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 - No verificado: el admin con login de Google ni la llamada real a OpenRouter
   (sin credenciales); la lógica del front se revisó por código.
 
+## Se quitan los «Destacados» de /tienda (2026-10-21)
+
+- Pedido del dueño: nada de «Destacados» («Piezas que miramos dos veces») en
+  /tienda. Se sacó de `index.html` el contenedor, CSS, JS (carga, auto-avance,
+  flechas, repintado en `lon-idioma`) y la hidratación de `destacados_titulo`.
+  La página arranca directo con Buscar + categorías + grilla. Reemplaza al PR
+  #16 (rama `feat/lon-tienda-sin-destacados`), que nunca se mergeó.
+- Se QUEDA: los recomendados/relacionados del detalle de producto, y
+  `GET /catalogo-destacados` (lo usa la banda con carrusel de fotos de
+  `landing.html`, que no es una sección de destacados). También
+  `recentrarCarrusel`, que usan las tabs de categoría.
+- Admin › Contenido: se sacó la sección «Tienda» (`destacados_titulo`) y la
+  clave salió de `LANDING_DEFAULTS` y `LANDING_TEXTOS_BILINGUES`. Una fila
+  `destacados_titulo*` que ya exista en la hoja Landing queda intacta, sin uso.
+- `idioma.js`: fuera `t_destacados`, `t_ver_anterior`, `t_ver_siguiente` (EN/FR/PT).
+- Verificado: /tienda a 375px arranca directo con Buscar, cambio de idioma sin errores. Sin probar con catálogo real (sin credenciales).
+
 ## Rediseño de la landing (2026-10-21)
 
 - **Hero a `100dvh`** (con `100vh` de respaldo): al abrir solo se ve el hero.
@@ -319,7 +337,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   `<clave>_en`. Lista en `LANDING_TEXTOS_BILINGUES` (googleSheets.js):
   hero_eyebrow, hero_tagline, hero_ubicacion, cta_primary_label,
   cta_secondary_label, sobre_lead, espacio_caption, espacio_quote,
-  catalogo_cta_texto, catalogo_cta_label, footer_texto, destacados_titulo y los
+  catalogo_cta_texto, catalogo_cta_label, footer_texto y los
   nuevos de abajo. Las alt de fotos y `footer_ig_texto` (es un @) NO son
   bilingües: la alt sigue en español si el CMS la pisa.
   - Cómo decide qué mostrar (`idioma.js`, función `aplicarDom`): el elemento
@@ -329,9 +347,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
     vacío, el diccionario `EN` (por su `data-i18n`); si no hay, `lonBase`.
     Cambia en vivo al tocar la bandera (aplicarDom corre en cada cambio) y
     `aplicarContenido` llama a `LONi18n.repintar()` al terminar el fetch.
-    Mismo esquema en `landing.html` y en `index.html` (footer_texto); el título
-    de destacados de /tienda usa `data-destacados-titulo[-en]` en el contenedor y
-    se repinta con el evento `lon-idioma` que ya existía.
+    Mismo esquema en `landing.html` y en `index.html` (footer_texto).
   - Ojo: con el inglés vacío y un español editado, en inglés se ve el diccionario
     (o el HTML), no el español nuevo. Es lo pedido; para que no pase hay que
     cargar el inglés.
@@ -419,8 +435,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
     `<clave>_pt` (casillas «— Français» / «— Português» en Admin › Contenido;
     `LANDING_DEFAULTS` en googleSheets.js las crea en la hoja Landing, el
     backend filtra por esas claves). Vacío = diccionario y, si no, español.
-    `dataset.lonFr` / `lonPt` los llenan landing.html e index.html; el título de
-    destacados usa `data-destacados-titulo-<idioma>`.
+    `dataset.lonFr` / `lonPt` los llenan landing.html e index.html.
   - Todo lo de abajo, dicho para «inglés», aplica igual a francés y portugués.
 - **Qué es**: `public/idioma.js`, compartido por `landing.html`, `carta.html`
   y `index.html` (la tienda). Banderas arriba a la derecha fuerzan
@@ -446,7 +461,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   - Atributos: `data-i18n-attr="placeholder:clave,aria-label:clave"`.
   - Texto armado por JS (la tienda): `T(clave, español, {vars})` con
     `{variables}`; al cambiar de idioma idioma.js dispara el evento
-    `lon-idioma` y `index.html` repinta catálogo, destacados, detalle,
+    `lon-idioma` y `index.html` repinta catálogo, detalle,
     carrito y checkout. El repintado del detalle NO cuenta como visita.
   - Para agregar un texto: marcarlo y sumar la clave en `EN`.
 - **Qué NO se traduce (a propósito, decisión del dueño)**: lo que viene de

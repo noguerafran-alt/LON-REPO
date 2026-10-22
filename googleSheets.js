@@ -2283,7 +2283,6 @@ const LANDING_DEFAULTS = {
   espacio_quote: 'Ver y apreciar lo que uno está obteniendo es elegir estar presente.',
   catalogo_cta_texto: 'Explorá el catálogo y armá tu pedido online.',
   catalogo_cta_label: 'Ir al catálogo',
-  destacados_titulo: 'Piezas que miramos dos veces',
   footer_texto: '© 2026 FLN Data Analysis — LON Philosophy',
   /* Admin › Contenido (mismo modelo que PROA). Se siembran solo si faltan; vacío =
      lo que se ve hoy. ig_handle queda guardada pero ya no se edita: los links son
@@ -2310,7 +2309,7 @@ const LANDING_DEFAULTS = {
 const LANDING_TEXTOS_BILINGUES = [
   'hero_eyebrow', 'hero_tagline', 'hero_ubicacion', 'cta_primary_label', 'cta_secondary_label',
   'sobre_lead', 'espacio_caption', 'espacio_quote', 'catalogo_cta_texto', 'catalogo_cta_label',
-  'footer_texto', 'destacados_titulo', 'banda_etiqueta', 'menu_categorias',
+  'footer_texto', 'banda_etiqueta', 'menu_categorias',
   'footer_privacidad', 'footer_terminos', 'footer_instagram',
 ];
 for (const clave of LANDING_TEXTOS_BILINGUES) {

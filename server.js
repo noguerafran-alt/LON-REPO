@@ -1238,7 +1238,8 @@ app.post('/producto-visita', limiteEscrituraPublica, async (req, res) => {
 });
 
 /* Top de productos "mas consultados" (hoja Consultas) y "mas visitados"
-   (hoja VISITAS) para la seccion "Destacados" del catalogo publico. Solo
+   (hoja VISITAS). Lo usa la banda con carrusel de fotos de la landing (no hay
+   seccion de destacados en /tienda). Solo
    incluye productos con stock disponible (los mismos que ya se pueden
    ver/comprar en el catalogo). Sin login. */
 app.get('/catalogo-destacados', limiteLecturaPublica, async (req, res) => {
