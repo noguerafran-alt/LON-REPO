@@ -245,7 +245,10 @@
     display:flex; align-items:center; justify-content:center; font-size:23px;
     box-shadow:0 4px 14px rgba(59,18,32,0.28); color:#fff; text-decoration:none;
   }
-  .btn-flotante-whatsapp{ background:var(--stamp-green); }
+  /* Bordo de la marca y no el verde de WhatsApp: el boton vive sobre el
+     crema de LON y el verde desentonaba. El icono blanco sigue siendo el
+     de WhatsApp, asi que se reconoce igual. */
+  .btn-flotante-whatsapp{ background:var(--bg-header); }
   .btn-flotante-chat{ background:var(--accent); }
 
   .panel-chat{

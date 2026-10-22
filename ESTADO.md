@@ -889,6 +889,13 @@ línea* **no sirve**.
 
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 
+- **El botón flotante de WhatsApp va en bordó, no en verde** (2026-10-22). El
+  verde `--stamp-green` es el color oficial de WhatsApp, pero sobre el crema de
+  LON desentonaba; se pasó a `--bg-header` (#5E1E2B), el mismo del header. El
+  ícono blanco sigue siendo el de WhatsApp, así que se reconoce igual. Si alguna
+  vez se agrega el botón a otra página, usar el mismo color.
+
+
 - El local vende también por un **POS de café/gastronomía separado**
   (tickets con categorías tipo CAFE, BAKERY, GENERICO — no son las
   categorías de LON). El Cierre de Caja **compara** el TOTAL general de
