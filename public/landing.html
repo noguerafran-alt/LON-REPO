@@ -93,17 +93,6 @@ img[data-respaldo].lista{opacity:1}
 footer{padding:40px 24px;text-align:center;font-size:12px;color:var(--ink-muted);line-height:1.7}
 footer a{color:var(--ink-muted)}
 footer a:hover{color:var(--accent-terracota)}
-.panel-menu{position:fixed;inset:0;z-index:50;display:none}
-.panel-menu.abierto{display:block}
-.panel-menu-backdrop{position:absolute;inset:0;background:rgba(59,18,32,.35)}
-.panel-menu-sheet{position:absolute;top:0;right:0;overflow-y:auto;width:min(320px,88vw);height:100%;background:var(--bg);padding:24px 20px;box-shadow:-8px 0 24px rgba(59,18,32,.12);display:flex;flex-direction:column;gap:8px}
-.panel-menu-sheet h2{font-family:Fraunces,serif;font-style:italic;font-weight:400;font-size:22px;margin:8px 0 16px}
-.panel-menu-sheet a{display:block;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
-.panel-menu-sheet a.acceso{display:flex;align-items:center;gap:12px}
-.panel-menu-sheet a.acceso svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.panel-menu-accesos{margin-top:20px;border-top:1px solid var(--line)}
-.panel-menu-idioma{margin-top:20px}
-.panel-menu-cerrar{align-self:flex-end;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:4px}
 @media(min-width:800px){
   .header .icon-btn{width:48px;height:48px}
   .header .icon-btn svg{width:28px;height:28px}
@@ -134,7 +123,7 @@ footer a:hover{color:var(--accent-terracota)}
 <header class="header" id="headerLanding">
   <div class="header-row">
     <div class="left">
-      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" aria-controls="panelMenuLanding" title="Menú" data-i18n-attr="aria-label:g_menu_categorias,title:g_menu">
+      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" aria-controls="panelMenuLon" title="Menú" data-i18n-attr="aria-label:g_menu_categorias,title:g_menu">
         <svg viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
     </div>
@@ -146,29 +135,6 @@ footer a:hover{color:var(--accent-terracota)}
 </header>
 
 <div class="header-zona" id="zonaHeader" aria-hidden="true"></div>
-
-<div class="panel-menu" id="panelMenuLanding" hidden>
-  <div class="panel-menu-backdrop" data-cerrar-menu></div>
-  <div class="panel-menu-sheet" role="dialog" aria-label="Menú" data-i18n-attr="aria-label:g_menu">
-    <button type="button" class="panel-menu-cerrar" data-cerrar-menu aria-label="Cerrar" data-i18n-attr="aria-label:g_cerrar">×</button>
-    <h2 data-landing="menu_categorias" data-i18n="g_categorias">Categorías</h2>
-    <a href="/tienda?cat=ANTIGUEDADES" data-i18n="g_cat_antiguedades">Antigüedades</a>
-    <a href="/tienda?cat=CERAMICA" data-i18n="g_cat_ceramica">Cerámica</a>
-    <a href="/tienda?cat=JOYAS" data-i18n="g_cat_joyas">Joyas</a>
-    <a href="/tienda?cat=LIBROS" data-i18n="g_cat_libros">Libros</a>
-    <a href="/tienda?cat=MADERA" data-i18n="g_cat_madera">Madera</a>
-    <a href="/tienda?cat=VELAS" data-i18n="g_cat_velas">Velas</a>
-    <a href="/tienda" style="margin-top:12px;border:none;font-weight:600;" data-i18n="l_ver_completo">Ver catálogo completo →</a>
-    <a href="/carta" style="border:none;" data-i18n="g_carta_cafe">Carta del café</a>
-    <!-- Orden pedido por el dueño: categorías arriba, accesos abajo y el idioma al final -->
-    <div class="panel-menu-accesos">
-      <a class="acceso" href="/cliente.html"><svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="g_escanear">Escanear</span></a>
-      <a class="acceso" href="/tienda?carrito=1"><svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg><span data-i18n="g_carrito">Carrito</span></a>
-      <a class="acceso" href="/tienda?cuenta=1"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg><span data-i18n="g_mi_cuenta">Mi cuenta</span></a>
-    </div>
-    <div class="panel-menu-idioma" data-selector-idioma></div>
-  </div>
-</div>
 
 <main>
   <section class="hero" aria-label="Presentación LON Philosophy" data-i18n-attr="aria-label:l_presentacion">
@@ -217,28 +183,14 @@ footer a:hover{color:var(--accent-terracota)}
 
 <script src="/lon-contenido.js"></script>
 <script src="/idioma.js"></script>
+<script src="/menu-lon.js"></script>
 <script>
-(function () {
-  var panel = document.getElementById('panelMenuLanding');
-  var btn = document.getElementById('btnMenuLanding');
-  function abrir() {
-    panel.hidden = false;
-    panel.classList.add('abierto');
-    btn.setAttribute('aria-expanded', 'true');
-  }
-  function cerrar() {
-    panel.classList.remove('abierto');
-    panel.hidden = true;
-    btn.setAttribute('aria-expanded', 'false');
-  }
-  btn.addEventListener('click', function () {
-    if (panel.classList.contains('abierto')) cerrar(); else abrir();
-  });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel.classList.contains('abierto')) { cerrar(); btn.focus(); } });
-  panel.querySelectorAll('[data-cerrar-menu], a.acceso').forEach(function (el) {
-    el.addEventListener('click', cerrar);
-  });
-})();
+LONMenu.iniciar({ boton: document.getElementById('btnMenuLanding') });
+// Solo las categorías públicas del catálogo; si el pedido falla no se muestra ninguna (nunca una lista inventada).
+fetch('/catalogo-categorias')
+  .then(function (res) { return res.ok ? res.json() : null; })
+  .then(function (data) { if (data && data.categorias) LONMenu.fijarCategorias(data.categorias); })
+  .catch(function () { /* queda solo «Ver catálogo completo» */ });
 
 (function () {
   var header = document.getElementById('headerLanding');

@@ -1292,6 +1292,36 @@ app.get('/catalogo-publico', limiteLecturaPublica, async (req, res) => {
   }
 });
 
+/* Categorías PÚBLICAS para el menú ☰ de la landing: las mismas que arman las
+   pestañas de /tienda (clave en mayúsculas, nombre visible del primer producto,
+   solo con productos públicos con stock). Liviano: sin fotos ni descripciones.
+   Cache corto en memoria para no leer 3 hojas por cada visita a la landing. */
+let cacheCategoriasPublicas = { hasta: 0, categorias: [] };
+app.get('/catalogo-categorias', limiteLecturaPublica, async (req, res) => {
+  try {
+    if (Date.now() > cacheCategoriasPublicas.hasta) {
+      const sheetsClient = google.sheets({ version: 'v4', auth });
+      const productos = await construirCatalogoConStock(sheetsClient, { soloConStock: true });
+      const porCategoria = new Map();
+      productos.forEach((p) => {
+        const clave = (p.categoria || '').trim().toUpperCase();
+        if (!clave) return;
+        const previa = porCategoria.get(clave);
+        if (previa) previa.cantidad++;
+        else porCategoria.set(clave, { categoria: clave, nombre: (p.categoriaVisible || '').trim() || clave, cantidad: 1 });
+      });
+      cacheCategoriasPublicas = {
+        hasta: Date.now() + 60 * 1000,
+        categorias: Array.from(porCategoria.values()).sort((a, b) => (a.categoria < b.categoria ? -1 : 1)),
+      };
+    }
+    res.json({ categorias: cacheCategoriasPublicas.categorias });
+  } catch (err) {
+    console.error('Error leyendo las categorías públicas:', err.message);
+    res.status(500).json({ error: 'No se pudieron cargar las categorías.' });
+  }
+});
+
 /* Suma 1 visita a un producto — se llama cada vez que alguien abre el
    detalle de un producto en el catalogo publico. Se usa para armar
    "Destacados: mas visitados". Sin login, con rate-limit anti-abuso. */
