@@ -3081,6 +3081,9 @@
       cafeProgresoTexto.textContent = data.cafesContador >= data.cafesParaGratis
         ? 'Tiene un regalo esperando — confirmá para entregárselo.'
         : `Lleva ${data.cafesContador}/${data.cafesParaGratis} cafés.`;
+      if (data.ultimoSello && !isNaN(Date.parse(data.ultimoSello))) {
+        cafeProgresoTexto.textContent += ` Último sello por NFC: ${new Date(data.ultimoSello).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}.`;
+      }
       mensajeCafeModal.textContent = '';
       mensajeCafeModal.style.color = '';
       btnConfirmarCafe.disabled = false;

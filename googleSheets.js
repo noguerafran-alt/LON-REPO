@@ -7,6 +7,7 @@
 
 const crypto = require('crypto');
 const config = require('./config');
+const { decidirSello, avanzarContador } = require('./sello');
 
 /**
  * Se fija cuantas filas tiene la GRILLA de una pestaña (no cuantas filas
@@ -1558,6 +1559,8 @@ async function getClientes(sheetsClient, spreadsheetId, sheetName) {
       fechaAlta: fila[cols.fechaAlta] || '',
       codigoFidelidad: fila[cols.codigoFidelidad] ? String(fila[cols.codigoFidelidad]).trim() : '',
       cafesContador: Number.isFinite(cafesContador) ? cafesContador : 0,
+      ultimoSello: fila[cols.ultimoSello] ? String(fila[cols.ultimoSello]).trim() : '',
+      selloDia: fila[cols.selloDia] ? String(fila[cols.selloDia]).trim() : '',
     });
   }
 
@@ -1622,21 +1625,7 @@ async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codi
   if (!numeroFila) return null;
 
   const objetivo = config.CAFES_PARA_GRATIS;
-  let contador = cliente.cafesContador;
-  let regalosEntregados = 0;
-  let regaloDesbloqueado = false;
-
-  for (let i = 0; i < cantidad; i++) {
-    if (contador >= objetivo) {
-      contador = 0;
-      regalosEntregados += 1;
-      regaloDesbloqueado = false;
-    } else {
-      contador += 1;
-      regaloDesbloqueado = contador >= objetivo;
-    }
-  }
-  const nuevoContador = contador;
+  const { contador: nuevoContador, regalosEntregados, regaloDesbloqueado } = avanzarContador(cliente.cafesContador, objetivo, cantidad);
   const esGratis = regalosEntregados > 0;
 
   const cols = config.COLUMNAS_CLIENTES;
@@ -1648,6 +1637,57 @@ async function registrarCafeCliente(sheetsClient, spreadsheetId, sheetName, codi
   });
 
   return { cliente, cafesContador: nuevoContador, esGratis, regalosEntregados, regaloDesbloqueado };
+}
+
+// Candado en memoria por cliente: dos toques seguidos se encolan y el
+// segundo relee la fila ya con el sello del primero (Render corre una sola
+// instancia; con varias haria falta otro mecanismo).
+const bloqueosSello = new Map();
+
+/**
+ * Sello por tarjeta NFC. Lee la hoja una vez, decide con sello.js y escribe
+ * D:G en un solo update (codigo, contador, ultimo sello, sellos del dia).
+ * Nunca canjea el gratis. Devuelve null si el email no tiene cuenta.
+ */
+function sellarCafeNfc(sheetsClient, spreadsheetId, sheetName, email, cantidad = 1, ahora = new Date()) {
+  const clave = normalizarEmail(email);
+  const previo = bloqueosSello.get(clave) || Promise.resolve();
+  const actual = previo.catch(() => {}).then(async () => {
+    const { numeroFila, cliente } = await buscarClientePorEmail(sheetsClient, spreadsheetId, sheetName, clave);
+    if (!numeroFila) return null;
+
+    const codigoFidelidad = cliente.codigoFidelidad || generarCodigoFidelidad();
+    const decision = decidirSello({
+      contador: cliente.cafesContador,
+      objetivo: config.CAFES_PARA_GRATIS,
+      cantidad,
+      ultimoSello: cliente.ultimoSello,
+      selloDia: cliente.selloDia,
+      ahora,
+      minutosEntre: config.SELLO_MINUTOS_ENTRE,
+      maxPorDia: config.SELLO_MAX_POR_DIA,
+    });
+    const nuevo = { ...cliente, codigoFidelidad };
+
+    if (decision.accion === 'sumar') {
+      nuevo.cafesContador = decision.contador;
+      nuevo.ultimoSello = decision.ultimoSello;
+      nuevo.selloDia = decision.selloDia;
+    }
+    if (decision.accion === 'sumar' || !cliente.codigoFidelidad) {
+      const cols = config.COLUMNAS_CLIENTES;
+      await sheetsClient.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!${columnaALetra(cols.codigoFidelidad)}${numeroFila}:${columnaALetra(cols.selloDia)}${numeroFila}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[nuevo.codigoFidelidad, nuevo.cafesContador, nuevo.ultimoSello, nuevo.selloDia]] },
+      });
+    }
+    return { cliente: nuevo, decision };
+  });
+  bloqueosSello.set(clave, actual);
+  actual.finally(() => { if (bloqueosSello.get(clave) === actual) bloqueosSello.delete(clave); }).catch(() => {});
+  return actual;
 }
 
 /* ============================================================
@@ -2528,6 +2568,7 @@ module.exports = {
   buscarClientePorCodigoFidelidad,
   crearClienteSiNoExiste,
   registrarCafeCliente,
+  sellarCafeNfc,
   getSiguienteNumeroProducto,
   crearProductoNuevo,
   actualizarLinksCatalogoProductos,

@@ -49,6 +49,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/idioma.js"></script>
+<script src="/tarjeta.js"></script>
 <style>
   :root{
     --bg:#F6EFE4; --bg-alt:#EDE3D0; --bg-card:#FFFBF5; --ink:#3B1220; --ink-muted:#6B3A45;
@@ -225,6 +226,8 @@
   }
   .qr-fidelidad-cliente{ width:160px; height:160px; display:block; margin:0 auto; border-radius:var(--radius); background:#fff; padding:8px; }
   .qr-fidelidad-cliente.oculto{ display:none; }
+  #loginClienteLogueado a#btnWalletCliente{ display:block; margin-top:12px; padding:10px; border-radius:var(--radius); background:var(--bg-header); color:var(--header-text); text-decoration:none; font-size:14px; }
+  #loginClienteLogueado a#btnWalletCliente.oculto{ display:none; }
   .btn-login-cliente{ font-size:22px; position:relative; }
   .btn-login-cliente.logueado::after{
     content:''; position:absolute; top:-2px; right:-4px; width:8px; height:8px;
@@ -846,8 +849,9 @@
       <div class="tarjeta-fidelidad-cafe">
         <p class="eyebrow" style="margin:0 0 8px;" data-i18n="t_cafe_fidelidad">Café de fidelidad</p>
         <div id="puntosFidelidadCafe" class="puntos-fidelidad-cafe">Cargando...</div>
-        <img id="qrFidelidadCliente" class="qr-fidelidad-cliente oculto" alt="Tu código QR de fidelidad" data-i18n-attr="alt:t_qr_alt">
+        <div id="tarjetaCliente" style="margin-bottom:10px;"></div>
         <p style="font-size:12px; color:var(--ink-muted); margin:8px 0 0;" data-i18n="t_qr_texto">Mostrá este QR en el local para cargar tu café. Al completar 3, el próximo escaneo te entrega un regalo sorpresa.</p>
+        <a id="btnWalletCliente" class="oculto" href="#" target="_blank" rel="noopener" data-i18n="t_wallet_agregar">Agregar a Google Wallet</a>
       </div>
       <button type="button" id="btnSalirCliente" style="width:100%; margin-top:16px;" data-i18n="t_cerrar_sesion">Cerrar sesión</button>
     </div>
@@ -1792,12 +1796,12 @@
   actualizarUiSesionCliente();
 
   const puntosFidelidadCafe = document.getElementById('puntosFidelidadCafe');
-  const qrFidelidadCliente = document.getElementById('qrFidelidadCliente');
+  const tarjetaCliente = document.getElementById('tarjetaCliente');
 
   async function cargarFidelidadCafe(){
     if (!sesionCliente) return;
     puntosFidelidadCafe.textContent = T('t_cargando', 'Cargando...');
-    qrFidelidadCliente.classList.add('oculto');
+    tarjetaCliente.innerHTML = '';
     try {
       const res = await fetch(`/cliente/mi-cuenta?token=${encodeURIComponent(sesionCliente.token)}`);
       const data = await res.json();
@@ -1806,12 +1810,13 @@
       if (data.cafesContador >= data.cafesParaGratis) {
         puntosFidelidadCafe.textContent = '🎁 ' + T('t_regalo', '¡Tenés un regalo esperando!');
       } else {
-        const llenos = '☕'.repeat(data.cafesContador);
-        const vacios = '⚪'.repeat(Math.max(0, data.cafesParaGratis - data.cafesContador));
-        puntosFidelidadCafe.textContent = `${llenos}${vacios}  ${data.cafesContador}/${data.cafesParaGratis}`;
+        puntosFidelidadCafe.textContent = `${data.cafesContador}/${data.cafesParaGratis}`;
       }
-      qrFidelidadCliente.src = data.qrDataUrl;
-      qrFidelidadCliente.classList.remove('oculto');
+      tarjetaCliente.appendChild(LONTarjeta.tarjeta({ nombre: data.nombre, llenos: data.cafesContador, total: data.cafesParaGratis, qr: data.qrDataUrl }));
+      const btnWallet = document.getElementById('btnWalletCliente');
+      if (data.walletUrl) btnWallet.href = data.walletUrl;
+      // Google Wallet no existe en iPhone/iPad.
+      btnWallet.classList.toggle('oculto', !data.walletUrl || LONTarjeta.esIOS());
     } catch (err) {
       puntosFidelidadCafe.textContent = T('t_err_tarjeta', 'No se pudo cargar tu tarjeta de café.');
     }

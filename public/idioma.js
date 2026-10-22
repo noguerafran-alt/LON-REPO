@@ -236,7 +236,24 @@
     t_err_pago: 'Could not start the payment: {m}',
     t_err_pedido: 'Could not confirm the order: {m}',
     t_err_desconocido: 'Unknown error',
-    t_sin_url_pago: 'No payment URL was returned.'
+    t_sin_url_pago: 'No payment URL was returned.',
+    t_wallet_agregar: 'Add to Google Wallet',
+    s_titulo: 'Stamp my coffee',
+    s_cargando: 'Stamping your coffee...',
+    s_token_invalido: 'This link is not valid. Tap your phone on the card at the counter.',
+    s_ingresar: 'Sign in with Google to add your coffee.',
+    s_sumado: '☕ Coffee added: you have {n} of {m}',
+    s_cuantos: 'How many coffees?',
+    s_sumado_parcial: 'Today you could add {k} more: we added {k}. You have {n} of {m}.',
+    s_pendiente_sobrantes: 'One of these coffees is free! Show this QR to the staff: they redeem the free one and add the {k} remaining.',
+    s_pendiente: 'Your next coffee is free! Show this QR to the staff.',
+    s_frenado_min: 'You stamped a moment ago. You can stamp again at {h}.',
+    s_frenado_dia: 'You reached today\'s stamp limit. Come back tomorrow.',
+    s_error: 'Could not stamp your coffee. Try again.',
+    s_ir_tienda: 'Go to the shop',
+    s_inicio_aviso: 'Add it to your home screen: tap Share (□↑) → Add to Home Screen',
+    s_tu_tarjeta: 'Your coffee card',
+    s_error_tarjeta: 'Could not load your coffee card.'
   };
 
   var FR = {
@@ -456,7 +473,24 @@
     t_err_pago: 'Impossible de lancer le paiement : {m}',
     t_err_pedido: 'Impossible de confirmer la commande : {m}',
     t_err_desconocido: 'Erreur inconnue',
-    t_sin_url_pago: 'Aucune URL de paiement n\'a été renvoyée.'
+    t_sin_url_pago: 'Aucune URL de paiement n\'a été renvoyée.',
+    t_wallet_agregar: 'Ajouter à Google Wallet',
+    s_titulo: 'Tamponner mon café',
+    s_cargando: 'Tamponnage de votre café...',
+    s_token_invalido: 'Ce lien n\'est pas valide. Approchez votre téléphone de la carte du comptoir.',
+    s_ingresar: 'Connectez-vous avec Google pour ajouter votre café.',
+    s_sumado: '☕ Café ajouté : vous en avez {n} sur {m}',
+    s_cuantos: 'Combien de cafés ?',
+    s_sumado_parcial: 'Aujourd\'hui vous pouviez en ajouter {k} de plus : nous en avons ajouté {k}. Vous en avez {n} sur {m}.',
+    s_pendiente_sobrantes: 'Un de ces cafés est offert ! Montrez ce QR au personnel : il valide le café offert et ajoute les {k} restants.',
+    s_pendiente: 'Votre prochain café est offert ! Montrez ce QR au personnel.',
+    s_frenado_min: 'Vous avez tamponné il y a peu. Vous pourrez retamponner à {h}.',
+    s_frenado_dia: 'Vous avez atteint la limite de tampons du jour. Revenez demain.',
+    s_error: 'Impossible de tamponner votre café. Réessayez.',
+    s_ir_tienda: 'Aller à la boutique',
+    s_inicio_aviso: 'Ajoutez-la à votre écran d’accueil : touchez Partager (□↑) → Sur l’écran d’accueil',
+    s_tu_tarjeta: 'Votre carte café',
+    s_error_tarjeta: 'Impossible de charger votre carte café.'
   };
 
   var PT = {
@@ -676,7 +710,24 @@
     t_err_pago: 'Não foi possível iniciar o pagamento: {m}',
     t_err_pedido: 'Não foi possível confirmar o pedido: {m}',
     t_err_desconocido: 'Erro desconhecido',
-    t_sin_url_pago: 'Nenhuma URL de pagamento foi retornada.'
+    t_sin_url_pago: 'Nenhuma URL de pagamento foi retornada.',
+    t_wallet_agregar: 'Adicionar ao Google Wallet',
+    s_titulo: 'Carimbar meu café',
+    s_cargando: 'Carimbando seu café...',
+    s_token_invalido: 'Este link não é válido. Encoste o celular no cartão do balcão.',
+    s_ingresar: 'Entre com o Google para somar seu café.',
+    s_sumado: '☕ Café somado: você tem {n} de {m}',
+    s_cuantos: 'Quantos cafés?',
+    s_sumado_parcial: 'Hoje você podia somar mais {k}: somamos {k}. Você tem {n} de {m}.',
+    s_pendiente_sobrantes: 'Um destes cafés é grátis! Mostre este QR à equipe: ela resgata o grátis e soma os {k} que sobram.',
+    s_pendiente: 'Seu próximo café é grátis! Mostre este QR à equipe.',
+    s_frenado_min: 'Você carimbou há pouco. Poderá carimbar de novo às {h}.',
+    s_frenado_dia: 'Você atingiu o limite de carimbos de hoje. Volte amanhã.',
+    s_error: 'Não foi possível carimbar seu café. Tente de novo.',
+    s_ir_tienda: 'Ir para a loja',
+    s_inicio_aviso: 'Adicione à sua tela de início: toque em Compartilhar (□↑) → Adicionar à Tela de Início',
+    s_tu_tarjeta: 'Seu cartão de café',
+    s_error_tarjeta: 'Não foi possível carregar seu cartão de café.'
   };
 
   var IDIOMAS = ['es', 'en', 'fr', 'pt'];
