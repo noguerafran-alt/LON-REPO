@@ -256,6 +256,26 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   play/pausa** ni nada tocable (2026-10-08): siempre en bucle y sin
   controles; si iOS lo bloquea, queda solo la foto.
 
+## Traducción automática del Contenido (2026-10-21)
+
+- `POST /admin/landing/traducir` (nivel 2, `limiteAdmin`): body
+  `{ textos: { clave: españolTexto } }` -> `{ ok, traducciones: { clave: { en, fr, pt } } }`.
+  Una sola llamada a OpenRouter por pedido (`llamarOpenRouter` +
+  `OPENROUTER_MODEL`, fallback a `openrouter/free`), gratis. Requiere
+  `OPENROUTER_API_KEY` en Render; sin ella responde 503 «Falta
+  OPENROUTER_API_KEY…» y el admin lo muestra. Prompt, validación del pedido
+  y de la respuesta del modelo (JSON, solo claves pedidas, strings, largo)
+  en `traduccionLanding.js` (autochequeo: `node traduccionLanding.js`).
+- Admin › Contenido: al cambiar un texto en español (evento `change`) se
+  rellenan sus casillas en/fr/pt vacías o ya rellenadas automáticamente
+  (`data-auto`); lo que el dueño escribió a mano no se pisa. Botón
+  «Traducir todo lo vacío» manda en un pedido todos los textos con alguna
+  traducción vacía y rellena solo las vacías. Muestra «Traduciendo…» y
+  deshabilita botones; si falla, mensaje y no se toca nada.
+- Nunca se guarda solo: solo rellena casillas; se publica con Guardar.
+- No verificado: el admin con login de Google ni la llamada real a OpenRouter
+  (sin credenciales); la lógica del front se revisó por código.
+
 ## Rediseño de la landing (2026-10-21)
 
 - **Hero a `100dvh`** (con `100vh` de respaldo): al abrir solo se ve el hero.
