@@ -95,18 +95,21 @@ footer a:hover{color:var(--accent-terracota)}
 .panel-menu{position:fixed;inset:0;z-index:50;display:none}
 .panel-menu.abierto{display:block}
 .panel-menu-backdrop{position:absolute;inset:0;background:rgba(59,18,32,.35)}
-.panel-menu-sheet{position:absolute;top:0;right:0;width:min(320px,88vw);height:100%;background:var(--bg);padding:24px 20px;box-shadow:-8px 0 24px rgba(59,18,32,.12);display:flex;flex-direction:column;gap:8px}
+.panel-menu-sheet{position:absolute;top:0;left:0;overflow-y:auto;width:min(320px,88vw);height:100%;background:var(--bg);padding:24px 20px;box-shadow:8px 0 24px rgba(59,18,32,.12);display:flex;flex-direction:column;gap:8px}
 .panel-menu-sheet h2{font-family:Fraunces,serif;font-style:italic;font-weight:400;font-size:22px;margin:8px 0 16px}
 .panel-menu-sheet a{display:block;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
+.panel-menu-sheet a.acceso{display:flex;align-items:center;gap:12px}
+.panel-menu-sheet a.acceso svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .panel-menu-cerrar{align-self:flex-end;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:4px}
 @media(max-width:799px){
   .lon-banda{padding:56px 20px 32px}
   .lon-banda-texto{width:100%}
   .lon-banda-fotos{padding:0 12px}
   .lon-banda-pista{gap:8px}
-  /* Tres fotos en un celular quedan de 112px y no se ve nada. Se muestran
-     menos y mas grandes, y la cortada al borde avisa que hay mas. */
-  .lon-banda-pista a{flex-basis:calc((100% - 8px) / 1.8)}
+  /* Tres fotos en un celular quedan de 112px y no se ve nada: se muestran dos completas. */
+  .lon-banda-pista a{flex-basis:calc((100% - 8px) / 2)}
+  .logo{height:22px}
+  .header-row{padding:0 12px}
   .hero-copy{padding:36px 20px 44px}
   .section{padding:48px 20px}
 }
@@ -116,22 +119,13 @@ footer a:hover{color:var(--accent-terracota)}
 <header class="header" id="headerLanding">
   <div class="header-row">
     <div class="left">
-      <a class="icon-btn" href="/cliente.html" aria-label="Escanear" title="Escanear" data-i18n-attr="aria-label:g_escanear,title:g_escanear">
-        <svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>
-      </a>
-      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" title="Menú" data-i18n-attr="aria-label:g_menu_categorias,title:g_menu">
+      <button class="icon-btn" id="btnMenuLanding" type="button" aria-label="Menú categorías" aria-expanded="false" aria-controls="panelMenuLanding" title="Menú" data-i18n-attr="aria-label:g_menu_categorias,title:g_menu">
         <svg viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
     </div>
     <a href="/" aria-label="LON Philosophy"><img class="logo" src="/logo-catalogo-white.png" alt="LON" width="120" height="28"></a>
     <div class="right">
       <div data-selector-idioma></div>
-      <a class="icon-btn" href="/tienda" aria-label="Catálogo" title="Catálogo" data-i18n-attr="aria-label:g_catalogo,title:g_catalogo">
-        <svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>
-      </a>
-      <a class="icon-btn" href="/tienda" aria-label="Cuenta" title="Cuenta" data-i18n-attr="aria-label:g_cuenta,title:g_cuenta">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>
-      </a>
     </div>
   </div>
 </header>
@@ -142,6 +136,9 @@ footer a:hover{color:var(--accent-terracota)}
   <div class="panel-menu-backdrop" data-cerrar-menu></div>
   <div class="panel-menu-sheet" role="dialog" aria-label="Menú" data-i18n-attr="aria-label:g_menu">
     <button type="button" class="panel-menu-cerrar" data-cerrar-menu aria-label="Cerrar" data-i18n-attr="aria-label:g_cerrar">×</button>
+    <a class="acceso" href="/cliente.html"><svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="g_escanear">Escanear</span></a>
+    <a class="acceso" href="/tienda"><svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg><span data-i18n="g_carrito">Carrito</span></a>
+    <a class="acceso" href="/tienda"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg><span data-i18n="g_mi_cuenta">Mi cuenta</span></a>
     <h2 data-landing="menu_categorias" data-i18n="g_categorias">Categorías</h2>
     <a href="/tienda?cat=ANTIGUEDADES" data-i18n="g_cat_antiguedades">Antigüedades</a>
     <a href="/tienda?cat=CERAMICA" data-i18n="g_cat_ceramica">Cerámica</a>
@@ -218,7 +215,8 @@ footer a:hover{color:var(--accent-terracota)}
   btn.addEventListener('click', function () {
     if (panel.classList.contains('abierto')) cerrar(); else abrir();
   });
-  panel.querySelectorAll('[data-cerrar-menu]').forEach(function (el) {
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel.classList.contains('abierto')) { cerrar(); btn.focus(); } });
+  panel.querySelectorAll('[data-cerrar-menu], a.acceso').forEach(function (el) {
     el.addEventListener('click', cerrar);
   });
 })();
