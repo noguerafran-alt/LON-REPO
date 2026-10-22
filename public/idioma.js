@@ -160,7 +160,6 @@
     t_whatsapp_msg: 'Hi! I have a question about a product.',
 
     // Tienda: armados por JS
-    t_destacados: 'Pieces we look at twice',
     t_en_stock: 'In stock',
     t_sin_stock: 'Out of stock',
     t_agregar: 'Add',
@@ -174,8 +173,6 @@
     t_todas: 'All',
     t_cat_anteriores: 'See previous categories',
     t_cat_mas: 'See more categories',
-    t_ver_anterior: 'Previous',
-    t_ver_siguiente: 'Next',
     t_foto_producto: 'Product photo',
     t_foto_n: 'photo {n}',
     t_comprar_ahora: 'Buy now',
@@ -375,7 +372,6 @@
     t_whatsapp: 'Discuter sur WhatsApp',
     t_whatsapp_msg: 'Bonjour ! J\'ai une question sur un produit.',
 
-    t_destacados: 'Des pièces qu\'on regarde à deux fois',
     t_en_stock: 'En stock',
     t_sin_stock: 'Épuisé',
     t_agregar: 'Ajouter',
@@ -389,8 +385,6 @@
     t_todas: 'Toutes',
     t_cat_anteriores: 'Voir les catégories précédentes',
     t_cat_mas: 'Voir plus de catégories',
-    t_ver_anterior: 'Précédent',
-    t_ver_siguiente: 'Suivant',
     t_foto_producto: 'Photo du produit',
     t_foto_n: 'photo {n}',
     t_comprar_ahora: 'Acheter maintenant',
@@ -590,7 +584,6 @@
     t_whatsapp: 'Conversar no WhatsApp',
     t_whatsapp_msg: 'Olá! Tenho uma dúvida sobre um produto.',
 
-    t_destacados: 'Peças que olhamos duas vezes',
     t_en_stock: 'Em estoque',
     t_sin_stock: 'Esgotado',
     t_agregar: 'Adicionar',
@@ -604,8 +597,6 @@
     t_todas: 'Todas',
     t_cat_anteriores: 'Ver categorias anteriores',
     t_cat_mas: 'Ver mais categorias',
-    t_ver_anterior: 'Anterior',
-    t_ver_siguiente: 'Próximo',
     t_foto_producto: 'Foto do produto',
     t_foto_n: 'foto {n}',
     t_comprar_ahora: 'Comprar agora',

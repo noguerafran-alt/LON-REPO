@@ -151,7 +151,7 @@
     scroll-snap-type:x proximity; padding-bottom:2px;
     /* Sin esto, deslizar hacia atrás en la punta se lo come el gesto de
        "volver atrás" del navegador en vez de scrollear (mismo motivo
-       que en el carrusel de destacados del catálogo público). */
+       que en la fila de categorías del catálogo público). */
     overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch;
   }
   .fila-tabs-categorias-lector::-webkit-scrollbar{ display:none; }
@@ -922,7 +922,6 @@
         <a href="#lc_espacio">El espacio</a>
         <a href="#lc_catalogo">Franja catálogo</a>
         <a href="#lc_footer">Footer</a>
-        <a href="#lc_tienda">Tienda</a>
         <a href="#lc_carta">Carta</a>
       </nav>
     </div>
@@ -1122,18 +1121,6 @@
         <p class="lc-ayuda">Al tocar un producto en /carta se abre su foto sobre la carta. Los productos sin foto quedan como están. Cuadrada u horizontal, JPG, PNG o WebP. Se publica al tocar Guardar.</p>
       </div>
       <div class="lc-grid" id="lcCartaFotos"></div>
-    </section>
-
-    <section class="lc-seccion" id="lc_tienda">
-      <div class="lc-sec-head">
-        <h3>Tienda (/tienda)</h3>
-      </div>
-      <div class="lc-grid">
-        <div class="lc-campo lc-full">
-          <label class="lc-label" for="landing_destacados_titulo">Título de destacados</label>
-          <input type="text" id="landing_destacados_titulo" data-landing-field="destacados_titulo" data-lc-bi autocomplete="off" placeholder="Piezas que miramos dos veces">
-        </div>
-      </div>
     </section>
     </div>
 
