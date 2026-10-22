@@ -82,8 +82,8 @@ img[data-respaldo].lista{opacity:1}
 .lon-banda-sigue{height:40px}
 .espacio{max-width:1280px;margin:0 auto;padding:56px 24px}
 .espacio figure{margin:0}
-/* Foto entera, sin recorte (pedido del dueño): escala dentro del ancho y de 85vh, centrada */
-.espacio img{display:block;width:auto;max-width:100%;height:auto;max-height:85vh;margin:0 auto;border-radius:var(--radius);background:var(--bg-alt)}
+/* Foto entera, sin recorte, y del mismo ancho que la fila de fotos de la banda (pedido del dueño) */
+.espacio img{display:block;width:100%;height:auto;border-radius:var(--radius);background:var(--bg-alt)}
 .espacio figcaption{margin-top:12px;font-size:13px;color:var(--ink-muted);font-weight:300}
 .espacio-quote{font-family:var(--lon-font-titulos, Fraunces, serif);font-style:italic;font-weight:300;font-size:clamp(18px,2.5vw,22px);color:var(--ink-muted);margin:20px 0 0;max-width:640px;line-height:1.45}
 .band{text-align:center;padding:64px 24px;background:var(--bg)}
@@ -105,6 +105,8 @@ footer a:hover{color:var(--accent-terracota)}
   .lon-banda{padding:56px 20px 32px}
   .lon-banda-texto{width:100%}
   .lon-banda-fotos{padding:0 12px}
+  /* Mismo margen lateral que la banda: la foto de abajo mide lo mismo que las dos de arriba */
+  .espacio{padding:48px 12px}
   .lon-banda-pista{gap:8px}
   /* Tres fotos en un celular quedan de 112px y no se ve nada: se muestran dos completas. */
   .lon-banda-pista a{flex-basis:calc((100% - 8px) / 2)}

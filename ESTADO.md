@@ -461,8 +461,14 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   - **`espacio_imagen`** (sección «El espacio» del admin) es la foto grande de
     abajo de la banda; la ayuda del admin ahora lo dice. Se muestra **entera,
     sin recorte** (2026-10-22, pedido del dueño): antes iba con
-    `max-height:480px` + `object-fit:cover` y cortaba arriba y abajo. Ahora
-    escala dentro del ancho y de `85vh`, centrada; no volver a `cover`.
+    `max-height:480px` + `object-fit:cover` y cortaba arriba y abajo; no
+    volver a `cover`. Desde 2026-10-22 mide **el mismo ancho que la fila de
+    fotos de la banda** (`width:100%`, alto automático; mismo margen lateral:
+    24px en desktop con el mismo máximo de 1232px, 12px en mobile).
+- **Flecha de volver en `/cliente.html` (escanear)** (2026-10-22): fija (se
+  sacó la animación que la hacía flotar), más grande (SVG de 30px en un
+  área táctil de 44px) y centrada en altura con el logo; antes era el
+  carácter «←», que quedaba más baja que el centro del logo.
 - **THE CLASSICS en mobile**: tabla de grilla CSS (nombre + 3 columnas de
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
