@@ -2543,6 +2543,64 @@ async function setLandingContenido(sheetsClient, spreadsheetId, sheetName, updat
   return getLandingContenido(sheetsClient, spreadsheetId, sheetName);
 }
 
+/* ============================================================
+ *  CARTA DEL CAFE (hoja Carta: una fila por seccion/categoria/subgrupo/producto)
+ *  La app SI escribe la fila de encabezados, pero solo cuando la hoja la crea ella
+ *  o esta vacia: una hoja con datos nunca se toca para esto.
+ * ============================================================ */
+function letraUltimaColumnaCarta() {
+  return columnaALetra(Object.keys(config.COLUMNAS_CARTA).length - 1);
+}
+
+async function ensureCartaSheet(sheetsClient, spreadsheetId, sheetName, encabezados) {
+  const metadata = await sheetsClient.spreadsheets.get({
+    spreadsheetId,
+    fields: 'sheets(properties(sheetId,title))',
+  });
+  if (!(metadata.data.sheets || []).some((s) => s.properties.title === sheetName)) {
+    await sheetsClient.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests: [{ addSheet: { properties: { title: sheetName, gridProperties: { rowCount: 300, columnCount: encabezados.length } } } }] },
+    });
+  }
+  const r = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A1:A1` });
+  if (!(r.data.values && r.data.values[0] && r.data.values[0][0])) {
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!A1:${letraUltimaColumnaCarta()}1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [encabezados] },
+    });
+  }
+}
+
+/** Todas las filas de datos (sin encabezado), en una sola lectura. */
+async function getCartaFilas(sheetsClient, spreadsheetId, sheetName) {
+  const r = await sheetsClient.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A2:${letraUltimaColumnaCarta()}`,
+  });
+  return (r.data.values || []).filter((f) => f.some((c) => String(c || '').trim() !== ''));
+}
+
+/** Reemplaza todas las filas de datos en un solo update (RAW: nada se interpreta como formula).
+ *  Si antes habia mas filas, se blanquean las que sobran en la misma llamada. */
+async function setCartaFilas(sheetsClient, spreadsheetId, sheetName, filas) {
+  const previas = await sheetsClient.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A2:A` });
+  const cantidadPrevia = (previas.data.values || []).length;
+  const ancho = Object.keys(config.COLUMNAS_CARTA).length;
+  const valores = filas.slice();
+  while (valores.length < cantidadPrevia) valores.push(new Array(ancho).fill(''));
+  if (!valores.length) return;
+  await asegurarFilasSuficientes(sheetsClient, spreadsheetId, sheetName, valores.length + 1);
+  await sheetsClient.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A2:${letraUltimaColumnaCarta()}${valores.length + 1}`,
+    valueInputOption: 'RAW',
+    requestBody: { values: valores },
+  });
+}
+
 module.exports = {
   appendRow,
   appendRows,
@@ -2611,5 +2669,8 @@ module.exports = {
   ensureLandingSheet,
   getLandingContenido,
   setLandingContenido,
+  ensureCartaSheet,
+  getCartaFilas,
+  setCartaFilas,
   columnaALetra,
 };

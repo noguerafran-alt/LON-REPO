@@ -51,6 +51,8 @@
   - **Contenido** (nivel 2; antes «Landing»): editor de la portada (/)
     con el mismo modelo que el «Contenido» de PROA. Ver sección
     «Admin › Contenido» más abajo.
+  - **Carta** (nivel 2): editor de `/carta` (secciones, categorías, productos,
+    precios, traducciones, fotos). Ver «Editor de la carta» más abajo.
 - **Bots/integraciones**: chatbot de WhatsApp (Cloud API), mail de
   confirmación de transferencia (Gmail SMTP), SEO dinámico por producto
   (`seo.js`) + sitemap.
@@ -60,7 +62,7 @@
 **Planilla `SHEET_ID_PRODUCTOS`**: `Productos`, `STOCK` (o el nombre en
 `HOJA_STOCK`), `Config` (categorías/subcategorías + nombre visible +
 recargo MP), `CODIGOS_BARRA`, `VISITAS`, `Envios`, `CONTADOR_UNIDADES`,
-`IMPRIMIR`, `IMPRIMIR APP`, `HISTORICO_SKU`.
+`IMPRIMIR`, `IMPRIMIR APP`, `HISTORICO_SKU`, `Carta` (la carta del café, ver «Editor de la carta»).
 
 **Planilla `SHEET_ID_VENTAS`**: `VENTAS`, `PEDIDOS`, `Clientes`,
 `AdminUsers`, **`CIERRE_CAJA`** (A-F ya existían: Fecha, Hora, Total
@@ -456,42 +458,24 @@ línea, Fraunces, crema/bordó). Solo `public/index.html` + claves en `idioma.js
 
 ## Carta del café online (/carta, 2026-10-20)
 
-- **Qué es**: `public/carta.html`, página estática pública (sin sesión),
+- **Qué es**: `public/carta.html`, página pública (sin sesión, armada por JS desde `/carta-datos`),
   servida por `app.get('/carta')` en `server.js`. Linkeada desde la landing
   (barra de categorías y menú lateral). Replica la carta impresa: versalitas
   (`font-variant-caps: all-small-caps`), cajas de 1px con esquinas
   redondeadas, marca de agua con `logo-catalogo.png` al 6% de opacidad,
   puntos guía en SWEET BITES/BAKERY/PATISSERIE/DRINKS. Fraunces, sin fuentes
   ni CDN nuevos.
-- **Contenido**: transcripto de las fotos de la carta impresa (2026-10-20),
-  hardcodeado en el HTML (no sale de Sheets). Precios y ortografía tal cual
-  el impreso (incluye "ORANGE COFFE" y "CAPUCCINO"). Para cambiar un precio
-  se edita el HTML.
-- **Fotos de productos (2026-10-21)**: al tocar un producto se abre su foto
-  en un `<dialog>` nativo (`showModal()`, `::backdrop` oscuro) solo sobre la
-  carta; cierra con tocar afuera, Esc o la X (`c_cerrar_foto`, traducible).
-  El fondo no scrollea mientras está abierto (`body.foto-abierta`).
-  Bajo el subtítulo de la portada hay un aviso «Tocá un producto para ver su
-  foto» (`c_aviso_foto`, `#avisoFoto`): arranca `hidden` y el mismo script lo
-  muestra solo si al menos un ítem tiene foto cargada (si el fetch falla, sigue
-  oculto), para no prometer fotos que no existen.
-  - **Mecanismo**: cada ítem de `carta.html` lleva `data-foto="<slug>"` (slug
-    fijo en español, no depende de la traducción). Al cargar, la carta pide
-    `/landing-contenido` una vez y los ítems con la clave
-    `carta_foto_<slug>` quedan tocables (`role=button`, `tabindex=0`,
-    Enter/Espacio). Sin foto o con el fetch caído: la carta queda como antes.
-  - **Carga**: Admin › Contenido › «Carta — fotos de productos» (nivel 2),
-    un campo por ítem, mismo modelo que `hero_imagen` (sube a
-    `/admin/landing/foto`, se publica con Guardar). Las claves se crean en la
-    hoja Landing al guardar (el upsert no exige que estén en
-    `LANDING_DEFAULTS`). La lista de slugs está en `CARTA_FOTOS` en
-    `admin.html`: **al agregar un producto a la carta hay que sumarlo en los
-    dos lados** (`data-foto` en el HTML y `CARTA_FOTOS`).
-  - **Hoy no hay ninguna foto cargada**: el dueño tiene que subirlas desde
-    Admin › Contenido; hasta entonces la carta no cambia.
-  - **Verificado** a 375px con `/landing-contenido` simulado (abre, oscurece,
-    Esc cierra, ítem sin foto no reacciona). **Sin probar**: subida real
-    contra Sheets, el panel del admin en navegador (sin login) y iOS Safari.
+- **Contenido y fotos (desde 2026-10-22)**: ya no están hardcodeados en el HTML:
+  salen de la hoja `Carta` y se editan en Admin › Carta. Ver «Editor de la carta»
+  (modelo, semilla, endpoints, fallback). Lo que sigue valiendo de antes: el
+  diseño (CSS) no cambió; al tocar un producto con foto se abre un `<dialog>`
+  nativo (`showModal()`, `::backdrop` oscuro) que cierra con tocar afuera, Esc o
+  la X (`c_cerrar_foto`); el fondo no scrollea mientras está abierto
+  (`body.foto-abierta`); el aviso «Tocá un producto para ver su foto»
+  (`c_aviso_foto`, `#avisoFoto`) arranca `hidden` y se muestra solo si algún
+  producto visible tiene foto. Precios y ortografía tal cual el impreso (incluye
+  «ORANGE COFFE» y «CAPUCCINO»: son datos de la semilla, ya se pueden corregir
+  desde el editor).
 - **Fotos de la banda bordó de la landing editables (2026-10-21)**: Admin ›
   Contenido › «Banda de fotos (debajo de Quiénes somos)», 9 casillas
   `banda_foto_1…9` (+ `_alt` y `_link` opcionales), mismo modelo que
@@ -524,11 +508,105 @@ línea, Fraunces, crema/bordó). Solo `public/index.html` + claves en `idioma.js
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
 
+## Editor de la carta (/carta como datos, 2026-10-22)
+
+Pedido del dueño: precios, nombres, categorías y productos de `/carta` editables
+(agregar/eliminar productos, eliminar una categoría, en el diseño y en lo que se
+ve), en una sección propia del admin y no dentro de Contenido.
+
+- **Modelo**: hoja nueva `Carta` (`HOJA_CARTA`, env `GOOGLE_CARTA_SHEET_NAME`) en
+  `SHEET_ID_PRODUCTOS`. **A diferencia de las hojas existentes del dueño, esta la
+  crea la app con su fila de encabezados** (`ensureCartaSheet`; también escribe los
+  encabezados si la hoja existe pero está vacía; una hoja con datos no se toca).
+  Una fila por elemento. Columnas (índices en `COLUMNAS_CARTA` de `config.js`, el
+  orden de las claves ES el orden de las columnas A..Y): `tipo` (seccion |
+  categoria | subgrupo | item), `id` (estable), `padre` (id), `orden`,
+  `nombre_es/_en/_fr/_pt`, `descripcion_es/_en/_fr/_pt`, `formato` (categoría:
+  `uno` | `tres` = Small/Medium/Large), `estilo` (categoría con formato uno:
+  `filas` | `puntos` guía | `detalle` con descripción), `marca` (SI = marca de agua
+  del gajo), `rotulo_1..3` (encabezados de columnas de precio, editables),
+  `precio` (formato uno), `precio_s/_m/_l` (formato tres; «-» = no se vende),
+  `sin_tacc` (SI), `foto` (URL), `activo` (SI/NO). Jerarquía: sección → categoría
+  (el recuadro) → subgrupo opcional (ej. Hot/Cold) → producto. `estilo` y `marca`
+  no estaban en el pedido pero hacen falta para que la carta se vea idéntica
+  (hay tres estilos de lista y cajas con y sin marca de agua). Título de categoría
+  vacío = caja sin `<h3>`.
+- **Lógica pura** (`cartaArbol.js`, autochequeo `node cartaArbol.js`): valida el
+  árbol, lo pasa a filas y de vuelta (tolerante con una hoja tocada a mano: ignora
+  huérfanos y ids repetidos), poda lo inactivo para el público (una categoría o
+  sección sin nada visible no se muestra) y completa fotos. El orden es la
+  posición en los arrays; `orden` se deriva al guardar.
+- **Semilla**: `public/carta-semilla.json` (52 renglones: 50 productos con foto/slug
+  + MEDIUM y LARGE de Take Away), generada por `node scripts/generar-carta-semilla.js`
+  a partir de **copias congeladas** de la carta y el diccionario originales
+  (`scripts/semilla/carta-original.html`, `idioma-original.js`: `carta.html` ya no
+  trae el contenido). El script corre sus asserts (50 slugs, precios clave, Toast
+  Forest con «(SIN TACC)» en el nombre, erratas conservadas). Los ids de producto
+  son los slugs de foto (`espresso`, `palta_toast`…). Si la hoja `Carta` está vacía
+  el servidor la siembra UNA vez (`obtenerCarta`/`leerCartaDeLaHoja` en `server.js`),
+  sumando las fotos que ya hubiera en Landing (`carta_foto_<id>`).
+- **Endpoints**: `GET /carta-datos` (público, `limiteLecturaPublica`, caché de
+  servidor 30 s + `Cache-Control: max-age=20`) devuelve `{carta}` solo con lo activo.
+  `GET /admin/carta` (todo, sin caché) y `PUT /admin/carta` (árbol completo; un solo
+  `values.update` RAW que reemplaza las filas y blanquea las sobrantes): ambos
+  `requiereNivel2` + `limiteAdmin`. Reusa `/admin/landing/foto` (fotos) y
+  `/admin/landing/traducir` (traducción automática, necesita `OPENROUTER_API_KEY`).
+- **Validación (servidor, 400 con mensaje claro)**: tipos, ids `[a-z0-9_-]` únicos,
+  estructura padre/hijo (por construcción del árbol; la lectura descarta huérfanos),
+  formato/estilo válidos, precio entero 0..9999999 o «-» (formato uno valida `precio`,
+  tres valida los tres; rótulos obligatorios en tres), nombre ≤120, descripción ≤600,
+  rótulo ≤20, foto `/uploads/…` o `https://`, ≤400 elementos y al menos una sección
+  (una carta vacía se confundiría con la hoja sin sembrar y se resembraría sola).
+- **Fallback**: si Sheets falla, `/carta-datos` responde 200 con la última carta
+  buena en memoria o, si no hay, la semilla (`origen: 'respaldo'`, `no-store`). Si
+  falla el propio `/carta-datos`, `carta.html` pide `/carta-semilla.json`. La carta
+  pública no se rompe. Limitación: al estar dibujada por JS, `/carta` ya no trae el
+  menú en el HTML estático (Google lo ejecuta; otros rastreadores no).
+- **`/carta` (`public/carta.html`)**: mismo CSS y mismas clases de antes; solo cambia
+  que `#carta` se arma por JS desde los datos (siempre con `textContent`, nunca
+  `innerHTML` con datos). Textos por idioma: `nombre_<idioma>` con caída al español;
+  el evento `lon-idioma` repinta. Los rótulos Small/Medium/Large no se traducen (como
+  antes). Descripciones: cada línea es un `<span class="desc">` (las siguientes a la
+  primera llevan `opc`, como «opcional: huevo poché $2000»). Mientras carga se ve
+  «· · ·» con `min-height` para que no salte. **Verificado** contra la carta anterior
+  en ES/EN/FR/PT a 375px y 1280px: mismo texto, mismas cajas y mismo alto de página
+  (los píxeles difieren solo en el antialias del texto partido en spans de antes).
+- **Admin › Carta** (pestaña nueva, nivel 2: oculta para nivel 1 y `requiereNivel2`
+  en servidor; no se carga de nuevo si ya está cargada, para no pisar cambios sin
+  guardar). Editor por árbol con categorías plegables: nombre ES + traducciones
+  (traducción automática al cambiar el español, sin pisar lo escrito a mano ni lo
+  ya traducido a mano: igual que Contenido, PR #28), agregar producto / subgrupo /
+  categoría / sección, eliminar con confirmación (dice cuántos productos se van),
+  subir/bajar, visible/oculto, formato y estilo de la categoría, marca de agua,
+  rótulos, precio(s), Sin TACC, descripción (solo en estilo «con descripción») y
+  foto. Un único Guardar; aviso de cambios sin guardar (también `beforeunload`);
+  nada se publica hasta Guardar. **Probado** abriendo `admin.html` en Chrome headless
+  con el servidor y los endpoints simulados (agregar, eliminar producto/categoría,
+  reordenar, ocultar, formato tres, traducción simulada, foto simulada, PUT validado
+  con `validarArbol`, 375px y 1280px sin scroll horizontal). El handler global del
+  admin que fuerza MAYÚSCULAS en los inputs de texto ahora exceptúa también
+  `#panelCarta` (el de Contenido ya estaba exceptuado).
+- **Sin uso / limpieza**: se sacó de Admin › Contenido la sección «Carta — fotos de
+  productos» (`CARTA_FOTOS`). Las claves `carta_foto_*` de la hoja Landing quedan
+  sin uso tras migrar (no se borraron filas). De `idioma.js` salieron las claves
+  `c_*`/`cn_*` que eran solo contenido de la carta (quedan `c_portada`,
+  `c_aviso_foto`, `c_sin_tacc`, `c_precios`, `c_cerrar_foto`; paridad EN/FR/PT
+  verificada); el contenido hardcodeado de `carta.html` pasó a la semilla.
+- **Sin verificar**: contra Sheets real (creación de la hoja, siembra, PUT, fotos
+  viejas de Landing), subida real de fotos, traducción real (OpenRouter), y login
+  real de nivel 2. El servidor se probó sin credenciales (fallback a semilla).
+  Dos ediciones simultáneas son «gana la última» (no hay control de versión).
+- **Bug viejo, no tocado**: al recargar `/admin` con sesión guardada,
+  `restaurarSesion()` llama `mostrarApp()` antes de que exista
+  `btnGenerarDesdeEscaneo` (`const` más abajo) y la excepción queda tragada: no se
+  restaura la pestaña activa y el admin vuelve a Escanear (tras un login nuevo
+  funciona bien).
+
 ## Selector de idioma ES/EN/FR/PT (sitio público, 2026-10-20; FR y PT 2026-10-21)
 
 - **Cuatro idiomas (2026-10-21)**: es, en, fr, pt (`<html lang>` = es / en /
   fr / pt-BR). `idioma.js` tiene un diccionario por idioma (`EN`, `FR`, `PT`,
-  mismas ~207 claves, mismas `{variables}`; expuestos en
+  mismas ~187 claves, mismas `{variables}`; expuestos en
   `LONi18n.diccionarios`, `LONi18n.claves` sigue siendo EN); si falta una clave
   se cae al español. **Las traducciones FR y PT las hizo una IA: conviene que
   alguien nativo las revise.** Banderas SVG de Francia (tricolor) y Brasil
@@ -583,7 +661,8 @@ línea, Fraunces, crema/bordó). Solo `public/index.html` + claves en `idioma.js
   servidor), `privacidad.html`, `terminos.html`, `cliente.html`, los pies de
   copyright, ni las páginas `checkout-*.html` ni el admin.
 - **Nombres de platos y bebidas (2026-10-21)**: los descriptivos también se
-  traducen (claves `cn_*`, 25; p. ej. `ALFAJOR DE PISTACHO` -> `PISTACHIO
+  traducen (antes claves `cn_*` de `idioma.js`; desde 2026-10-22 viven en la
+  hoja `Carta` como `nombre_en/_fr/_pt`; p. ej. `ALFAJOR DE PISTACHO` -> `PISTACHIO
   ALFAJOR`). Quedan en español a propósito `ALFAJOR`, `CHIPA`, `MEDIALUNAS`,
   `MACARON` (y `PAIN AU CHOCOLAT`): son nombres propios del producto, sin
   equivalente o que un café no traduce; solo se traduce el complemento.

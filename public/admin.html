@@ -684,8 +684,70 @@
     #panelLanding .lc-foto-prev{ width:120px; }
     #panelLanding .lc-foto--vert .lc-foto-prev{ width:96px; }
   }
+  /* Panel Carta (editor de /carta). Todo prefijado con #panelCarta y con clases .ca-* en cada
+     control: las reglas genericas de ID de arriba le ganan a una clase suelta. */
+  #panelCarta{ padding:16px 24px 0; flex:1; }
+  #panelCarta .ca-titulo h2{
+    font-family:'Fraunces', Georgia, serif; font-weight:500; font-size:28px; line-height:1.15; margin:0 0 4px; color:var(--ink);
+  }
+  #panelCarta .ca-ayuda{ font-size:13px; line-height:1.45; color:var(--ink-muted); margin:6px 0 0; }
+  #panelCarta .ca-in{
+    display:block; width:100%; min-width:0; font:inherit; font-size:15px; line-height:1.3; padding:8px 10px; min-height:40px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--field-bg); color:var(--field-text);
+  }
+  #panelCarta .ca-in:focus{ outline:none; border-color:var(--accent); }
+  #panelCarta textarea.ca-in{ resize:vertical; min-height:60px; }
+  #panelCarta .ca-btn{
+    padding:8px 14px; min-height:40px; font-family:'Archivo', sans-serif; font-size:14px; font-weight:600; white-space:nowrap;
+    border-radius:var(--radius); cursor:pointer; background:transparent; color:var(--ink); border:1px solid var(--ink-muted);
+  }
+  #panelCarta .ca-btn:hover{ background:var(--bg-alt); border-color:var(--ink); }
+  #panelCarta .ca-btn:disabled{ opacity:.55; cursor:default; }
+  #panelCarta .ca-btn.ca-prim{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  #panelCarta .ca-btn.ca-prim:hover{ background:var(--accent); border-color:var(--accent); }
+  #panelCarta .ca-btn.ca-mini{ padding:0; width:40px; }
+  #panelCarta .ca-btn.ca-borrar{ color:var(--stamp-red); border-color:var(--stamp-red); }
+  #panelCarta .ca-btn.ca-borrar:hover{ background:var(--stamp-red-soft); }
+  #panelCarta :is(input, textarea, select, button, summary):focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  #panelCarta .ca-sec{ border-top:2px solid var(--ink); margin-top:22px; padding-top:12px; }
+  #panelCarta .ca-sec > .ca-cab .ca-in{ font-family:'Fraunces', Georgia, serif; font-size:18px; font-weight:500; }
+  #panelCarta .ca-cab{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  #panelCarta .ca-cab .ca-nom{ flex:1 1 220px; min-width:0; }
+  #panelCarta .ca-ctl{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  #panelCarta .ca-activo{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-muted); min-height:40px; cursor:pointer; }
+  #panelCarta .ca-activo input{ width:18px; height:18px; margin:0; }
+  #panelCarta .ca-cat{ border:1px solid var(--line); border-radius:var(--radius); background:rgba(255,255,255,.45); margin-top:12px; }
+  #panelCarta .ca-cat > summary{ cursor:pointer; padding:10px 12px; font-weight:600; font-size:15px; display:flex; gap:8px; align-items:baseline; list-style:revert; }
+  #panelCarta .ca-cat > summary small{ font-weight:400; color:var(--ink-muted); font-size:12.5px; }
+  #panelCarta .ca-cat-cuerpo{ padding:4px 12px 14px; display:grid; gap:10px; }
+  #panelCarta .ca-ajustes{ display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  #panelCarta .ca-ajustes .ca-in{ width:auto; flex:0 1 auto; }
+  #panelCarta .ca-ajustes .ca-rot{ width:96px; }
+  #panelCarta .ca-trad{ font-size:13px; }
+  #panelCarta .ca-trad > summary{ cursor:pointer; color:var(--ink-muted); padding:4px 0; }
+  #panelCarta .ca-trad-cuerpo{ display:grid; gap:6px; padding-top:4px; }
+  #panelCarta .ca-trad-cuerpo label{ display:grid; grid-template-columns:78px minmax(0,1fr); gap:8px; align-items:center; font-size:12px; color:var(--ink-muted); margin:0; text-transform:none; letter-spacing:0; font-family:'Archivo', sans-serif; font-weight:600; }
+  #panelCarta .ca-sub{ border-left:3px solid var(--accent); padding-left:10px; display:grid; gap:10px; }
+  #panelCarta .ca-item{ border-top:1px dashed var(--line); padding-top:10px; display:grid; gap:8px; }
+  #panelCarta .ca-item.ca-off, #panelCarta .ca-sec.ca-off > .ca-cab, #panelCarta .ca-sub.ca-off > .ca-cab{ opacity:.55; }
+  #panelCarta .ca-precios{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  #panelCarta .ca-precios .ca-precio{ width:96px; }
+  #panelCarta .ca-foto{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  #panelCarta .ca-foto img{ width:44px; height:44px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); background:var(--bg-alt); }
+  #panelCarta .ca-pie{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  #panelCarta .ca-barra{
+    position:sticky; bottom:0; z-index:5; margin:20px -24px 0; padding:12px 24px calc(12px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--bg); border-top:1px solid var(--line);
+  }
+  #panelCarta #mensajeCarta{ flex:1 1 180px; min-width:0; font-size:14px; font-weight:500; line-height:1.3; }
+  @media (max-width:640px){
+    #panelCarta{ padding:14px 12px 0; }
+    #panelCarta .ca-barra{ margin:20px -12px 0; padding-left:12px; padding-right:12px; }
+    #panelCarta .ca-cat-cuerpo{ padding:4px 8px 12px; }
+    #panelCarta .ca-trad-cuerpo label{ grid-template-columns:minmax(0,1fr); gap:2px; }
+  }
   @media (prefers-reduced-motion: reduce){
-    #panelLanding *{ transition:none !important; }
+    #panelLanding *, #panelCarta *{ transition:none !important; }
   }
 </style>
 </head>
@@ -714,6 +776,7 @@
     <button id="tabGenerarUnidades" type="button">Productos</button>
     <button id="tabCatalogo" type="button">Catálogo</button>
     <button id="tabLanding" type="button">Contenido</button>
+    <button id="tabCarta" type="button">Carta</button>
     <button id="tabPedidos" type="button">Pedidos</button>
     <button id="tabCierreCaja" type="button">Cierre de caja</button>
     <button id="tabUsuarios" type="button">Usuarios</button>
@@ -915,7 +978,6 @@
         <a href="#lc_espacio">El espacio</a>
         <a href="#lc_catalogo">Franja catálogo</a>
         <a href="#lc_footer">Footer</a>
-        <a href="#lc_carta">Carta</a>
       </nav>
     </div>
 
@@ -1117,13 +1179,6 @@
       </div>
     </section>
 
-    <section class="lc-seccion" id="lc_carta">
-      <div class="lc-sec-head">
-        <h3>Carta — fotos de productos</h3>
-        <p class="lc-ayuda">Al tocar un producto en /carta se abre su foto sobre la carta. Los productos sin foto quedan como están. Cuadrada u horizontal, JPG, PNG o WebP. Se publica al tocar Guardar.</p>
-      </div>
-      <div class="lc-grid" id="lcCartaFotos"></div>
-    </section>
     </div>
 
     <input type="file" id="inputLandingFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
@@ -1133,6 +1188,26 @@
       <button type="button" class="lc-btn lc-btn-prim" id="btnGuardarLanding">Guardar</button>
       <button type="button" class="lc-btn lc-btn-sec" id="btnRecargarLanding">Recargar</button>
       <div id="mensajeLanding" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div id="panelCarta" style="display:none;">
+    <div class="ca-titulo">
+      <h2>Carta</h2>
+      <p class="ca-ayuda">Lo que se ve en <strong>/carta</strong>: secciones, categorías (los recuadros), productos, precios y traducciones. Nada se publica hasta que tocás <strong>Guardar</strong>. Un producto o categoría <em>oculto</em> no se muestra pero se conserva. Una categoría sin productos visibles no aparece.</p>
+      <p class="ca-ayuda">
+        <button type="button" class="ca-btn" id="btnCartaTraducir">Traducir todo lo vacío</button>
+        <span id="estadoCartaTraducir"></span>
+        Las traducciones son automáticas: revisalas antes de Guardar. Al cambiar un texto en español se rellenan solas las casillas vacías o ya traducidas automáticamente; las que editaste a mano no se tocan.
+      </p>
+    </div>
+    <div id="cartaArbol">Cargando…</div>
+    <div class="ca-pie"><button type="button" class="ca-btn" id="btnCartaSeccion">+ Sección</button></div>
+    <input type="file" id="inputCartaFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
+    <div class="ca-barra">
+      <button type="button" class="ca-btn ca-prim" id="btnGuardarCarta">Guardar</button>
+      <button type="button" class="ca-btn" id="btnRecargarCarta">Recargar</button>
+      <div id="mensajeCarta" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -1352,8 +1427,8 @@
     const el = evento.target;
     const esTextoLibre = el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text');
     if (!esTextoLibre) return;
-    // Landing editorial: conservar mayúsculas/minúsculas del copy.
-    if (el.closest('#panelLanding') || el.hasAttribute('data-landing-field')) return;
+    // Landing editorial y Carta: conservar mayúsculas/minúsculas del copy.
+    if (el.closest('#panelLanding') || el.closest('#panelCarta') || el.hasAttribute('data-landing-field')) return;
     const mayusculas = el.value.toUpperCase();
     if (mayusculas === el.value) return;
     const inicio = el.selectionStart;
@@ -1380,10 +1455,12 @@
   const tabPedidos = document.getElementById('tabPedidos');
   const tabCierreCaja = document.getElementById('tabCierreCaja');
   const tabUsuarios = document.getElementById('tabUsuarios');
+  const tabCarta = document.getElementById('tabCarta');
   const seccionEscanear = document.getElementById('seccionEscanear');
   const panelGenerarUnidades = document.getElementById('panelGenerarUnidades');
   const panelCatalogo = document.getElementById('panelCatalogo');
   const panelLanding = document.getElementById('panelLanding');
+  const panelCarta = document.getElementById('panelCarta');
   const panelPedidos = document.getElementById('panelPedidos');
   const panelCierreCaja = document.getElementById('panelCierreCaja');
   const panelUsuarios = document.getElementById('panelUsuarios');
@@ -1521,6 +1598,7 @@
     tabGenerarUnidades.style.display = esNivel2() ? '' : 'none';
     tabCatalogo.style.display = esNivel2() ? '' : 'none';
     tabLanding.style.display = esNivel2() ? '' : 'none';
+    tabCarta.style.display = esNivel2() ? '' : 'none';
     tabCierreCaja.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
@@ -1536,7 +1614,7 @@
     let seccionGuardada = 'escanear';
     try {
       const guardada = localStorage.getItem('admin_seccion_activa');
-      if (['escanear', 'generar', 'catalogo', 'landing', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
+      if (['escanear', 'generar', 'catalogo', 'landing', 'carta', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
     } catch (e) {}
     mostrarSeccionAdmin(seccionGuardada);
   }
@@ -1544,7 +1622,7 @@
   function mostrarSeccionAdmin(seccion){
     // Nivel 1 no puede quedar parado en una seccion que no le corresponde
     // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
-    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'landing' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
+    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'landing' || seccion === 'carta' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
     try { localStorage.setItem('admin_seccion_activa', seccion); } catch (e) {}
 
     const esEscanear = seccion === 'escanear';
@@ -1552,12 +1630,14 @@
     const esGenerar = seccion === 'generar';
     const esCatalogo = seccion === 'catalogo';
     const esLanding = seccion === 'landing';
+    const esCarta = seccion === 'carta';
     const esCierreCaja = seccion === 'cierrecaja';
     const esUsuarios = seccion === 'usuarios';
     tabEscanear.classList.toggle('activo', esEscanear);
     tabGenerarUnidades.classList.toggle('activo', esGenerar);
     tabCatalogo.classList.toggle('activo', esCatalogo);
     tabLanding.classList.toggle('activo', esLanding);
+    tabCarta.classList.toggle('activo', esCarta);
     tabPedidos.classList.toggle('activo', esPedidos);
     tabCierreCaja.classList.toggle('activo', esCierreCaja);
     tabUsuarios.classList.toggle('activo', esUsuarios);
@@ -1565,6 +1645,7 @@
     panelGenerarUnidades.style.display = esGenerar ? 'block' : 'none';
     panelCatalogo.style.display = esCatalogo ? 'block' : 'none';
     panelLanding.style.display = esLanding ? 'block' : 'none';
+    panelCarta.style.display = esCarta ? 'block' : 'none';
     panelPedidos.style.display = esPedidos ? 'block' : 'none';
     panelCierreCaja.style.display = esCierreCaja ? 'block' : 'none';
     panelUsuarios.style.display = esUsuarios ? 'block' : 'none';
@@ -1582,6 +1663,9 @@
     if (esLanding) {
       cargarLandingContenidoAdmin();
     }
+    if (esCarta) {
+      cargarCartaAdmin(false); // no recarga si ya está cargada: no pisa cambios sin guardar
+    }
     if (esPedidos) {
       cargarPedidos();
     }
@@ -1596,6 +1680,7 @@
   tabGenerarUnidades.addEventListener('click', () => mostrarSeccionAdmin('generar'));
   tabCatalogo.addEventListener('click', () => mostrarSeccionAdmin('catalogo'));
   tabLanding.addEventListener('click', () => mostrarSeccionAdmin('landing'));
+  tabCarta.addEventListener('click', () => mostrarSeccionAdmin('carta'));
   tabPedidos.addEventListener('click', () => mostrarSeccionAdmin('pedidos'));
   tabCierreCaja.addEventListener('click', () => mostrarSeccionAdmin('cierrecaja'));
   tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
@@ -1735,32 +1820,6 @@
   }
   document.querySelectorAll('#panelLanding [data-lc-ajustes]').forEach(armarAjustesTexto);
 
-  /* Fotos de la carta: una clave carta_foto_<slug> por producto. Los slugs tienen que
-     coincidir con los data-foto de carta.html. Se arman acá, antes de enganchar los
-     botones de subir/quitar más abajo. */
-  const CARTA_FOTOS = [
-    ['espresso', 'Espresso'], ['doppio', 'Doppio'], ['macchiato', 'Macchiato'], ['americano', 'Americano'],
-    ['capuccino', 'Capuccino'], ['flat_white', 'Flat White'], ['latte', 'Latte'], ['lagrima', 'Lágrima'],
-    ['coffee_chai', 'Coffee Chai'], ['organic_mocca', 'Organic Mocca'], ['iced_latte', 'Iced Latte'],
-    ['espresso_tonic', 'Espresso Tonic'], ['affogato', 'Affogato'], ['orange_coffe', 'Orange Coffe'],
-    ['caramel_macchiato', 'Caramel Macchiato'],
-    ['leche_almendras', 'Leche de almendras'], ['leche_avena', 'Leche de avena'], ['extra_shot', 'Extra shot'],
-    ['matcha_latte', 'Matcha Latte'], ['golden_milk', 'Golden Milk'], ['chai_latte', 'Chai Latte'],
-    ['matcha_orange', 'Matcha Orange'], ['jugo_naranja', 'Jugo de naranja'], ['limonada_clasica', 'Limonada clásica'],
-    ['limonada_frutos_rojos', 'Limonada frutos rojos'], ['limonada_hibiscus', 'Limonada de hibiscus'], ['agua_gas', 'Agua con gas'],
-    ['bromelia', 'Bromelia (infusión)'], ['irupe', 'Irupé (infusión)'],
-    ['palta_toast', 'Palta toast'], ['toast_forest', 'Toast Forest'], ['chipa_setas', 'Chipa de setas'],
-    ['chipa_tomates', 'Chipa de tomates confitados'], ['handroll_verdura', 'Handroll de verdura'],
-    ['handroll_bondiola', 'Handroll de bondiola braseada'],
-    ['florentinos', 'Florentinos'], ['bocadito_almendra', 'Bocadito de almendra'],
-    ['mini_alfajor_pistacho', 'Mini alfajor de pistacho'], ['mini_alfajor_avellanas', 'Mini alfajor de avellanas'],
-    ['macaron', 'Macaron'], ['datil_relleno', 'Dátil relleno'],
-    ['medialunas', 'Medialunas'], ['pain_au_chocolat', 'Pain au chocolat'], ['chipa', 'Chipa'],
-    ['budin_frutos_rojos', 'Budín de frutos rojos'],
-    ['cookie_mani_chocolate', 'Cookie de maní y chocolate'], ['cookie_frutos_rojos', 'Cookie de frutos rojos'],
-    ['alfajor_pistacho', 'Alfajor de pistacho'], ['alfajor_avellanas', 'Alfajor de avellanas'],
-    ['brownie_chocolate', 'Brownie de chocolate'],
-  ];
   (function armarFotosBanda() {
     const cont = document.getElementById('lcBandaFotos');
     if (!cont) return;
@@ -1780,26 +1839,6 @@
         + '<input type="text" id="landing_' + clave + '_link" data-landing-field="' + clave + '_link" autocomplete="off" placeholder="Link (opcional): /tienda?producto=SKU" aria-label="Link de la foto ' + n + '"></div>';
       cont.appendChild(g);
     }
-  })();
-
-  (function armarFotosCarta() {
-    const cont = document.getElementById('lcCartaFotos');
-    if (!cont) return;
-    CARTA_FOTOS.forEach(([slug, nombre]) => {
-      const clave = 'carta_foto_' + slug;
-      LANDING_CAMPOS_IMG.push(clave);
-      const g = document.createElement('div');
-      g.className = 'lc-foto';
-      g.setAttribute('role', 'group');
-      g.setAttribute('aria-labelledby', 'lc_t_' + clave);
-      g.innerHTML = '<div class="lc-foto-prev"><img id="preview_' + clave + '" alt=""></div>'
-        + '<div class="lc-foto-info"><span class="lc-label" id="lc_t_' + clave + '"></span>'
-        + '<button type="button" class="lc-btn lc-btn-sec" data-landing-upload="' + clave + '">Cambiar foto</button>'
-        + '<button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="' + clave + '">Quitar</button>'
-        + '<input type="hidden" id="landing_' + clave + '" data-landing-field="' + clave + '"></div>';
-      g.querySelector('.lc-label').textContent = nombre;
-      cont.appendChild(g);
-    });
   })();
 
   /* Doble idioma: cada texto con data-lc-bi suma casillas <clave>_en, _fr y _pt. Vacía = el sitio
@@ -2199,6 +2238,460 @@
     });
   }
 
+
+  /* ------------------------------------------------------------
+   * CARTA — editor de /carta (nivel 2). GET/PUT /admin/carta; fotos por /admin/landing/foto;
+   * traducciones por /admin/landing/traducir. Todo queda en memoria hasta Guardar y el
+   * servidor vuelve a validar todo. Los campos que empiezan con _ son solo del editor.
+   * ------------------------------------------------------------ */
+  let cartaEd = null;
+  let cartaCargada = false;
+  let cartaSucia = false;
+  let cartaFotoDestino = null;
+  let cartaFoco = null;
+  let traduciendoCarta = false;
+  let cartaSlots = [];
+  const cartaAbiertos = new Set();
+  const IDS_TRAD_CARTA = ['en', 'fr', 'pt'];
+  const NOMBRES_IDIOMA_CARTA = { en: 'English', fr: 'Français', pt: 'Português' };
+
+  const nuevoIdCarta = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const textosCarta = (es) => ({ es: es || '', en: '', fr: '', pt: '' });
+  function celCarta(tag, cls, txt) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+
+  function mensajeCarta(texto, tipo) {
+    const el = document.getElementById('mensajeCarta');
+    if (!el) return;
+    el.textContent = texto || '';
+    el.style.color = tipo === 'ok' ? 'var(--stamp-green)' : (tipo === 'error' ? 'var(--stamp-red)' : 'var(--ink-muted)');
+  }
+  function marcarCartaSucia(texto) {
+    cartaSucia = true;
+    mensajeCarta(texto || 'Hay cambios sin guardar. Tocá Guardar para publicar.', '');
+  }
+  function estadoCartaTraducir(texto, error) {
+    const el = document.getElementById('estadoCartaTraducir');
+    if (!el) return;
+    el.textContent = texto ? texto + ' ' : '';
+    el.style.color = error ? 'var(--stamp-red)' : 'var(--ink-muted)';
+  }
+
+  function itemsDe(nodo) {
+    if (nodo.tipo === 'item') return 1;
+    if (nodo.tipo === 'subgrupo') return nodo.items.length;
+    if (nodo.categorias) return nodo.categorias.reduce((n, c) => n + itemsDe(c), 0);
+    return nodo.hijos.reduce((n, h) => n + itemsDe(h), 0);
+  }
+
+  function botonCarta(texto, clase, titulo, fn) {
+    const b = celCarta('button', 'ca-btn ' + (clase || ''), texto);
+    b.type = 'button';
+    if (titulo) { b.title = titulo; b.setAttribute('aria-label', titulo); }
+    b.addEventListener('click', fn);
+    return b;
+  }
+
+  function moverCarta(arr, idx, dir) {
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    marcarCartaSucia();
+    dibujarCarta();
+  }
+
+  function controlesCarta(arr, idx, nodo, aviso) {
+    const d = celCarta('div', 'ca-ctl');
+    d.appendChild(botonCarta('▲', 'ca-mini', 'Subir', () => moverCarta(arr, idx, -1)));
+    d.appendChild(botonCarta('▼', 'ca-mini', 'Bajar', () => moverCarta(arr, idx, 1)));
+    const lab = celCarta('label', 'ca-activo');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = nodo.activo !== false;
+    cb.addEventListener('change', () => { nodo.activo = cb.checked; marcarCartaSucia(); dibujarCarta(); });
+    lab.append(cb, document.createTextNode('Visible'));
+    d.appendChild(lab);
+    d.appendChild(botonCarta('Eliminar', 'ca-borrar', 'Eliminar', () => {
+      if (!confirm(aviso())) return;
+      arr.splice(idx, 1);
+      marcarCartaSucia('Elemento eliminado. Tocá Guardar para publicar.');
+      dibujarCarta();
+    }));
+    return d;
+  }
+
+  /* Un texto en español (obj[clave]) + sus traducciones plegables. Cambiar el español y salir
+     del campo traduce solo lo vacío o lo rellenado automáticamente; lo escrito a mano no se pisa. */
+  function campoTexto(obj, clave, { placeholder, area, claseExtra, alCambiar }) {
+    const t = obj[clave];
+    t._auto = t._auto || {};
+    const refs = {};
+    const es = area ? celCarta('textarea', 'ca-in ' + (claseExtra || '')) : celCarta('input', 'ca-in ' + (claseExtra || ''));
+    if (!area) es.type = 'text';
+    else es.rows = 2;
+    es.autocomplete = 'off';
+    es.placeholder = placeholder;
+    es.setAttribute('aria-label', placeholder + ' (español)');
+    es.value = t.es;
+    es.addEventListener('input', () => { t.es = es.value; marcarCartaSucia(); if (alCambiar) alCambiar(); });
+    const slot = { t, refs };
+    cartaSlots.push(slot);
+    es.addEventListener('change', () => { if (t.es.trim()) traducirSlots([slot], true); });
+
+    const det = celCarta('details', 'ca-trad');
+    det.appendChild(celCarta('summary', null, 'Traducciones'));
+    const cuerpo = celCarta('div', 'ca-trad-cuerpo');
+    IDS_TRAD_CARTA.forEach((cod) => {
+      const lab = celCarta('label', null, NOMBRES_IDIOMA_CARTA[cod]);
+      const inp = area ? celCarta('textarea', 'ca-in') : celCarta('input', 'ca-in');
+      if (!area) inp.type = 'text';
+      else inp.rows = 2;
+      inp.autocomplete = 'off';
+      inp.value = t[cod];
+      inp.addEventListener('input', () => { t[cod] = inp.value; delete t._auto[cod]; marcarCartaSucia(); });
+      refs[cod] = inp;
+      lab.appendChild(inp);
+      cuerpo.appendChild(lab);
+    });
+    det.appendChild(cuerpo);
+    return { es, det };
+  }
+
+  async function traducirSlots(slots, incluirAuto) {
+    if (traduciendoCarta) return;
+    const vacio = (s, l) => !s.t[l].trim() || (incluirAuto && s.t._auto[l]);
+    const pend = slots.filter((s) => s.t.es.trim() && IDS_TRAD_CARTA.some((l) => vacio(s, l)));
+    if (!pend.length) return estadoCartaTraducir('No hay traducciones vacías.', false);
+    const btn = document.getElementById('btnCartaTraducir');
+    const guardar = document.getElementById('btnGuardarCarta');
+    traduciendoCarta = true;
+    if (btn) btn.disabled = true;
+    if (guardar) guardar.disabled = true;
+    try {
+      let rellenadas = 0;
+      for (let i = 0; i < pend.length; i += 20) {
+        const lote = pend.slice(i, i + 20);
+        const textos = {};
+        lote.forEach((s, j) => { textos['t' + j] = s.t.es; });
+        estadoCartaTraducir('Traduciendo ' + Math.min(i + 20, pend.length) + ' de ' + pend.length + '…', false);
+        const tr = await pedirTraducciones(textos);
+        lote.forEach((s, j) => IDS_TRAD_CARTA.forEach((l) => {
+          const v = tr['t' + j] && tr['t' + j][l];
+          if (!v || !vacio(s, l)) return;
+          s.t[l] = v;
+          s.t._auto[l] = true;
+          if (s.refs[l]) s.refs[l].value = v;
+          rellenadas++;
+        }));
+      }
+      if (rellenadas) marcarCartaSucia('Traducciones automáticas rellenadas: revisalas y tocá Guardar para publicar.');
+      estadoCartaTraducir(rellenadas ? '' : 'No había nada para rellenar.', false);
+    } catch (err) {
+      estadoCartaTraducir('No se pudo traducir: ' + (err.message || 'error'), true);
+    } finally {
+      traduciendoCarta = false;
+      if (btn) btn.disabled = false;
+      if (guardar) guardar.disabled = false;
+    }
+  }
+
+  function precioCarta(it, campo, placeholder) {
+    const inp = celCarta('input', 'ca-in ca-precio');
+    inp.type = 'text';
+    inp.inputMode = 'numeric';
+    inp.maxLength = 8;
+    inp.autocomplete = 'off';
+    inp.placeholder = placeholder;
+    inp.setAttribute('aria-label', 'Precio ' + placeholder + ' de ' + (it.nombre.es || 'producto nuevo') + ' (número o «-» si no se vende)');
+    inp.value = it[campo];
+    inp.addEventListener('input', () => { it[campo] = inp.value.trim(); marcarCartaSucia(); });
+    return inp;
+  }
+
+  function itemCarta(it, c, arr, idx) {
+    const b = celCarta('div', 'ca-item' + (it.activo === false ? ' ca-off' : ''));
+    const cab = celCarta('div', 'ca-cab');
+    const nom = campoTexto(it, 'nombre', { placeholder: 'Nombre del producto', claseExtra: 'ca-nom' });
+    nom.es.classList.add('ca-nom');
+    if (it.id === cartaFoco) { cartaFoco = null; setTimeout(() => { nom.es.focus(); nom.es.scrollIntoView({ block: 'center' }); }, 0); }
+    cab.append(nom.es, controlesCarta(arr, idx, it, () => '¿Eliminar el producto «' + (it.nombre.es || 'sin nombre') + '»?'));
+    b.appendChild(cab);
+
+    const pr = celCarta('div', 'ca-precios');
+    if (c.formato === 'tres') {
+      [['precio_s', 0], ['precio_m', 1], ['precio_l', 2]].forEach(([campo, i]) => pr.appendChild(precioCarta(it, campo, c.rotulos[i] || ['Small', 'Medium', 'Large'][i])));
+    } else {
+      pr.appendChild(precioCarta(it, 'precio', 'Precio'));
+    }
+    const lt = celCarta('label', 'ca-activo');
+    const cbt = document.createElement('input');
+    cbt.type = 'checkbox';
+    cbt.checked = !!it.sin_tacc;
+    cbt.addEventListener('change', () => { it.sin_tacc = cbt.checked; marcarCartaSucia(); });
+    lt.append(cbt, document.createTextNode('Sin TACC'));
+    pr.appendChild(lt);
+    b.appendChild(pr);
+
+    if (c.formato === 'uno' && c.estilo === 'detalle') {
+      const d = campoTexto(it, 'descripcion', { placeholder: 'Descripción (opcional)', area: true });
+      b.append(d.es, d.det);
+    }
+    b.appendChild(nom.det);
+
+    const f = celCarta('div', 'ca-foto');
+    if (it.foto) {
+      const im = celCarta('img');
+      im.src = it.foto;
+      im.alt = '';
+      f.appendChild(im);
+    }
+    f.appendChild(botonCarta(it.foto ? 'Cambiar foto' : 'Subir foto', '', null, () => {
+      cartaFotoDestino = it;
+      document.getElementById('inputCartaFotoFile').click();
+    }));
+    if (it.foto) f.appendChild(botonCarta('Quitar foto', '', null, () => { it.foto = ''; marcarCartaSucia('Foto quitada. Tocá Guardar para publicar.'); dibujarCarta(); }));
+    b.appendChild(f);
+    return b;
+  }
+
+  function nuevoItemCarta(c) {
+    const guion = c.formato === 'tres' ? '-' : '';
+    return {
+      tipo: 'item', id: nuevoIdCarta(), nombre: textosCarta(''), descripcion: textosCarta(''),
+      precio: '', precio_s: guion, precio_m: guion, precio_l: guion, sin_tacc: false, foto: '', activo: true,
+    };
+  }
+
+  function categoriaCarta(c, arr, idx) {
+    const det = celCarta('details', 'ca-cat' + (c.activo === false ? ' ca-off' : ''));
+    det.open = cartaAbiertos.has(c.id);
+    det.addEventListener('toggle', () => { if (det.open) cartaAbiertos.add(c.id); else cartaAbiertos.delete(c.id); });
+    const sum = celCarta('summary');
+    const titulo = celCarta('span');
+    const cuenta = celCarta('small');
+    const pintarResumen = () => {
+      titulo.textContent = c.nombre.es || '(sin título)';
+      cuenta.textContent = itemsDe(c) + ' productos' + (c.activo === false ? ' · oculta' : '');
+    };
+    pintarResumen();
+    sum.append(titulo, cuenta);
+    det.appendChild(sum);
+
+    const cuerpo = celCarta('div', 'ca-cat-cuerpo');
+    const cab = celCarta('div', 'ca-cab');
+    const nom = campoTexto(c, 'nombre', { placeholder: 'Título de la categoría (puede quedar vacío)', claseExtra: 'ca-nom', alCambiar: pintarResumen });
+    nom.es.classList.add('ca-nom');
+    cab.append(nom.es, controlesCarta(arr, idx, c, () => {
+      const n = itemsDe(c);
+      return '¿Eliminar la categoría «' + (c.nombre.es || 'sin título') + '»?' + (n ? ' Se van también sus ' + n + ' productos.' : '');
+    }));
+    cuerpo.append(cab, nom.det);
+
+    const aj = celCarta('div', 'ca-ajustes');
+    const fmt = celCarta('select', 'ca-in');
+    fmt.setAttribute('aria-label', 'Formato de precio');
+    [['uno', 'Un precio por producto'], ['tres', 'Tres precios (Small / Medium / Large)']].forEach(([v, t]) => {
+      const o = celCarta('option', null, t);
+      o.value = v;
+      fmt.appendChild(o);
+    });
+    fmt.value = c.formato;
+    fmt.addEventListener('change', () => {
+      c.formato = fmt.value;
+      if (c.formato === 'tres') {
+        if (c.rotulos.some((r) => !r)) c.rotulos = ['Small', 'Medium', 'Large'];
+        const todos = c.hijos.flatMap((h) => (h.tipo === 'subgrupo' ? h.items : [h]));
+        todos.forEach((it) => ['precio_s', 'precio_m', 'precio_l'].forEach((k) => { if (!it[k]) it[k] = '-'; }));
+      }
+      marcarCartaSucia();
+      dibujarCarta();
+    });
+    aj.appendChild(fmt);
+    if (c.formato === 'uno') {
+      const est = celCarta('select', 'ca-in');
+      est.setAttribute('aria-label', 'Estilo de la lista');
+      [['filas', 'Filas'], ['puntos', 'Con puntos guía'], ['detalle', 'Con descripción']].forEach(([v, t]) => {
+        const o = celCarta('option', null, t);
+        o.value = v;
+        est.appendChild(o);
+      });
+      est.value = c.estilo;
+      est.addEventListener('change', () => { c.estilo = est.value; marcarCartaSucia(); dibujarCarta(); });
+      aj.appendChild(est);
+    }
+    const lm = celCarta('label', 'ca-activo');
+    const cbm = document.createElement('input');
+    cbm.type = 'checkbox';
+    cbm.checked = !!c.marca;
+    cbm.addEventListener('change', () => { c.marca = cbm.checked; marcarCartaSucia(); });
+    lm.append(cbm, document.createTextNode('Marca de agua'));
+    aj.appendChild(lm);
+    const cantRot = c.formato === 'tres' ? 3 : 1;
+    for (let i = 0; i < cantRot; i++) {
+      const r = celCarta('input', 'ca-in ca-rot');
+      r.type = 'text';
+      r.maxLength = 20;
+      r.autocomplete = 'off';
+      r.placeholder = c.formato === 'tres' ? 'Rótulo ' + (i + 1) : 'Encabezado (opc.)';
+      r.setAttribute('aria-label', c.formato === 'tres' ? 'Rótulo de la columna ' + (i + 1) : 'Encabezado de la columna de precio (opcional)');
+      r.value = c.rotulos[i];
+      r.addEventListener('input', () => { c.rotulos[i] = r.value; marcarCartaSucia(); });
+      aj.appendChild(r);
+    }
+    cuerpo.appendChild(aj);
+
+    c.hijos.forEach((h, i) => {
+      if (h.tipo !== 'subgrupo') return cuerpo.appendChild(itemCarta(h, c, c.hijos, i));
+      const sg = celCarta('div', 'ca-sub' + (h.activo === false ? ' ca-off' : ''));
+      const scab = celCarta('div', 'ca-cab');
+      const sn = campoTexto(h, 'nombre', { placeholder: 'Nombre del subgrupo (ej. Hot)', claseExtra: 'ca-nom' });
+      sn.es.classList.add('ca-nom');
+      scab.append(sn.es, controlesCarta(c.hijos, i, h, () => {
+        const n = h.items.length;
+        return '¿Eliminar el subgrupo «' + (h.nombre.es || 'sin nombre') + '»?' + (n ? ' Se van también sus ' + n + ' productos.' : '');
+      }));
+      sg.append(scab, sn.det);
+      h.items.forEach((it, k) => sg.appendChild(itemCarta(it, c, h.items, k)));
+      sg.appendChild(botonCarta('+ Producto en ' + (h.nombre.es || 'el subgrupo'), '', null, () => {
+        const it = nuevoItemCarta(c);
+        h.items.push(it);
+        cartaFoco = it.id;
+        cartaAbiertos.add(c.id);
+        marcarCartaSucia();
+        dibujarCarta();
+      }));
+      cuerpo.appendChild(sg);
+    });
+
+    const pie = celCarta('div', 'ca-pie');
+    pie.appendChild(botonCarta('+ Producto', '', null, () => {
+      const it = nuevoItemCarta(c);
+      c.hijos.push(it);
+      cartaFoco = it.id;
+      cartaAbiertos.add(c.id);
+      marcarCartaSucia();
+      dibujarCarta();
+    }));
+    pie.appendChild(botonCarta('+ Subgrupo', '', null, () => {
+      c.hijos.push({ tipo: 'subgrupo', id: nuevoIdCarta(), nombre: textosCarta(''), activo: true, items: [] });
+      cartaAbiertos.add(c.id);
+      marcarCartaSucia();
+      dibujarCarta();
+    }));
+    cuerpo.appendChild(pie);
+    det.appendChild(cuerpo);
+    return det;
+  }
+
+  function seccionCarta(s, arr, idx) {
+    const b = celCarta('section', 'ca-sec' + (s.activo === false ? ' ca-off' : ''));
+    const cab = celCarta('div', 'ca-cab');
+    const nom = campoTexto(s, 'nombre', { placeholder: 'Nombre de la sección', claseExtra: 'ca-nom' });
+    nom.es.classList.add('ca-nom');
+    cab.append(nom.es, controlesCarta(arr, idx, s, () => {
+      const n = itemsDe(s);
+      return '¿Eliminar la sección «' + (s.nombre.es || 'sin nombre') + '»?' + (s.categorias.length ? ' Se van también sus ' + s.categorias.length + ' categorías y ' + n + ' productos.' : '');
+    }));
+    b.append(cab, nom.det);
+    s.categorias.forEach((c, i) => b.appendChild(categoriaCarta(c, s.categorias, i)));
+    const pie = celCarta('div', 'ca-pie');
+    pie.appendChild(botonCarta('+ Categoría', '', null, () => {
+      const c = { id: nuevoIdCarta(), nombre: textosCarta(''), activo: true, formato: 'uno', estilo: 'filas', marca: false, rotulos: ['', '', ''], hijos: [] };
+      s.categorias.push(c);
+      cartaAbiertos.add(c.id);
+      marcarCartaSucia();
+      dibujarCarta();
+    }));
+    b.appendChild(pie);
+    return b;
+  }
+
+  function dibujarCarta() {
+    const cont = document.getElementById('cartaArbol');
+    if (!cont || !cartaEd) return;
+    cartaSlots = [];
+    cont.textContent = '';
+    cartaEd.secciones.forEach((s, i) => cont.appendChild(seccionCarta(s, cartaEd.secciones, i)));
+    if (!cartaEd.secciones.length) cont.appendChild(celCarta('p', 'ca-ayuda', 'No hay secciones. Agregá una con «+ Sección».'));
+  }
+
+  async function cargarCartaAdmin(forzar) {
+    if (cartaCargada && !forzar) return;
+    mensajeCarta('Cargando…', '');
+    try {
+      const res = await fetch('/admin/carta?token=' + encodeURIComponent(adminToken));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.arbol) throw new Error(data.error || 'No se pudo cargar');
+      cartaEd = data.arbol;
+      cartaCargada = true;
+      cartaSucia = false;
+      dibujarCarta();
+      mensajeCarta('Carta cargada.', 'ok');
+    } catch (err) {
+      mensajeCarta(err.message || 'Error al cargar', 'error');
+    }
+  }
+
+  const arbolCartaParaGuardar = () => JSON.parse(JSON.stringify(cartaEd, (k, v) => (k.charAt(0) === '_' ? undefined : v)));
+
+  async function guardarCartaAdmin() {
+    if (!cartaEd) return;
+    const btn = document.getElementById('btnGuardarCarta');
+    if (btn) btn.disabled = true;
+    mensajeCarta('Guardando…', '');
+    try {
+      const res = await fetch('/admin/carta', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken, arbol: arbolCartaParaGuardar() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.arbol) throw new Error(data.error || 'No se pudo guardar');
+      cartaEd = data.arbol;
+      cartaSucia = false;
+      dibujarCarta();
+      mensajeCarta('Guardado. Ya se ve en /carta.', 'ok');
+    } catch (err) {
+      mensajeCarta(err.message || 'Error al guardar', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  document.getElementById('btnGuardarCarta').addEventListener('click', guardarCartaAdmin);
+  document.getElementById('btnRecargarCarta').addEventListener('click', () => {
+    if (cartaSucia && !confirm('Hay cambios sin guardar. ¿Descartarlos y recargar?')) return;
+    cargarCartaAdmin(true);
+  });
+  document.getElementById('btnCartaSeccion').addEventListener('click', () => {
+    if (!cartaEd) return;
+    cartaEd.secciones.push({ id: nuevoIdCarta(), nombre: textosCarta(''), activo: true, categorias: [] });
+    marcarCartaSucia();
+    dibujarCarta();
+  });
+  document.getElementById('btnCartaTraducir').addEventListener('click', () => traducirSlots(cartaSlots, false));
+  window.addEventListener('beforeunload', (ev) => { if (cartaSucia) { ev.preventDefault(); ev.returnValue = ''; } });
+
+  const inputCartaFotoFile = document.getElementById('inputCartaFotoFile');
+  inputCartaFotoFile.addEventListener('change', async () => {
+    const archivo = inputCartaFotoFile.files && inputCartaFotoFile.files[0];
+    inputCartaFotoFile.value = '';
+    const destino = cartaFotoDestino;
+    cartaFotoDestino = null;
+    if (!archivo || !destino) return;
+    mensajeCarta('Subiendo foto…', '');
+    try {
+      destino.foto = await subirFotoLanding(archivo);
+      dibujarCarta();
+      marcarCartaSucia('Foto lista. Tocá Guardar para publicar.');
+    } catch (err) {
+      mensajeCarta(err.message || 'Error al subir', 'error');
+    }
+  });
 
   document.getElementById('btnActivarCamara').addEventListener('click', () => {
     if (escanerIniciado) {

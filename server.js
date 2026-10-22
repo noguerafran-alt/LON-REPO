@@ -66,6 +66,9 @@ const {
   ensureLandingSheet,
   getLandingContenido,
   setLandingContenido,
+  ensureCartaSheet,
+  getCartaFilas,
+  setCartaFilas,
 } = require('./googleSheets');
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
 const QRCode = require('qrcode');
@@ -76,6 +79,7 @@ const mercadopago = require('./mercadopago');
 const emailService = require('./email');
 const ticketCierre = require('./ticketCierre');
 const traduccionLanding = require('./traduccionLanding');
+const cartaArbol = require('./cartaArbol');
 const imagenes = require('./imagenes');
 const whatsapp = require('./whatsapp');
 const helmet = require('helmet');
@@ -1885,6 +1889,95 @@ app.post('/admin/landing/video', limiteAdmin, (req, res) => {
       res.status(500).json({ error: 'No se pudo guardar el video.' });
     }
   });
+});
+
+/* ============================================================
+ *  CARTA DEL CAFE (/carta) — datos en la hoja Carta, editor en Admin › Carta
+ * ============================================================
+ * La hoja Carta se siembra UNA vez desde public/carta-semilla.json (con las fotos que
+ * ya estaban en Landing, claves carta_foto_<id>). Si Sheets falla, la carta publica
+ * sale de la ultima lectura buena o, si no hay, de la semilla: nunca se rompe.
+ * ============================================================ */
+const CARTA_SEMILLA = JSON.parse(fs.readFileSync(path.join(__dirname, 'public', 'carta-semilla.json'), 'utf8'));
+const CARTA_CACHE_MS = 30 * 1000;
+let cartaCache = { arbol: null, hasta: 0 };
+let cartaEnVuelo = null;
+
+async function leerCartaDeLaHoja() {
+  const sheetsClient = google.sheets({ version: 'v4', auth });
+  const id = config.SHEET_ID_PRODUCTOS;
+  await ensureCartaSheet(sheetsClient, id, config.HOJA_CARTA, cartaArbol.ENCABEZADOS);
+  const filas = await getCartaFilas(sheetsClient, id, config.HOJA_CARTA);
+  if (filas.length) return cartaArbol.arbolDeFilas(filas);
+
+  const arbol = JSON.parse(JSON.stringify(CARTA_SEMILLA));
+  try {
+    const landing = await getLandingContenido(sheetsClient, id, config.HOJA_LANDING);
+    const fotos = {};
+    for (const [k, v] of Object.entries(landing)) {
+      if (k.startsWith('carta_foto_') && String(v).trim()) fotos[k.slice('carta_foto_'.length)] = String(v).trim();
+    }
+    cartaArbol.aplicarFotos(arbol, fotos);
+  } catch (err) {
+    console.warn('Carta: no se pudieron traer las fotos viejas de Landing:', err.message);
+  }
+  await setCartaFilas(sheetsClient, id, config.HOJA_CARTA, cartaArbol.filasDeArbol(arbol));
+  return arbol;
+}
+
+function obtenerCarta(fresco) {
+  if (!fresco && cartaCache.arbol && Date.now() < cartaCache.hasta) return Promise.resolve(cartaCache.arbol);
+  if (!cartaEnVuelo) {
+    cartaEnVuelo = leerCartaDeLaHoja()
+      .then((arbol) => { cartaCache = { arbol, hasta: Date.now() + CARTA_CACHE_MS }; return arbol; })
+      .finally(() => { cartaEnVuelo = null; });
+  }
+  return cartaEnVuelo;
+}
+
+/* Publico: solo lo activo. Con Sheets caido responde igual (200) con la ultima carta buena o la semilla. */
+app.get('/carta-datos', limiteLecturaPublica, async (req, res) => {
+  try {
+    const arbol = await obtenerCarta(false);
+    res.set('Cache-Control', 'public, max-age=20');
+    res.json({ ok: true, origen: 'hoja', carta: cartaArbol.soloActivo(arbol) });
+  } catch (err) {
+    console.error('Error leyendo la carta, se usa la copia de respaldo:', err.message);
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, origen: 'respaldo', carta: cartaArbol.soloActivo(cartaCache.arbol || CARTA_SEMILLA) });
+  }
+});
+
+/* Admin nivel 2: el arbol completo (con lo oculto) para el editor. */
+app.get('/admin/carta', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, arbol: await obtenerCarta(true) });
+  } catch (err) {
+    console.error('Error leyendo la carta (admin):', err.message);
+    res.status(500).json({ error: 'No se pudo cargar la carta.' });
+  }
+});
+
+/* Admin nivel 2: guarda el arbol completo, reemplazando las filas. Valida todo en el servidor. */
+app.put('/admin/carta', limiteAdmin, async (req, res) => {
+  try {
+    const sesion = requiereNivel2(req, res);
+    if (!sesion) return;
+    const v = cartaArbol.validarArbol(req.body && req.body.arbol);
+    if (v.error) return res.status(400).json({ error: v.error });
+
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    await ensureCartaSheet(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CARTA, cartaArbol.ENCABEZADOS);
+    await setCartaFilas(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CARTA, cartaArbol.filasDeArbol(v.arbol));
+    cartaCache = { arbol: v.arbol, hasta: Date.now() + CARTA_CACHE_MS };
+    res.json({ ok: true, arbol: v.arbol });
+  } catch (err) {
+    console.error('Error guardando la carta (admin):', err.message);
+    res.status(500).json({ error: 'No se pudo guardar la carta.' });
+  }
 });
 
 /* Config publica minima que necesita el frontend (nada sensible): el

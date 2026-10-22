@@ -1,0 +1,1494 @@
+{
+ "secciones": [
+  {
+   "id": "s_coffee_menu",
+   "nombre": {
+    "es": "Coffee Menu",
+    "en": "",
+    "fr": "",
+    "pt": ""
+   },
+   "activo": true,
+   "categorias": [
+    {
+     "id": "c_the_classics",
+     "nombre": {
+      "es": "The Classics",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "tres",
+     "estilo": "filas",
+     "marca": true,
+     "rotulos": [
+      "Small",
+      "Medium",
+      "Large"
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "espresso",
+       "nombre": {
+        "es": "ESPRESSO",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "5700",
+       "precio_m": "-",
+       "precio_l": "-",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "doppio",
+       "nombre": {
+        "es": "DOPPIO",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "5700",
+       "precio_m": "-",
+       "precio_l": "-",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "macchiato",
+       "nombre": {
+        "es": "MACCHIATO",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "5700",
+       "precio_m": "-",
+       "precio_l": "-",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "americano",
+       "nombre": {
+        "es": "AMERICANO",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "5700",
+       "precio_m": "6300",
+       "precio_l": "-",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "capuccino",
+       "nombre": {
+        "es": "CAPUCCINO",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "-",
+       "precio_m": "6300",
+       "precio_l": "6900",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "flat_white",
+       "nombre": {
+        "es": "FLAT WHITE",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "-",
+       "precio_m": "6300",
+       "precio_l": "6900",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "latte",
+       "nombre": {
+        "es": "LATTE",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "-",
+       "precio_m": "6300",
+       "precio_l": "6900",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "lagrima",
+       "nombre": {
+        "es": "LAGRIMA",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "",
+       "precio_s": "-",
+       "precio_m": "5900",
+       "precio_l": "6400",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    },
+    {
+     "id": "c_the_specials",
+     "nombre": {
+      "es": "The Specials",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "filas",
+     "marca": true,
+     "rotulos": [
+      "Medium",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "subgrupo",
+       "id": "g_the_specials_hot",
+       "nombre": {
+        "es": "Hot",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "activo": true,
+       "items": [
+        {
+         "tipo": "item",
+         "id": "coffee_chai",
+         "nombre": {
+          "es": "COFFEE CHAI",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "7200",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        },
+        {
+         "tipo": "item",
+         "id": "organic_mocca",
+         "nombre": {
+          "es": "ORGANIC MOCCA",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "7300",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        }
+       ]
+      },
+      {
+       "tipo": "subgrupo",
+       "id": "g_the_specials_cold",
+       "nombre": {
+        "es": "Cold",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "activo": true,
+       "items": [
+        {
+         "tipo": "item",
+         "id": "iced_latte",
+         "nombre": {
+          "es": "ICED LATTE",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "7200",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        },
+        {
+         "tipo": "item",
+         "id": "espresso_tonic",
+         "nombre": {
+          "es": "ESPRESSO TONIC",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "8200",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        },
+        {
+         "tipo": "item",
+         "id": "affogato",
+         "nombre": {
+          "es": "AFFOGATO",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "8700",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        },
+        {
+         "tipo": "item",
+         "id": "orange_coffe",
+         "nombre": {
+          "es": "ORANGE COFFE",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "7800",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        },
+        {
+         "tipo": "item",
+         "id": "caramel_macchiato",
+         "nombre": {
+          "es": "CARAMEL MACCHIATO",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "descripcion": {
+          "es": "",
+          "en": "",
+          "fr": "",
+          "pt": ""
+         },
+         "precio": "7500",
+         "precio_s": "",
+         "precio_m": "",
+         "precio_l": "",
+         "sin_tacc": false,
+         "foto": "",
+         "activo": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "c_adicionales",
+     "nombre": {
+      "es": "Adicionales",
+      "en": "Extras",
+      "fr": "Suppléments",
+      "pt": "Adicionais"
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "filas",
+     "marca": false,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "leche_almendras",
+       "nombre": {
+        "es": "LECHE DE ALMENDRAS",
+        "en": "ALMOND MILK",
+        "fr": "LAIT D'AMANDE",
+        "pt": "LEITE DE AMÊNDOAS"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "2000",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "leche_avena",
+       "nombre": {
+        "es": "LECHE DE AVENA",
+        "en": "OAT MILK",
+        "fr": "LAIT D'AVOINE",
+        "pt": "LEITE DE AVEIA"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "2000",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "extra_shot",
+       "nombre": {
+        "es": "EXTRA SHOT",
+        "en": "EXTRA SHOT",
+        "fr": "SHOT SUPPLÉMENTAIRE",
+        "pt": "SHOT EXTRA"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "2500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    },
+    {
+     "id": "c_take_away",
+     "nombre": {
+      "es": "Take Away",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "filas",
+     "marca": false,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "take_away_medium",
+       "nombre": {
+        "es": "MEDIUM",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "take_away_large",
+       "nombre": {
+        "es": "LARGE",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7700",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s_non_coffee",
+   "nombre": {
+    "es": "Non - Coffee",
+    "en": "",
+    "fr": "",
+    "pt": ""
+   },
+   "activo": true,
+   "categorias": [
+    {
+     "id": "c_non_coffee",
+     "nombre": {
+      "es": "",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "detalle",
+     "marca": true,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "matcha_latte",
+       "nombre": {
+        "es": "MATCHA LATTE",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "Bebida a base té verde matcha. Emulsionada con leche",
+        "en": "Green matcha tea drink. Frothed with milk",
+        "fr": "Boisson au thé vert matcha. Mousseuse, au lait",
+        "pt": "Bebida de chá verde matcha. Batida com leite"
+       },
+       "precio": "7100",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "golden_milk",
+       "nombre": {
+        "es": "GOLDEN MILK",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "Bebida a base de cúrcuma, canela, nuez moscada, miel y pimienta negra. Emulsionada con leche",
+        "en": "Drink made with turmeric, cinnamon, nutmeg, honey and black pepper. Frothed with milk",
+        "fr": "Boisson au curcuma, cannelle, noix de muscade, miel et poivre noir. Mousseuse, au lait",
+        "pt": "Bebida feita com cúrcuma, canela, noz-moscada, mel e pimenta-do-reino. Batida com leite"
+       },
+       "precio": "7200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "chai_latte",
+       "nombre": {
+        "es": "CHAI LATTE",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "Bebida a base té negro, canela, cardamomo, coco en escamas, nuez moscada, clavo de olor, miel y pimienta negra. Emulsionada con leche",
+        "en": "Drink made with black tea, cinnamon, cardamom, coconut flakes, nutmeg, clove, honey and black pepper. Frothed with milk",
+        "fr": "Boisson au thé noir, cannelle, cardamome, noix de coco râpée, noix de muscade, clou de girofle, miel et poivre noir. Mousseuse, au lait",
+        "pt": "Bebida feita com chá preto, canela, cardamomo, coco em flocos, noz-moscada, cravo, mel e pimenta-do-reino. Batida com leite"
+       },
+       "precio": "7200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    },
+    {
+     "id": "c_drinks",
+     "nombre": {
+      "es": "Drinks",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "puntos",
+     "marca": false,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "matcha_orange",
+       "nombre": {
+        "es": "MATCHA ORANGE",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7300",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "jugo_naranja",
+       "nombre": {
+        "es": "JUGO DE NARANJA",
+        "en": "ORANGE JUICE",
+        "fr": "JUS D'ORANGE",
+        "pt": "SUCO DE LARANJA"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "6600",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "limonada_clasica",
+       "nombre": {
+        "es": "LIMONADA CLÁSICA",
+        "en": "CLASSIC LEMONADE",
+        "fr": "LIMONADE CLASSIQUE",
+        "pt": "LIMONADA CLÁSSICA"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "5600",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "limonada_frutos_rojos",
+       "nombre": {
+        "es": "LIMONADA FRUTOS ROJOS",
+        "en": "RED BERRY LEMONADE",
+        "fr": "LIMONADE AUX FRUITS ROUGES",
+        "pt": "LIMONADA DE FRUTAS VERMELHAS"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "limonada_hibiscus",
+       "nombre": {
+        "es": "LIMONADA DE HIBISCUS",
+        "en": "HIBISCUS LEMONADE",
+        "fr": "LIMONADE À L'HIBISCUS",
+        "pt": "LIMONADA DE HIBISCO"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7300",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "agua_gas",
+       "nombre": {
+        "es": "AGUA CON GAS",
+        "en": "SPARKLING WATER",
+        "fr": "EAU GAZEUSE",
+        "pt": "ÁGUA COM GÁS"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "4900",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    },
+    {
+     "id": "c_infusiones_anua",
+     "nombre": {
+      "es": "Infusiones · Anuá",
+      "en": "Infusions · Anuá",
+      "fr": "Infusions · Anuá",
+      "pt": "Infusões · Anuá"
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "detalle",
+     "marca": true,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "bromelia",
+       "nombre": {
+        "es": "BROMELIA · INSPIRADO EN CENTRO AMÉRICA",
+        "en": "BROMELIA · INSPIRED BY CENTRAL AMERICA",
+        "fr": "BROMELIA · INSPIRÉ DE L'AMÉRIQUE CENTRALE",
+        "pt": "BROMELIA · INSPIRADO NA AMÉRICA CENTRAL"
+       },
+       "descripcion": {
+        "es": "Ananá, vaina de vainilla molida, coco tostado y anís. (notas dulces, cuerpo avainillado. Efecto nutritivo, carminativo y saciante)",
+        "en": "Pineapple, ground vanilla bean, toasted coconut and anise. (sweet notes, vanilla-forward body. Nourishing, carminative and satiating effect)",
+        "fr": "Ananas, gousse de vanille moulue, noix de coco grillée et anis. (notes douces, corps vanillé. Effet nourrissant, carminatif et rassasiant)",
+        "pt": "Abacaxi, fava de baunilha moída, coco tostado e anis. (notas doces, corpo com baunilha em destaque. Efeito nutritivo, carminativo e saciante)"
+       },
+       "precio": "6900",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "irupe",
+       "nombre": {
+        "es": "IRUPÉ · INSPIRADO EN EL LITORAL ARGENTINO",
+        "en": "IRUPÉ · INSPIRED BY ARGENTINA'S LITORAL",
+        "fr": "IRUPÉ · INSPIRÉ DU LITORAL ARGENTIN",
+        "pt": "IRUPÉ · INSPIRADO NO LITORAL ARGENTINO"
+       },
+       "descripcion": {
+        "es": "Mango, hibiscus, lemongrass y flor de azahar. (notas ácidas, verdes y dulces. Efecto refrescante, desinflamante, antioxidante y restaurador)",
+        "en": "Mango, hibiscus, lemongrass and orange blossom. (tart, green and sweet notes. Refreshing, anti-inflammatory, antioxidant and restorative effect)",
+        "fr": "Mangue, hibiscus, citronnelle et fleur d'oranger. (notes acidulées, vertes et sucrées. Effet rafraîchissant, anti-inflammatoire, antioxydant et réparateur)",
+        "pt": "Manga, hibisco, capim-limão e flor de laranjeira. (notas ácidas, verdes e doces. Efeito refrescante, anti-inflamatório, antioxidante e restaurador)"
+       },
+       "precio": "6900",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s_brunch",
+   "nombre": {
+    "es": "Brunch",
+    "en": "",
+    "fr": "",
+    "pt": ""
+   },
+   "activo": true,
+   "categorias": [
+    {
+     "id": "c_brunch",
+     "nombre": {
+      "es": "",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "detalle",
+     "marca": true,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "palta_toast",
+       "nombre": {
+        "es": "PALTA · TOAST",
+        "en": "AVOCADO · TOAST",
+        "fr": "AVOCAT · TARTINE",
+        "pt": "ABACATE · TORRADA"
+       },
+       "descripcion": {
+        "es": "(tostón de pan integral, palta, tomate confitado, queso crema)\nopcional: huevo poché $2000",
+        "en": "(whole-wheat toast, avocado, confit tomato, cream cheese)\noptional: poached egg $2000",
+        "fr": "(tartine de pain complet, avocat, tomate confite, fromage frais)\nen option : œuf poché 2000 $",
+        "pt": "(torrada integral, abacate, tomate confit, cream cheese)\nopcional: ovo pochê $2000"
+       },
+       "precio": "13500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "toast_forest",
+       "nombre": {
+        "es": "TOAST FOREST (SIN TACC)",
+        "en": "FOREST TOAST (GLUTEN-FREE)",
+        "fr": "TARTINE FOREST (SANS GLUTEN)",
+        "pt": "TORRADA FOREST (SEM GLÚTEN)"
+       },
+       "descripcion": {
+        "es": "Pan de elaboración propia preparado con fécula de mandioca, almidón de maíz, harina de arroz integral, harina de garbanzos, harina de trigo sarraceno y un mix de semillas. Servido con alioli de almendras, palta fresca y cebollas encurtidas.",
+        "en": "House-made bread prepared with cassava starch, corn starch, brown rice flour, chickpea flour, buckwheat flour and a seed mix. Served with almond aioli, fresh avocado and pickled onions.",
+        "fr": "Pain maison à base de fécule de manioc, fécule de maïs, farine de riz complet, farine de pois chiche, farine de sarrasin et un mélange de graines. Servi avec aïoli d'amande, avocat frais et oignons marinés.",
+        "pt": "Pão da casa feito com fécula de mandioca, amido de milho, farinha de arroz integral, farinha de grão-de-bico, farinha de trigo-sarraceno e mix de sementes. Servido com aioli de amêndoas, abacate fresco e cebola em conserva."
+       },
+       "precio": "18500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "chipa_setas",
+       "nombre": {
+        "es": "CHIPA DE SETAS",
+        "en": "MUSHROOM CHIPA",
+        "fr": "CHIPA AUX CHAMPIGNONS",
+        "pt": "CHIPA DE COGUMELOS"
+       },
+       "descripcion": {
+        "es": "Relleno de una selección de hongos de pino, portobellos y champiñones salteados con cebolla puerro y tomates secos confitados.",
+        "en": "Filled with a selection of pine mushrooms, portobellos and button mushrooms sautéed with leek and confit sun-dried tomatoes.",
+        "fr": "Garni d'un assortiment de champignons des pins, portobellos et champignons de Paris sautés au poireau et aux tomates séchées confites.",
+        "pt": "Recheada com seleção de cogumelos pinho, portobello e champignon salteados com alho-poró e tomate seco confit."
+       },
+       "precio": "15400",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "chipa_tomates",
+       "nombre": {
+        "es": "CHIPA DE TOMATES CONFITADOS X2",
+        "en": "CONFIT TOMATO CHIPA X2",
+        "fr": "CHIPA AUX TOMATES CONFITES X2",
+        "pt": "CHIPA DE TOMATE CONFIT X2"
+       },
+       "descripcion": {
+        "es": "Relleno de cebollas encurtidas y tomates confitados.",
+        "en": "Filled with pickled onions and confit tomatoes.",
+        "fr": "Garni d'oignons marinés et de tomates confites.",
+        "pt": "Recheada com cebola em conserva e tomate confit."
+       },
+       "precio": "16500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "handroll_verdura",
+       "nombre": {
+        "es": "HANDROLL DE VERDURA",
+        "en": "VEGGIE HANDROLL",
+        "fr": "HANDROLL VÉGÉTARIEN",
+        "pt": "HANDROLL VEGETARIANO"
+       },
+       "descripcion": {
+        "es": "Panqueque de premezcla sin gluten, relleno de espinaca, cebolla y zanahoria salteadas, ricotta cremosa y queso dambo.",
+        "en": "Gluten-free premix pancake filled with sautéed spinach, onion and carrot, creamy ricotta and dambo cheese.",
+        "fr": "Crêpe sans gluten garnie d'épinards, oignon et carotte sautés, ricotta crémeuse et fromage dambo.",
+        "pt": "Panqueca sem glúten recheada com espinafre, cebola e cenoura salteados, ricota cremosa e queijo dambo."
+       },
+       "precio": "15800",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "handroll_bondiola",
+       "nombre": {
+        "es": "HANDROLL DE BONDIOLA BRASEADA",
+        "en": "BRAISED PORK SHOULDER HANDROLL",
+        "fr": "HANDROLL À L'ÉCHINE DE PORC BRAISÉE",
+        "pt": "HANDROLL DE COPA-LOMBO BRASEADA"
+       },
+       "descripcion": {
+        "es": "Panqueque de premezcla sin gluten, relleno de bondiola braseada, cebolla caramelizada y queso dambo fundido.",
+        "en": "Gluten-free premix pancake filled with braised pork shoulder, caramelized onion and melted dambo cheese.",
+        "fr": "Crêpe sans gluten garnie d'échine de porc braisée, oignon caramélisé et fromage dambo fondu.",
+        "pt": "Panqueca sem glúten recheada com copa-lombo de porco braseada, cebola caramelizada e queijo dambo derretido."
+       },
+       "precio": "15800",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s_sweet_bites_bakery_patisserie",
+   "nombre": {
+    "es": "Sweet Bites · Bakery · Patisserie",
+    "en": "",
+    "fr": "",
+    "pt": ""
+   },
+   "activo": true,
+   "categorias": [
+    {
+     "id": "c_sweet_bites",
+     "nombre": {
+      "es": "Sweet Bites",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "puntos",
+     "marca": true,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "florentinos",
+       "nombre": {
+        "es": "FLORENTINOS (X3)",
+        "en": "FLORENTINES (X3)",
+        "fr": "FLORENTINS (X3)",
+        "pt": "FLORENTINOS (X3)"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "4200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "bocadito_almendra",
+       "nombre": {
+        "es": "BOCADITO DE ALMENDRA (X3)",
+        "en": "ALMOND BITE (X3)",
+        "fr": "BOUCHÉE AUX AMANDES (X3)",
+        "pt": "BOCADINHO DE AMÊNDOAS (X3)"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "4400",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "mini_alfajor_pistacho",
+       "nombre": {
+        "es": "MINI ALFAJOR DE PISTACHO",
+        "en": "MINI PISTACHIO ALFAJOR",
+        "fr": "MINI ALFAJOR À LA PISTACHE",
+        "pt": "MINI ALFAJOR DE PISTACHE"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "4900",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "mini_alfajor_avellanas",
+       "nombre": {
+        "es": "MINI ALFAJOR DE AVELLANAS",
+        "en": "MINI HAZELNUT ALFAJOR",
+        "fr": "MINI ALFAJOR À LA NOISETTE",
+        "pt": "MINI ALFAJOR DE AVELÃ"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "4900",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "macaron",
+       "nombre": {
+        "es": "MACARON",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "4900",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "datil_relleno",
+       "nombre": {
+        "es": "DATIL RELLENO",
+        "en": "STUFFED DATE",
+        "fr": "DATTE FARCIE",
+        "pt": "TÂMARA RECHEADA"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "6000",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    },
+    {
+     "id": "c_bakery",
+     "nombre": {
+      "es": "Bakery",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "puntos",
+     "marca": true,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "medialunas",
+       "nombre": {
+        "es": "MEDIALUNAS",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "3200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "pain_au_chocolat",
+       "nombre": {
+        "es": "PAIN AU CHOCOLAT",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "6500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "chipa",
+       "nombre": {
+        "es": "CHIPA",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "5200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "budin_frutos_rojos",
+       "nombre": {
+        "es": "BUDIN DE FRUTOS ROJOS",
+        "en": "RED BERRY LOAF CAKE",
+        "fr": "CAKE AUX FRUITS ROUGES",
+        "pt": "BOLO INGLÊS DE FRUTAS VERMELHAS"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "8200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": true,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    },
+    {
+     "id": "c_patisserie",
+     "nombre": {
+      "es": "Patisserie",
+      "en": "",
+      "fr": "",
+      "pt": ""
+     },
+     "activo": true,
+     "formato": "uno",
+     "estilo": "puntos",
+     "marca": true,
+     "rotulos": [
+      "",
+      "",
+      ""
+     ],
+     "hijos": [
+      {
+       "tipo": "item",
+       "id": "cookie_mani_chocolate",
+       "nombre": {
+        "es": "COOKIE DE MANI Y CHOCOLATE",
+        "en": "PEANUT & CHOCOLATE COOKIE",
+        "fr": "COOKIE CACAHUÈTE ET CHOCOLAT",
+        "pt": "COOKIE DE AMENDOIM E CHOCOLATE"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "5800",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "cookie_frutos_rojos",
+       "nombre": {
+        "es": "COOKIE DE FRUTOS ROJOS",
+        "en": "RED BERRY COOKIE",
+        "fr": "COOKIE AUX FRUITS ROUGES",
+        "pt": "COOKIE DE FRUTAS VERMELHAS"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "5800",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "alfajor_pistacho",
+       "nombre": {
+        "es": "ALFAJOR DE PISTACHO",
+        "en": "PISTACHIO ALFAJOR",
+        "fr": "ALFAJOR À LA PISTACHE",
+        "pt": "ALFAJOR DE PISTACHE"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "alfajor_avellanas",
+       "nombre": {
+        "es": "ALFAJOR DE AVELLANAS",
+        "en": "HAZELNUT ALFAJOR",
+        "fr": "ALFAJOR À LA NOISETTE",
+        "pt": "ALFAJOR DE AVELÃ"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "7500",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      },
+      {
+       "tipo": "item",
+       "id": "brownie_chocolate",
+       "nombre": {
+        "es": "BROWNIE DE CHOCOLATE",
+        "en": "CHOCOLATE BROWNIE",
+        "fr": "BROWNIE AU CHOCOLAT",
+        "pt": "BROWNIE DE CHOCOLATE"
+       },
+       "descripcion": {
+        "es": "",
+        "en": "",
+        "fr": "",
+        "pt": ""
+       },
+       "precio": "8200",
+       "precio_s": "",
+       "precio_m": "",
+       "precio_l": "",
+       "sin_tacc": false,
+       "foto": "",
+       "activo": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
