@@ -331,6 +331,15 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   si es un sitio nuevo puede venir vacío y la banda sin fotos.
 - **Sin verificar en navegador** (solo `node --check` del script): ni a
   375px, ni el comportamiento del scroll.
+- **Ícono de Instagram en el hero (2026-10-21)**: SVG inline de solo trazo
+  (cuadrado redondeado + círculo + punto), `currentColor`, 20px / stroke 1.3
+  como los íconos del header; `.btn-link` es `inline-flex` con gap 8px. NO
+  usar el logo/degradé oficial de IG. **El texto va en un `<span>` hijo** con
+  `data-landing="cta_secondary_label"` y `data-i18n="l_instagram"`: el CMS y
+  `idioma.js` hacen `textContent` sobre el elemento con esos atributos y, si
+  estuvieran en el `<a>`, borrarían el SVG. No volver a poner el texto
+  directo en el `<a>`. El estilo editable (`hero_ctas` → `.hero .cta-row a`)
+  sigue en el `<a>` y el span lo hereda.
 
 ## CMS completo de la landing (2026-10-21)
 
