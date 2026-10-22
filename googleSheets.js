@@ -2314,6 +2314,9 @@ const LANDING_TEXTOS_BILINGUES = [
 ];
 for (const clave of LANDING_TEXTOS_BILINGUES) {
   for (const cod of ['en', 'fr', 'pt']) LANDING_DEFAULTS[clave + '_' + cod] = '';
+  // 'si' = el dueño borró el texto a propósito y el sitio no lo muestra. Vacío en la
+  // clave sin esta marca NO oculta: hay muchas filas sembradas en '' que muestran el HTML.
+  LANDING_DEFAULTS[clave + '_oculto'] = '';
 }
 
 /* Estilo por bloque (mismos nombres que BLOQUES_TEXTO en landing.html y los

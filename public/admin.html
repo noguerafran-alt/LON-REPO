@@ -1836,7 +1836,10 @@
     ayuda.className = 'lc-ayuda';
     ayuda.textContent = 'Si se deja vacío se usa la traducción automática.';
     extra.push(ayuda);
-    es.after(...extra);
+    const ayudaEs = document.createElement('p');
+    ayudaEs.className = 'lc-ayuda';
+    ayudaEs.textContent = 'Si lo borrás y guardás, ese texto no se muestra en el sitio.';
+    es.after(ayudaEs, ...extra);
   });
 
   document.querySelectorAll('#panelLanding select[data-fuente-select]').forEach((sel) => {
@@ -1903,8 +1906,43 @@
     const igTexto = document.getElementById('landing_footer_ig_texto');
     const handle = String(src.ig_handle || '').trim().replace(/^@/, '');
     if (igTexto) igTexto.placeholder = handle ? '@' + handle : '@lonphilosophy';
+    // tuvoTexto: solo un español que tenía texto (o ya estaba oculto) puede pasar a oculto al guardar.
+    document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
+      const clave = es.getAttribute('data-landing-field');
+      es.dataset.tuvoTexto = (es.value.trim() !== '' || src[clave + '_oculto'] === 'si') ? '1' : '';
+    });
     landingCambiosSinGuardar = false;
     actualizarPreviewsLanding();
+    rellenarConTextoDelSitio(src);
+  }
+
+  /* El español vacío sin marca _oculto significa «el sitio muestra el texto del HTML»: se lo
+     mostramos al dueño leyendo la landing real (no se duplican los textos acá). Con _oculto='si'
+     queda vacío a propósito. Rellenar no marca cambios sin guardar. */
+  let textosSitioPromesa = null;
+  function textosDelSitio() {
+    if (!textosSitioPromesa) {
+      textosSitioPromesa = fetch('/landing.html').then((r) => r.text()).then((html) => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const textos = {};
+        doc.querySelectorAll('[data-landing]').forEach((n) => {
+          const k = n.getAttribute('data-landing');
+          if (n.tagName !== 'IMG' && !(k in textos)) textos[k] = n.textContent.trim();
+        });
+        return textos;
+      }).catch(() => { textosSitioPromesa = null; return {}; });
+    }
+    return textosSitioPromesa;
+  }
+  async function rellenarConTextoDelSitio(src) {
+    const textos = await textosDelSitio();
+    document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
+      const clave = es.getAttribute('data-landing-field');
+      if (es.value.trim() === '' && src[clave + '_oculto'] !== 'si' && textos[clave]) {
+        es.value = textos[clave];
+        es.dataset.tuvoTexto = '1';
+      }
+    });
   }
 
   // Solo los campos del formulario: claves viejas que ya no se editan (ig_handle,
@@ -1913,6 +1951,14 @@
     const data = {};
     document.querySelectorAll('#panelLanding [data-landing-field]').forEach((el) => {
       data[el.getAttribute('data-landing-field')] = el.value;
+    });
+    // Español vacío = el dueño lo quiere oculto: se marca y se vacían las otras lenguas.
+    document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
+      const clave = es.getAttribute('data-landing-field');
+      // Vacío sin tuvoTexto = el relleno no corrió o no había texto: no se oculta ni se tocan en/fr/pt.
+      const vacio = es.value.trim() === '' && es.dataset.tuvoTexto === '1';
+      data[clave + '_oculto'] = vacio ? 'si' : '';
+      if (vacio) ['en', 'fr', 'pt'].forEach((cod) => { data[clave + '_' + cod] = ''; });
     });
     return data;
   }
@@ -2014,7 +2060,10 @@
   document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
     const clave = es.getAttribute('data-landing-field');
     es.addEventListener('change', () => {
-      if (!es.value.trim()) return;
+      if (!es.value.trim()) {
+        IDIOMAS_LANDING.forEach((cod) => { const c = cajaIdioma(clave, cod); if (c) { c.value = ''; c.removeAttribute('data-auto'); } });
+        return;
+      }
       const hayLugar = IDIOMAS_LANDING.some((cod) => {
         const c = cajaIdioma(clave, cod);
         return c && (!c.value.trim() || c.hasAttribute('data-auto'));
