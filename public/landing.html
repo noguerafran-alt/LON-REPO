@@ -145,7 +145,7 @@ footer a:hover{color:var(--accent-terracota)}
       <h1 data-landing="hero_tagline">Making community</h1>
       <p class="hero-sub" data-landing="hero_ubicacion" data-i18n="l_ubicacion">Libros, objetos y café — para estar presente</p>
       <div class="cta-row">
-        <a class="btn-solid" href="/tienda" data-landing="cta_primary_label" data-i18n="l_ver_piezas">Ver piezas</a>
+        <a class="btn-solid" href="/tienda" data-landing="cta_primary_label" data-i18n="l_ver_piezas" data-cafe-texto="Ver la carta" data-cafe-i18n="l_ver_la_carta" data-cafe-href="/carta">Ver piezas</a>
         <a class="btn-link" href="https://www.instagram.com/lonphilosophy/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="12" cy="12" r="3.6"/><circle cx="16.8" cy="7.2" r=".5"/></svg><span data-landing="cta_secondary_label" data-i18n="l_instagram">Seguinos en Instagram</span></a>
       </div>
     </div>
@@ -169,8 +169,8 @@ footer a:hover{color:var(--accent-terracota)}
   </section>
 
   <section class="band" aria-label="Ir al catálogo" data-i18n-attr="aria-label:l_ir_catalogo_aria">
-    <p data-landing="catalogo_cta_texto" data-i18n="l_band_texto">Explorá el catálogo y armá tu pedido online.</p>
-    <a class="btn-ink" href="/tienda" data-landing="catalogo_cta_label" data-i18n="l_ir_catalogo">Ir al catálogo</a>
+    <p data-landing="catalogo_cta_texto" data-i18n="l_band_texto" data-cafe-texto="Mirá nuestra carta y pasá a tomar un café." data-cafe-i18n="l_band_texto_cafe">Explorá el catálogo y armá tu pedido online.</p>
+    <a class="btn-ink" href="/tienda" data-landing="catalogo_cta_label" data-i18n="l_ir_catalogo" data-cafe-texto="Ver la carta" data-cafe-i18n="l_ver_la_carta" data-cafe-href="/carta">Ir al catálogo</a>
   </section>
 </main>
 
@@ -185,6 +185,24 @@ footer a:hover{color:var(--accent-terracota)}
 <script src="/idioma.js"></script>
 <script src="/menu-lon.js"></script>
 <script>
+/* Este mismo archivo sirve la landing (/) y la cafetería (/cafeteria): en la cafetería el
+   contenido del CMS sale de las claves con prefijo «cafe_» (se les saca el prefijo y el resto
+   del código no se entera) y los CTA apuntan a la carta. Va ANTES de iniciar el menú porque
+   idioma.js guarda el texto original la primera vez que lo ve. */
+var LON_CAFE = document.body.getAttribute('data-pagina') === 'cafeteria' || location.pathname.indexOf('/cafeteria') === 0;
+function contenidoDePagina(c) {
+  if (!LON_CAFE) return c;
+  var o = {};
+  Object.keys(c || {}).forEach(function (k) { if (k.indexOf('cafe_') === 0) o[k.slice(5)] = c[k]; });
+  return o;
+}
+if (LON_CAFE) {
+  document.querySelectorAll('[data-cafe-texto]').forEach(function (el) {
+    el.textContent = el.getAttribute('data-cafe-texto');
+    el.setAttribute('data-i18n', el.getAttribute('data-cafe-i18n'));
+    el.setAttribute('href', el.getAttribute('data-cafe-href'));
+  });
+}
 LONMenu.iniciar({ boton: document.getElementById('btnMenuLanding') });
 // Solo las categorías públicas del catálogo; si el pedido falla no se muestra ninguna (nunca una lista inventada).
 fetch('/catalogo-categorias')
@@ -317,13 +335,14 @@ fetch('/catalogo-categorias')
     .catch(function () { return null; });
   window.lonContenidoPromesa
     .then(function (data) {
-      var c = (data && data.ok && data.contenido) || {};
+      var c = contenidoDePagina((data && data.ok && data.contenido) || {});
       var fotos = [];
       for (var n = 1; n <= 9; n++) {
         var foto = String(c['banda_foto_' + n] || '').trim();
         if (foto) fotos.push({ foto: foto, nombre: c['banda_foto_' + n + '_alt'] || '', href: linkSeguro(c['banda_foto_' + n + '_link']) });
       }
-      return fotos.length ? armar(fotos) : destacados();
+      // Los destacados son productos de la tienda: la cafetería sin fotos propias no muestra banda.
+      return fotos.length ? armar(fotos) : (LON_CAFE ? null : destacados());
     })
     .catch(function () { /* sin fotos la banda queda solo con el texto */ });
 })();
@@ -455,6 +474,24 @@ fetch('/catalogo-categorias')
 
   function aplicarContenido(contenido) {
     if (!contenido || typeof contenido !== 'object') return;
+    contenido = contenidoDePagina(contenido);
+
+    // Título y descripción propios de la cafetería (los que ve Google son los del servidor).
+    var metaTitulo = String(contenido.meta_title || '').trim();
+    var metaDesc = String(contenido.meta_description || '').trim();
+    if (LON_CAFE && metaTitulo) {
+      document.title = metaTitulo;
+      ['og:title', 'twitter:title'].forEach(function (p) {
+        var m = document.querySelector('meta[property="' + p + '"],meta[name="' + p + '"]');
+        if (m) m.setAttribute('content', metaTitulo);
+      });
+    }
+    if (LON_CAFE && metaDesc) {
+      ['description', 'og:description', 'twitter:description'].forEach(function (p) {
+        var m = document.querySelector('meta[property="' + p + '"],meta[name="' + p + '"]');
+        if (m) m.setAttribute('content', metaDesc);
+      });
+    }
 
     document.querySelectorAll('[data-landing]').forEach(function (el) {
       var key = el.getAttribute('data-landing');
@@ -498,9 +535,9 @@ fetch('/catalogo-categorias')
     });
 
     // Links (CTAs, Instagram) fijos en código: el CMS solo cambia el texto visible.
-    // CTAs primarios siempre a /tienda (no ancla de catálogo en landing)
+    // CTAs primarios siempre a /tienda (no ancla de catálogo en landing); en la cafetería, a la carta.
     document.querySelectorAll('a[data-landing="cta_primary_label"], a[data-landing="catalogo_cta_label"]').forEach(function (el) {
-      el.href = '/tienda';
+      el.href = LON_CAFE ? '/carta' : '/tienda';
     });
 
     // Texto junto a «Instagram» en el footer: footer_ig_texto; si está vacío,

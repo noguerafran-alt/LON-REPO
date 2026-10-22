@@ -273,6 +273,25 @@ function leerLanding() {
   return landingCache;
 }
 
+/* /cafeteria = la misma landing.html con el SEO propio de la cafeteria. El contenido (textos,
+   fotos) lo arma el cliente con las claves cafe_ del CMS; esto solo cambia lo que ve un
+   rastreador: title, description, canonical, og:url y el data-pagina que activa el modo cafeteria. */
+function landingCafeteria(base) {
+  const titulo = 'LON Café — Cafetería de LON Philosophy';
+  const descripcion = 'El café de LON Philosophy: café de especialidad, pastelería y una carta para quedarse un rato.';
+  const url = `${base}/cafeteria`;
+  return leerLanding()
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${escaparAtributo(titulo)}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*"/, (m, a) => `${a}${escaparAtributo(descripcion)}"`)
+    .replace(/(<meta property="og:title" content=")[^"]*"/, (m, a) => `${a}${escaparAtributo(titulo)}"`)
+    .replace(/(<meta property="og:description" content=")[^"]*"/, (m, a) => `${a}${escaparAtributo(descripcion)}"`)
+    .replace(/(<meta name="twitter:title" content=")[^"]*"/, (m, a) => `${a}${escaparAtributo(titulo)}"`)
+    .replace(/(<meta name="twitter:description" content=")[^"]*"/, (m, a) => `${a}${escaparAtributo(descripcion)}"`)
+    .replace(/(<link rel="canonical" href=")[^"]*"/, (m, a) => `${a}${escaparAtributo(url)}"`)
+    .replace(/(<meta property="og:url" content=")[^"]*"/, (m, a) => `${a}${escaparAtributo(url)}"`)
+    .replace('<body>', '<body data-pagina="cafeteria">');
+}
+
 /* Sirve el catalogo (index.html), inyectando SEO de producto si
    ?producto= esta presente. Usado por /tienda y por /?producto=... */
 async function servirCatalogoConSeo(req, res, next, obtenerProductos, base) {
@@ -332,6 +351,15 @@ function montarRutasSeo(app, { cargarProductos, urlBase }) {
     }
   });
 
+  app.get('/cafeteria', (req, res, next) => {
+    try {
+      return res.type('html').send(landingCafeteria(base));
+    } catch (err) {
+      console.error('SEO: no se pudo armar /cafeteria:', err.message);
+      return next();
+    }
+  });
+
   /* Catalogo de tienda (misma pagina index.html + SEO de producto). */
   app.get('/tienda', async (req, res, next) => {
     return servirCatalogoConSeo(req, res, next, obtenerProductos, base);
@@ -349,6 +377,7 @@ function montarRutasSeo(app, { cargarProductos, urlBase }) {
     const urls = [
       { loc: `${base}/`, priority: '1.0', changefreq: 'weekly' },
       { loc: `${base}/tienda`, priority: '0.9', changefreq: 'daily' },
+      { loc: `${base}/cafeteria`, priority: '0.7', changefreq: 'weekly' },
       ...productos.map((p) => ({
         loc: `${base}/tienda?producto=${encodeURIComponent(slugProducto(p))}`,
         priority: '0.8',

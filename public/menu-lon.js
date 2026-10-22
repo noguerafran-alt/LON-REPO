@@ -5,6 +5,7 @@
    Mientras no lleguen, el panel muestra solo «Ver catálogo completo». */
 (function () {
   var ICONO = {
+    sobre: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>',
     escanear: '<svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg>',
     carrito: '<svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>',
     cuenta: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg>',
@@ -62,8 +63,10 @@
       '<h2 data-landing="menu_categorias" data-i18n="g_categorias">Categorías</h2>' +
       '<div id="menuLonCategorias"></div>' +
       '<a href="/tienda" style="margin-top:12px;border:none;font-weight:600;" data-i18n="l_ver_completo">Ver catálogo completo →</a>' +
+      '<a href="/cafeteria" data-i18n="g_cafeteria">Cafetería</a>' +
       '<a href="/carta" style="border:none;" data-i18n="g_carta_cafe">Carta del café</a>' +
       '<div class="panel-menu-accesos">' +
+      acceso('/', ICONO.sobre, 'g_sobre_nosotros', 'Sobre nosotros') +
       acceso('/cliente.html', ICONO.escanear, 'g_escanear', 'Escanear') +
       acceso('/tienda?carrito=1', ICONO.carrito, 'g_carrito', 'Carrito', 'carrito') +
       acceso('/tienda?cuenta=1', ICONO.cuenta, 'g_mi_cuenta', 'Mi cuenta', 'cuenta') +

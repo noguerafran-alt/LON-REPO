@@ -2381,6 +2381,23 @@ for (let n = 1; n <= 9; n++) {
   for (const sufijo of ['', '_alt', '_link']) LANDING_DEFAULTS['banda_foto_' + n + sufijo] = '';
 }
 
+/* Cafetería (/cafeteria): la misma landing con su propio contenido. Cada clave de la landing
+   (menos ig_handle, que es de la tienda) existe también con prefijo cafe_ y SIEMPRE vacía:
+   vacío = el texto del HTML. Generadas acá y no a mano para que no se desfasen. Más el
+   título y la descripción propios de la página. */
+for (const clave of Object.keys(LANDING_DEFAULTS)) {
+  if (clave !== 'ig_handle') LANDING_DEFAULTS['cafe_' + clave] = '';
+}
+LANDING_DEFAULTS.cafe_meta_title = '';
+LANDING_DEFAULTS.cafe_meta_description = '';
+
+/* Catálogo (/tienda): textos editables con el mismo patrón multi idioma (es, _en, _fr, _pt).
+   El nombre de la clave es 'tienda_' + la clave de idioma.js sin el 't_'. */
+const TIENDA_TEXTOS = ['catalogo_miga', 'ph_buscar', 'sugerencias', 'sin_resultados', 'precios_nota'];
+for (const t of TIENDA_TEXTOS) {
+  for (const sufijo of ['', '_en', '_fr', '_pt']) LANDING_DEFAULTS['tienda_' + t + sufijo] = '';
+}
+
 /**
  * Asegura que exista la pestaña Landing con encabezado clave/valor y,
  * si falta alguna clave conocida, la siembra con el default (sin

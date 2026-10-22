@@ -28,6 +28,8 @@
     g_categorias: 'Categories',
     g_cerrar: 'Close',
     g_carta_cafe: 'Café menu',
+    g_cafeteria: 'Café',
+    g_sobre_nosotros: 'About us',
     g_privacidad: 'Privacy',
     g_terminos: 'Terms',
     g_acceso_admin: 'Admin access →',
@@ -38,6 +40,8 @@
     l_banda_etiqueta: 'Making community',
     l_ubicacion: 'Books, objects and coffee — to be present',
     l_ver_piezas: 'Browse pieces',
+    l_ver_la_carta: 'See the menu',
+    l_band_texto_cafe: 'Take a look at our menu and come by for a coffee.',
     l_instagram: 'Follow us on Instagram',
     l_quienes: 'About us',
     l_sobre_lead: 'We are a concept store that brings reading, objects and coffee together at one pace: look, choose, stay a while.',
@@ -223,6 +227,8 @@
     g_categorias: 'Catégories',
     g_cerrar: 'Fermer',
     g_carta_cafe: 'Carte du café',
+    g_cafeteria: 'Café',
+    g_sobre_nosotros: 'À propos de nous',
     g_privacidad: 'Confidentialité',
     g_terminos: 'Conditions',
     g_acceso_admin: 'Accès administrateur →',
@@ -232,6 +238,8 @@
     l_banda_etiqueta: 'Making community',
     l_ubicacion: 'Livres, objets et café — pour être présent',
     l_ver_piezas: 'Voir les pièces',
+    l_ver_la_carta: 'Voir la carte',
+    l_band_texto_cafe: 'Découvrez notre carte et passez prendre un café.',
     l_instagram: 'Suivez-nous sur Instagram',
     l_quienes: 'Qui sommes-nous',
     l_sobre_lead: 'Nous sommes un concept store qui réunit lecture, objets et café sur un même rythme : regarder, choisir, prendre son temps.',
@@ -414,6 +422,8 @@
     g_categorias: 'Categorias',
     g_cerrar: 'Fechar',
     g_carta_cafe: 'Cardápio do café',
+    g_cafeteria: 'Cafeteria',
+    g_sobre_nosotros: 'Sobre nós',
     g_privacidad: 'Privacidade',
     g_terminos: 'Termos',
     g_acceso_admin: 'Acesso de administrador →',
@@ -423,6 +433,8 @@
     l_banda_etiqueta: 'Making community',
     l_ubicacion: 'Livros, objetos e café — para estar presente',
     l_ver_piezas: 'Ver as peças',
+    l_ver_la_carta: 'Ver o cardápio',
+    l_band_texto_cafe: 'Confira nosso cardápio e venha tomar um café.',
     l_instagram: 'Siga a gente no Instagram',
     l_quienes: 'Quem somos',
     l_sobre_lead: 'Somos uma concept store que reúne leitura, objetos e café num mesmo ritmo: olhar, escolher, ficar um pouco.',
@@ -603,7 +615,11 @@
   } catch (e) { /* navegación privada: se sigue en español sin guardar */ }
 
   // Texto del diccionario del idioma activo (null en español o si falta la clave).
+  // Textos editables del CMS (p. ej. los de /tienda): { clave: { es, en, fr, pt } }; mandan sobre el diccionario.
+  var SOBRE = {};
   function dic(clave) {
+    var o = SOBRE[clave];
+    if (o && o[idioma]) return o[idioma];
     var d = DIC[idioma];
     return d && d[clave] != null ? d[clave] : null;
   }
@@ -752,5 +768,11 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
   else iniciar();
 
-  window.LONi18n = { t: t, idioma: function () { return idioma; }, fijar: fijar, claves: EN, diccionarios: DIC, repintar: aplicarDom, armarSelectores: armarSelectores };
+  function sobrescribir(mapa) {
+    for (var k in mapa) SOBRE[k] = mapa[k];
+    aplicarDom();
+    window.dispatchEvent(new CustomEvent('lon-idioma', { detail: { idioma: idioma } }));
+  }
+
+  window.LONi18n = { sobrescribir: sobrescribir, t: t, idioma: function () { return idioma; }, fijar: fijar, claves: EN, diccionarios: DIC, repintar: aplicarDom, armarSelectores: armarSelectores };
 })();

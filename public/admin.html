@@ -591,6 +591,14 @@
     padding:6px 10px; font-size:12.5px; border-radius:var(--radius);
     border:1px solid var(--stamp-red); background:#fff; color:var(--stamp-red); cursor:pointer;
   }
+  /* Selector de las 4 ediciones de Contenido (Landing, Catálogo, Cafetería, Carta). */
+  #barraEdiciones{ display:flex; flex-wrap:wrap; padding:14px 24px 0; }
+  #barraEdiciones button{ background:none; border:1px solid var(--ink-muted); color:var(--ink); padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; margin:0 0 0 -1px; border-radius:0; width:auto; }
+  #barraEdiciones button:first-child{ margin-left:0; border-radius:var(--radius) 0 0 var(--radius); }
+  #barraEdiciones button:last-child{ border-radius:0 var(--radius) var(--radius) 0; }
+  #barraEdiciones button.activo{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  #barraEdiciones button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  @media (max-width:600px){ #barraEdiciones{ padding:12px 12px 0; } #barraEdiciones button{ padding:8px 10px; } }
   /* Panel Contenido (mismo diseño que PROA). Todo prefijado con #panelLanding: las reglas
      genéricas de ID de arriba (label, input, textarea) le ganan a cualquier clase suelta.
      overflow visible: con overflow:auto el panel sería el contenedor de scroll del sticky
@@ -776,7 +784,6 @@
     <button id="tabGenerarUnidades" type="button">Productos</button>
     <button id="tabCatalogo" type="button">Catálogo</button>
     <button id="tabLanding" type="button">Contenido</button>
-    <button id="tabCarta" type="button">Carta</button>
     <button id="tabPedidos" type="button">Pedidos</button>
     <button id="tabCierreCaja" type="button">Cierre de caja</button>
     <button id="tabUsuarios" type="button">Usuarios</button>
@@ -962,22 +969,30 @@
   </div>
 
 
+  <div id="barraEdiciones" role="group" aria-label="Qué querés editar" style="display:none;">
+    <button type="button" data-edicion="landing">Landing</button>
+    <button type="button" data-edicion="tienda">Catálogo</button>
+    <button type="button" data-edicion="cafe">Cafetería</button>
+    <button type="button" data-edicion="carta">Carta</button>
+  </div>
+
   <div id="panelLanding" style="display:none;">
     <div class="lc-titulo">
       <h2>Contenido</h2>
-      <p class="lc-ayuda">Textos, fotos, video, fuentes, alineación, tamaño y estilo de la página de inicio (/). Las fotos y el video que subas no se publican hasta que tocás <strong>Guardar</strong>. Los links, el menú, el carrito y el orden de las secciones son fijos.</p>
+      <p class="lc-ayuda" id="lcAyudaEdicion">Textos, fotos, video, fuentes, alineación, tamaño y estilo de la página de inicio (/). Las fotos y el video que subas no se publican hasta que tocás <strong>Guardar</strong>. Los links, el menú, el carrito y el orden de las secciones son fijos.</p>
       <p class="lc-ayuda">
         <button type="button" class="lc-btn lc-btn-sec" id="btnTraducirLanding">Traducir todo lo vacío</button>
         <span id="estadoTraducirLanding"></span>
         Las traducciones son automáticas: revisalas antes de Guardar. Al cambiar un texto en español se rellenan solas las casillas vacías o ya traducidas automáticamente; las que editaste a mano no se tocan.
       </p>
-      <nav class="lc-indice" aria-label="Secciones del editor">
+      <nav class="lc-indice" aria-label="Secciones del editor" data-solo="landing cafe">
         <a href="#lc_tipografia">Tipografía</a>
         <a href="#lc_hero">Hero</a>
         <a href="#lc_sobre">Banda y menú</a>
         <a href="#lc_espacio">El espacio</a>
         <a href="#lc_catalogo">Franja catálogo</a>
         <a href="#lc_footer">Footer</a>
+        <a href="#lc_meta" data-solo="cafe">Título y descripción</a>
       </nav>
     </div>
 
@@ -1092,7 +1107,7 @@
     <section class="lc-seccion" id="lc_banda_fotos">
       <div class="lc-sec-head">
         <h3>Banda de fotos (debajo de Quiénes somos)</h3>
-        <p class="lc-ayuda">Si no cargás ninguna, se muestran solas las fotos de los productos más vistos. Cada foto puede llevar un link opcional (por ejemplo /tienda?producto=SKU). Se publica al tocar Guardar.</p>
+        <p class="lc-ayuda" id="lcAyudaBanda">Si no cargás ninguna, se muestran solas las fotos de los productos más vistos. Cada foto puede llevar un link opcional (por ejemplo /tienda?producto=SKU). Se publica al tocar Guardar.</p>
       </div>
       <div class="lc-grid" id="lcBandaFotos"></div>
     </section>
@@ -1132,7 +1147,7 @@
     <section class="lc-seccion" id="lc_catalogo">
       <div class="lc-sec-head">
         <h3>Franja catálogo</h3>
-        <p class="lc-ayuda">El botón siempre lleva al catálogo (/tienda).</p>
+        <p class="lc-ayuda" id="lcAyudaFranja">El botón siempre lleva al catálogo (/tienda).</p>
       </div>
       <div class="lc-grid">
         <div class="lc-campo lc-full">
@@ -1177,6 +1192,32 @@
           <input type="text" id="landing_footer_terminos" data-landing-field="footer_terminos" data-lc-bi autocomplete="off" placeholder="Términos">
         </div>
       </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_meta" data-solo="cafe">
+      <div class="lc-sec-head">
+        <h3>Título y descripción de la página</h3>
+        <p class="lc-ayuda">Lo que se ve en la pestaña del navegador y al compartir el link. Vacío = «LON Café — Cafetería de LON Philosophy». Google lee el texto de fábrica; este se aplica al abrir la página.</p>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_meta_title">Título</label>
+          <input type="text" id="landing_meta_title" data-landing-field="meta_title" autocomplete="off" placeholder="LON Café — Cafetería de LON Philosophy">
+        </div>
+        <div class="lc-campo lc-full">
+          <label class="lc-label" for="landing_meta_description">Descripción</label>
+          <textarea id="landing_meta_description" data-landing-field="meta_description" rows="2"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="lc-seccion" id="lc_tienda" data-solo="tienda">
+      <div class="lc-sec-head">
+        <h3>Textos del catálogo (/tienda)</h3>
+        <p class="lc-ayuda">Vacío = el texto de fábrica (se ve como placeholder), con su traducción de siempre. Conservá las marcas entre llaves ({q}, {f}): el sitio las reemplaza. Los nombres visibles de las categorías y los recargos de Mercado Pago NO se editan acá: están en la pestaña Catálogo.</p>
+        <p class="lc-ayuda"><button type="button" class="lc-btn lc-btn-sec" id="btnIrCatalogoCategorias">Ir a la pestaña Catálogo</button></p>
+      </div>
+      <div class="lc-grid" id="lcTiendaCampos"></div>
     </section>
 
     </div>
@@ -1455,12 +1496,19 @@
   const tabPedidos = document.getElementById('tabPedidos');
   const tabCierreCaja = document.getElementById('tabCierreCaja');
   const tabUsuarios = document.getElementById('tabUsuarios');
-  const tabCarta = document.getElementById('tabCarta');
   const seccionEscanear = document.getElementById('seccionEscanear');
   const panelGenerarUnidades = document.getElementById('panelGenerarUnidades');
   const panelCatalogo = document.getElementById('panelCatalogo');
   const panelLanding = document.getElementById('panelLanding');
   const panelCarta = document.getElementById('panelCarta');
+  const barraEdiciones = document.getElementById('barraEdiciones');
+  // Contenido tiene 4 ediciones: landing | tienda (catálogo) | cafe | carta. Se recuerda la última.
+  const EDICIONES = ['landing', 'tienda', 'cafe', 'carta'];
+  let edicionContenido = 'landing';
+  try {
+    const guardadaEd = localStorage.getItem('admin_edicion_contenido');
+    if (EDICIONES.includes(guardadaEd)) edicionContenido = guardadaEd;
+  } catch (e) {}
   const panelPedidos = document.getElementById('panelPedidos');
   const panelCierreCaja = document.getElementById('panelCierreCaja');
   const panelUsuarios = document.getElementById('panelUsuarios');
@@ -1598,7 +1646,6 @@
     tabGenerarUnidades.style.display = esNivel2() ? '' : 'none';
     tabCatalogo.style.display = esNivel2() ? '' : 'none';
     tabLanding.style.display = esNivel2() ? '' : 'none';
-    tabCarta.style.display = esNivel2() ? '' : 'none';
     tabCierreCaja.style.display = esNivel2() ? '' : 'none';
     tabUsuarios.style.display = esNivel2() ? '' : 'none';
 
@@ -1614,7 +1661,7 @@
     let seccionGuardada = 'escanear';
     try {
       const guardada = localStorage.getItem('admin_seccion_activa');
-      if (['escanear', 'generar', 'catalogo', 'landing', 'carta', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
+      if (['escanear', 'generar', 'catalogo', 'landing', 'pedidos', 'cierrecaja', 'usuarios'].includes(guardada)) seccionGuardada = guardada;
     } catch (e) {}
     mostrarSeccionAdmin(seccionGuardada);
   }
@@ -1622,7 +1669,8 @@
   function mostrarSeccionAdmin(seccion){
     // Nivel 1 no puede quedar parado en una seccion que no le corresponde
     // (por ejemplo si quedo ahi antes de que le bajaran el nivel).
-    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'landing' || seccion === 'carta' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
+    if (seccion === 'carta') { seccion = 'landing'; edicionContenido = 'carta'; } // la Carta pasó adentro de Contenido
+    if (!esNivel2() && (seccion === 'generar' || seccion === 'catalogo' || seccion === 'landing' || seccion === 'cierrecaja' || seccion === 'usuarios')) seccion = 'escanear';
     try { localStorage.setItem('admin_seccion_activa', seccion); } catch (e) {}
 
     const esEscanear = seccion === 'escanear';
@@ -1630,21 +1678,23 @@
     const esGenerar = seccion === 'generar';
     const esCatalogo = seccion === 'catalogo';
     const esLanding = seccion === 'landing';
-    const esCarta = seccion === 'carta';
+    const esCarta = esLanding && edicionContenido === 'carta';
+    const esLandingForm = esLanding && edicionContenido !== 'carta';
     const esCierreCaja = seccion === 'cierrecaja';
     const esUsuarios = seccion === 'usuarios';
     tabEscanear.classList.toggle('activo', esEscanear);
     tabGenerarUnidades.classList.toggle('activo', esGenerar);
     tabCatalogo.classList.toggle('activo', esCatalogo);
     tabLanding.classList.toggle('activo', esLanding);
-    tabCarta.classList.toggle('activo', esCarta);
     tabPedidos.classList.toggle('activo', esPedidos);
     tabCierreCaja.classList.toggle('activo', esCierreCaja);
     tabUsuarios.classList.toggle('activo', esUsuarios);
     seccionEscanear.style.display = esEscanear ? 'block' : 'none';
     panelGenerarUnidades.style.display = esGenerar ? 'block' : 'none';
     panelCatalogo.style.display = esCatalogo ? 'block' : 'none';
-    panelLanding.style.display = esLanding ? 'block' : 'none';
+    barraEdiciones.style.display = esLanding ? 'flex' : 'none';
+    barraEdiciones.querySelectorAll('button').forEach((b) => b.classList.toggle('activo', b.getAttribute('data-edicion') === edicionContenido));
+    panelLanding.style.display = esLandingForm ? 'block' : 'none';
     panelCarta.style.display = esCarta ? 'block' : 'none';
     panelPedidos.style.display = esPedidos ? 'block' : 'none';
     panelCierreCaja.style.display = esCierreCaja ? 'block' : 'none';
@@ -1660,8 +1710,9 @@
       cargarCatalogoCompletoAdmin();
       cargarTarifasEnvio();
     }
-    if (esLanding) {
-      cargarLandingContenidoAdmin();
+    if (esLandingForm) {
+      aplicarEdicionLanding();
+      if (!landingCargadoEd || landingCargadoEd !== edicionContenido) cargarLandingContenidoAdmin(); // no pisa cambios sin guardar
     }
     if (esCarta) {
       cargarCartaAdmin(false); // no recarga si ya está cargada: no pisa cambios sin guardar
@@ -1680,7 +1731,29 @@
   tabGenerarUnidades.addEventListener('click', () => mostrarSeccionAdmin('generar'));
   tabCatalogo.addEventListener('click', () => mostrarSeccionAdmin('catalogo'));
   tabLanding.addEventListener('click', () => mostrarSeccionAdmin('landing'));
-  tabCarta.addEventListener('click', () => mostrarSeccionAdmin('carta'));
+  barraEdiciones.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-edicion]');
+    if (b) elegirEdicion(b.getAttribute('data-edicion'));
+  });
+
+  // Cambiar de edición con cambios sin guardar pide confirmación (cada edición tiene su Guardar).
+  function edicionSucia() {
+    if (edicionContenido === 'carta') return cartaSucia;
+    if (edicionContenido === 'tienda') return tiendaCambiosSinGuardar;
+    return landingCambiosSinGuardar;
+  }
+  function elegirEdicion(nueva) {
+    if (!EDICIONES.includes(nueva) || nueva === edicionContenido) return;
+    if (edicionSucia()) {
+      if (!confirm('Hay cambios sin guardar en esta edición. ¿Descartarlos y cambiar?')) return;
+      // Lo descartado se vuelve a leer del servidor al volver a esa edición.
+      cartaSucia = false; cartaCargada = false;
+      landingCambiosSinGuardar = false; tiendaCambiosSinGuardar = false; landingCargadoEd = null;
+    }
+    edicionContenido = nueva;
+    try { localStorage.setItem('admin_edicion_contenido', nueva); } catch (e) {}
+    mostrarSeccionAdmin('landing');
+  }
   tabPedidos.addEventListener('click', () => mostrarSeccionAdmin('pedidos'));
   tabCierreCaja.addEventListener('click', () => mostrarSeccionAdmin('cierrecaja'));
   tabUsuarios.addEventListener('click', () => mostrarSeccionAdmin('usuarios'));
@@ -1879,6 +1952,45 @@
 
   let landingUploadTarget = null;
   let landingCambiosSinGuardar = false;
+  let tiendaCambiosSinGuardar = false;
+  let landingCargadoEd = null; // edición (landing | cafe | tienda) cuyos datos están hoy en el formulario
+
+  /* La Cafetería es la misma landing con claves cafe_<clave>: el formulario trabaja siempre con la
+     clave base y estas dos funciones traducen al leer y al guardar. */
+  function contenidoDeEdicion(c) {
+    if (edicionContenido !== 'cafe') return c;
+    const o = {};
+    Object.keys(c || {}).forEach((k) => { if (k.startsWith('cafe_')) o[k.slice(5)] = c[k]; });
+    return o;
+  }
+  function conPrefijoEdicion(d) {
+    if (edicionContenido !== 'cafe') return d;
+    const o = {};
+    Object.keys(d).forEach((k) => { o['cafe_' + k] = d[k]; });
+    return o;
+  }
+
+  const AYUDAS_EDICION = {
+    landing: 'Textos, fotos, video, fuentes, alineación, tamaño y estilo de la página de inicio (/). Las fotos y el video que subas no se publican hasta que tocás <strong>Guardar</strong>. Los links, el menú, el carrito y el orden de las secciones son fijos.',
+    cafe: 'La página de la cafetería (<strong>/cafeteria</strong>): el mismo diseño que la página de inicio, con su propio contenido. Vacío = el texto de fábrica (el mismo de la landing); sin foto del hero o del espacio se usa la foto de fábrica; sin fotos en la banda, la banda no aparece. El botón principal y la franja de abajo llevan a la carta (/carta). Nada se publica hasta que tocás <strong>Guardar</strong>.',
+    tienda: 'Textos del catálogo (<strong>/tienda</strong>) en los cuatro idiomas. Nada se publica hasta que tocás <strong>Guardar</strong>.',
+  };
+  const AYUDAS_BANDA = {
+    landing: 'Si no cargás ninguna, se muestran solas las fotos de los productos más vistos. Cada foto puede llevar un link opcional (por ejemplo /tienda?producto=SKU). Se publica al tocar Guardar.',
+    cafe: 'Si no cargás ninguna, la banda de fotos no aparece (no se usan los productos de la tienda). Cada foto puede llevar un link opcional (por ejemplo /carta). Se publica al tocar Guardar.',
+  };
+  function aplicarEdicionLanding() {
+    const e = edicionContenido;
+    document.querySelectorAll('#panelLanding .lc-seccion, #panelLanding [data-solo]').forEach((el) => {
+      el.style.display = (el.getAttribute('data-solo') || 'landing cafe').split(' ').includes(e) ? '' : 'none';
+    });
+    document.getElementById('lcAyudaEdicion').innerHTML = AYUDAS_EDICION[e] || '';
+    const banda = document.getElementById('lcAyudaBanda');
+    if (banda) banda.textContent = AYUDAS_BANDA[e] || AYUDAS_BANDA.landing;
+    const franja = document.getElementById('lcAyudaFranja');
+    if (franja) franja.textContent = e === 'cafe' ? 'El botón lleva a la carta (/carta).' : 'El botón siempre lleva al catálogo (/tienda).';
+    mensajeLanding('', '');
+  }
 
   function mensajeLanding(texto, tipo) {
     const el = document.getElementById('mensajeLanding');
@@ -1949,23 +2061,27 @@
   /* El español vacío sin marca _oculto significa «el sitio muestra el texto del HTML»: se lo
      mostramos al dueño leyendo la landing real (no se duplican los textos acá). Con _oculto='si'
      queda vacío a propósito. Rellenar no marca cambios sin guardar. */
-  let textosSitioPromesa = null;
-  function textosDelSitio() {
-    if (!textosSitioPromesa) {
-      textosSitioPromesa = fetch('/landing.html').then((r) => r.text()).then((html) => {
+  const textosSitioPromesas = {};
+  // En la cafetería, los elementos con data-cafe-texto muestran ese texto y no el de la landing.
+  function textosDelSitio(cafe) {
+    const id = cafe ? 'cafe' : 'landing';
+    if (!textosSitioPromesas[id]) {
+      textosSitioPromesas[id] = fetch('/landing.html').then((r) => r.text()).then((html) => {
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const textos = {};
         doc.querySelectorAll('[data-landing]').forEach((n) => {
           const k = n.getAttribute('data-landing');
-          if (n.tagName !== 'IMG' && !(k in textos)) textos[k] = n.textContent.trim();
+          if (n.tagName !== 'IMG' && !(k in textos)) textos[k] = (cafe && n.hasAttribute('data-cafe-texto')) ? n.getAttribute('data-cafe-texto') : n.textContent.trim();
         });
         return textos;
-      }).catch(() => { textosSitioPromesa = null; return {}; });
+      }).catch(() => { textosSitioPromesas[id] = null; return {}; });
     }
-    return textosSitioPromesa;
+    return textosSitioPromesas[id];
   }
   async function rellenarConTextoDelSitio(src) {
-    const textos = await textosDelSitio();
+    const cafe = edicionContenido === 'cafe';
+    const textos = await textosDelSitio(cafe);
+    if ((edicionContenido === 'cafe') !== cafe) return; // se cambió de edición mientras se leía
     document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
       const clave = es.getAttribute('data-landing-field');
       if (es.value.trim() === '' && src[clave + '_oculto'] !== 'si' && textos[clave]) {
@@ -1980,6 +2096,7 @@
   function leerFormLanding() {
     const data = {};
     document.querySelectorAll('#panelLanding [data-landing-field]').forEach((el) => {
+      if (edicionContenido !== 'cafe' && el.closest('[data-solo="cafe"]')) return; // título/descripción: solo cafetería
       data[el.getAttribute('data-landing-field')] = el.value;
     });
     // Español vacío = el dueño lo quiere oculto: se marca y se vacían las otras lenguas.
@@ -1993,13 +2110,21 @@
     return data;
   }
 
+  function rellenarSegunEdicion(contenido) {
+    if (edicionContenido === 'tienda') rellenarTienda(contenido);
+    else rellenarFormLanding(contenidoDeEdicion(contenido));
+    landingCargadoEd = edicionContenido;
+  }
+
   async function cargarLandingContenidoAdmin() {
+    const ed = edicionContenido;
     mensajeLanding('Cargando…', '');
     try {
       const res = await fetch(`/admin/landing?token=${encodeURIComponent(adminToken)}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'No se pudo cargar');
-      rellenarFormLanding(data.contenido || data);
+      if (ed !== edicionContenido) return; // se cambió de edición mientras cargaba
+      rellenarSegunEdicion(data.contenido || data);
       mensajeLanding('Contenido cargado.', 'ok');
     } catch (err) {
       mensajeLanding(err.message || 'Error al cargar', 'error');
@@ -2011,7 +2136,7 @@
     if (btn) btn.disabled = true;
     mensajeLanding('Guardando…', '');
     try {
-      const contenido = leerFormLanding();
+      const contenido = edicionContenido === 'tienda' ? leerTienda() : conPrefijoEdicion(leerFormLanding());
       const res = await fetch('/admin/landing', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2019,8 +2144,9 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
-      if (data.contenido) rellenarFormLanding(data.contenido);
+      if (data.contenido) rellenarSegunEdicion(data.contenido);
       landingCambiosSinGuardar = false;
+      tiendaCambiosSinGuardar = false;
       mensajeLanding('Guardado. Ya se ve en la página.', 'ok');
     } catch (err) {
       mensajeLanding(err.message || 'Error al guardar', 'error');
@@ -2108,6 +2234,7 @@
 
   const btnTraducirLanding = document.getElementById('btnTraducirLanding');
   if (btnTraducirLanding) btnTraducirLanding.addEventListener('click', () => {
+    if (edicionContenido === 'tienda') return traducirTienda();
     const claves = [];
     document.querySelectorAll('#panelLanding [data-lc-bi]').forEach((es) => {
       const clave = es.getAttribute('data-landing-field');
@@ -2117,6 +2244,82 @@
     if (!claves.length) return estadoTraduccion('No hay traducciones vacías.', false);
     traducirLanding(claves, false);
   });
+
+  /* Edición «Catálogo»: textos de /tienda con claves tienda_<x> (<x> = clave t_<x> de idioma.js),
+     más _en/_fr/_pt. Mismo endpoint (PUT /admin/landing) y mismo Guardar que la landing. */
+  const TIENDA_TEXTOS = [
+    ['catalogo_miga', 'Título del catálogo', 'Catálogo'],
+    ['ph_buscar', 'Texto del buscador', 'BUSCAR PRODUCTO POR NOMBRE...'],
+    ['sugerencias', 'Título de las sugerencias de búsqueda', 'Sugerencias de búsqueda'],
+    ['sin_resultados', 'Mensaje cuando no hay resultados ({q} = lo buscado)', 'No encontramos productos que coincidan con "{q}".'],
+    ['precios_nota', 'Nota de precios en US$ ({f} = fecha de la cotización)', 'Precios en US$ al dólar blue del {f}; el pago es en pesos argentinos.'],
+  ];
+  const TIENDA_IDIOMAS = [['', 'Español'], ['_en', 'English'], ['_fr', 'Français'], ['_pt', 'Português']];
+  (function armarCamposTienda() {
+    const cont = document.getElementById('lcTiendaCampos');
+    if (!cont) return;
+    TIENDA_TEXTOS.forEach(([clave, titulo, porDefecto]) => {
+      const caja = document.createElement('div');
+      caja.className = 'lc-campo lc-full';
+      TIENDA_IDIOMAS.forEach(([sufijo, nombre]) => {
+        const id = 'tienda_' + clave + sufijo;
+        const lab = document.createElement('label');
+        lab.className = 'lc-label';
+        lab.htmlFor = id;
+        lab.textContent = titulo + ' — ' + nombre;
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = id;
+        inp.setAttribute('data-tienda-field', id);
+        inp.autocomplete = 'off';
+        inp.placeholder = sufijo ? '' : porDefecto;
+        caja.append(lab, inp);
+      });
+      cont.appendChild(caja);
+    });
+  })();
+  function marcarCambiosTienda(texto) {
+    tiendaCambiosSinGuardar = true;
+    mensajeLanding(texto || 'Hay cambios sin guardar. Tocá Guardar para publicar.', '');
+  }
+  function rellenarTienda(src) {
+    document.querySelectorAll('#panelLanding [data-tienda-field]').forEach((el) => {
+      const k = el.getAttribute('data-tienda-field');
+      el.value = src && src[k] != null ? String(src[k]) : '';
+    });
+    tiendaCambiosSinGuardar = false;
+  }
+  function leerTienda() {
+    const data = {};
+    document.querySelectorAll('#panelLanding [data-tienda-field]').forEach((el) => { data[el.getAttribute('data-tienda-field')] = el.value; });
+    return data;
+  }
+  async function traducirTienda() {
+    const textos = {};
+    TIENDA_TEXTOS.forEach(([clave]) => {
+      const es = document.getElementById('tienda_' + clave);
+      const faltan = IDIOMAS_LANDING.some((cod) => !document.getElementById('tienda_' + clave + '_' + cod).value.trim());
+      if (es.value.trim() && faltan) textos[clave] = es.value;
+    });
+    if (!Object.keys(textos).length) return estadoTraduccion('No hay traducciones vacías.', false);
+    estadoTraduccion('Traduciendo…', false);
+    try {
+      const tr = await pedirTraducciones(textos);
+      let rellenadas = 0;
+      Object.keys(textos).forEach((clave) => IDIOMAS_LANDING.forEach((cod) => {
+        const caja = document.getElementById('tienda_' + clave + '_' + cod);
+        if (caja.value.trim() || !tr[clave] || !tr[clave][cod]) return;
+        caja.value = tr[clave][cod];
+        rellenadas++;
+      }));
+      if (rellenadas) marcarCambiosTienda('Traducciones automáticas rellenadas: revisalas (conservá {q} y {f}) y tocá Guardar para publicar.');
+      estadoTraduccion(rellenadas ? '' : 'No había nada para rellenar.', false);
+    } catch (err) {
+      estadoTraduccion('No se pudo traducir: ' + (err.message || 'error'), true);
+    }
+  }
+  const btnIrCatalogoCategorias = document.getElementById('btnIrCatalogoCategorias');
+  if (btnIrCatalogoCategorias) btnIrCatalogoCategorias.addEventListener('click', () => mostrarSeccionAdmin('catalogo'));
 
   async function subirFotoLanding(archivo) {
     const formData = new FormData();
@@ -2156,6 +2359,7 @@
   if (panelLandingEl) {
     panelLandingEl.addEventListener('input', (ev) => {
       if (ev.target.closest('[data-landing-field]') || ev.target.matches('[data-landing-field]')) marcarCambiosLanding();
+      if (ev.target.matches('[data-tienda-field]')) marcarCambiosTienda();
     });
     panelLandingEl.addEventListener('change', (ev) => {
       if (ev.target.matches('[data-landing-field]')) marcarCambiosLanding();

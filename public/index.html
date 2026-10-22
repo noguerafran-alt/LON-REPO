@@ -788,7 +788,7 @@
 <div class="fullscreen hidden" id="pantallaCarrito">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverCarrito" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
+    <a href="/" class="enlace-logo-header" title="LON Philosophy" aria-label="LON Philosophy" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
   </div>
@@ -805,7 +805,7 @@
 <div class="fullscreen hidden" id="pantallaLoginCliente">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverLoginCliente" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
+    <a href="/" class="enlace-logo-header" title="LON Philosophy" aria-label="LON Philosophy" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
   </div>
@@ -834,7 +834,7 @@
 <div class="fullscreen hidden" id="pantallaCheckout">
   <div class="barra-superior-catalogo barra-superior-fullscreen">
     <button type="button" class="volver btn-volver-flecha" id="btnVolverFlechaCheckout" title="Volver" aria-label="Volver" data-i18n-attr="title:t_volver,aria-label:t_volver"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
-    <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" data-i18n-attr="title:g_acceso_admin_sin_flecha,aria-label:g_acceso_admin_sin_flecha" style="justify-self:center;">
+    <a href="/" class="enlace-logo-header" title="LON Philosophy" aria-label="LON Philosophy" style="justify-self:center;">
       <img src="/logo-catalogo-white.png" alt="LON" class="logo-barra-catalogo">
     </a>
   </div>
@@ -961,18 +961,21 @@
 <img id="lonLogoCms" src="" alt="" data-landing="logo" class="lon-foto-oculta" width="1" height="1">
 
 <script>
-  /* El logo de LON del header no siempre va al mismo lado: si hay una
-     sesión de admin activa en este navegador, va al panel admin (como
-     antes); si no (cliente logueado o nadie logueado), va al catálogo
-     — no tiene sentido mandar a un cliente comprador a la pantalla de
-     login del admin. */
+  /* El logo de LON del header lleva a la landing («/») para clientes y para
+     quien no tiene sesión; solo con sesión de admin activa en este navegador
+     va al panel admin. El HTML ya nace con «/» (sin depender de este script). */
   (function fijarDestinoLogoHeader(){
-    let destino = '/';
+    let esAdmin = false;
     try {
       const sesionAdmin = localStorage.getItem('admin_sesion');
-      if (sesionAdmin && JSON.parse(sesionAdmin).token) destino = '/admin.html';
+      esAdmin = !!(sesionAdmin && JSON.parse(sesionAdmin).token);
     } catch (e) {}
-    document.querySelectorAll('.enlace-logo-header').forEach((a) => { a.href = destino; });
+    if (!esAdmin) return;
+    document.querySelectorAll('.enlace-logo-header').forEach((a) => {
+      a.href = '/admin.html';
+      a.title = 'Acceso admin';
+      a.setAttribute('aria-label', 'Acceso admin');
+    });
   })();
 
   /* Texto armado por JS: el español va escrito acá y el inglés vive en idioma.js.
@@ -2542,6 +2545,21 @@
 
     function aplicarContenido(contenido) {
       if (!contenido || typeof contenido !== 'object') return;
+
+      // Textos propios del catálogo (Admin › Contenido › Catálogo): tienda_<x> = clave t_<x> de
+      // idioma.js. Solo se pisan los idiomas con algo cargado; el resto sigue como siempre.
+      if (window.LONi18n && LONi18n.sobrescribir) {
+        var sobre = {}, hay = false;
+        ['catalogo_miga', 'ph_buscar', 'sugerencias', 'sin_resultados', 'precios_nota'].forEach(function (n) {
+          var o = {};
+          [['es', ''], ['en', '_en'], ['fr', '_fr'], ['pt', '_pt']].forEach(function (p) {
+            var v = contenido['tienda_' + n + p[1]];
+            if (v != null && String(v).trim() !== '') o[p[0]] = String(v);
+          });
+          if (Object.keys(o).length) { sobre['t_' + n] = o; hay = true; }
+        });
+        if (hay) LONi18n.sobrescribir(sobre);
+      }
 
       document.querySelectorAll('[data-landing]').forEach(function (el) {
         var key = el.getAttribute('data-landing');
