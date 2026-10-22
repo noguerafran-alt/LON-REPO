@@ -284,10 +284,10 @@ footer a:hover{color:var(--accent-terracota)}
     if (anchoCopia && !sinMovimiento.matches) intervalo = setInterval(avanzar, 4000);
   }
 
-  function armar(productos) {
-    var items = productos.map(function (p) {
-      return '<a href="/tienda?producto=' + encodeURIComponent(p.skuGeneral) + '"><img src="' + esc(encodeURI(p.foto)) +
-        '" alt="' + esc(p.nombre) + '" loading="lazy" draggable="false"></a>';
+  function armar(fotos) {
+    var items = fotos.map(function (f) {
+      var img = '<img src="' + esc(encodeURI(f.foto)) + '" alt="' + esc(f.nombre) + '" loading="lazy" draggable="false">';
+      return f.href ? '<a href="' + esc(f.href) + '">' + img + '</a>' : '<a>' + img + '</a>';
     });
     // Con 3 o menos fotos entran todas: quietas, sin loop.
     var hayLoop = items.length > 3;
@@ -318,17 +318,42 @@ footer a:hover{color:var(--accent-terracota)}
     iniciar();
   }
 
-  fetch('/catalogo-destacados')
-    .then(function (res) { return res.ok ? res.json() : null; })
-    .then(function (data) {
-      if (!data) return;
-      var vistos = {};
-      var productos = (data.masConsultados || []).concat(data.masVisitados || []).filter(function (p) {
-        if (!p.foto || vistos[p.skuGeneral]) return false;
-        vistos[p.skuGeneral] = true;
-        return true;
+  // Solo rutas propias («/…») o https://; cualquier otra cosa (javascript:, //otro.sitio) se ignora.
+  function linkSeguro(v) {
+    v = String(v || '').trim();
+    return (/^\/(?![\/\\])/.test(v) || /^https:\/\//i.test(v)) ? v : '';
+  }
+  function destacados() {
+    return fetch('/catalogo-destacados')
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var vistos = {};
+        var productos = (data.masConsultados || []).concat(data.masVisitados || []).filter(function (p) {
+          if (!p.foto || vistos[p.skuGeneral]) return false;
+          vistos[p.skuGeneral] = true;
+          return true;
+        });
+        if (productos.length) armar(productos.map(function (p) {
+          return { foto: p.foto, nombre: p.nombre, href: '/tienda?producto=' + encodeURIComponent(p.skuGeneral) };
+        }));
       });
-      if (productos.length) armar(productos);
+  }
+
+  // La banda espera al contenido del CMS para decidir la fuente (sin parpadeo). Si el CMS
+  // falla o no trae fotos, vale el comportamiento de siempre.
+  window.lonContenidoPromesa = fetch('/landing-contenido')
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .catch(function () { return null; });
+  window.lonContenidoPromesa
+    .then(function (data) {
+      var c = (data && data.ok && data.contenido) || {};
+      var fotos = [];
+      for (var n = 1; n <= 9; n++) {
+        var foto = String(c['banda_foto_' + n] || '').trim();
+        if (foto) fotos.push({ foto: foto, nombre: c['banda_foto_' + n + '_alt'] || '', href: linkSeguro(c['banda_foto_' + n + '_link']) });
+      }
+      return fotos.length ? armar(fotos) : destacados();
     })
     .catch(function () { /* sin fotos la banda queda solo con el texto */ });
 })();
@@ -522,8 +547,7 @@ footer a:hover{color:var(--accent-terracota)}
 
   }
 
-  fetch('/landing-contenido')
-    .then(function (res) { return res.ok ? res.json() : null; })
+  window.lonContenidoPromesa
     .then(function (data) {
       if (data && data.ok && data.contenido) aplicarContenido(data.contenido);
     })

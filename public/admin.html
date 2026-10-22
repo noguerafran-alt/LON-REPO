@@ -678,6 +678,8 @@
   #panelLanding .lc-video-acciones{ display:flex; flex-wrap:wrap; gap:8px; }
   #panelLanding .lc-foto-info{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; min-width:0; }
   #panelLanding .lc-foto-info .lc-label{ margin:0; }
+  #panelLanding #lcBandaFotos .lc-foto-info{ flex:1; align-items:stretch; }
+  #panelLanding #lcBandaFotos .lc-foto-info .lc-btn{ align-self:flex-start; }
   /* Barra de guardado: queda pegada abajo mientras se scrollea el formulario largo. */
   #panelLanding .lc-barra{
     position:sticky; bottom:0; z-index:5; margin:20px -24px 0; padding:12px 24px calc(12px + env(safe-area-inset-bottom));
@@ -1034,9 +1036,18 @@
       </div>
     </section>
 
+    <section class="lc-seccion" id="lc_banda_fotos">
+      <div class="lc-sec-head">
+        <h3>Banda de fotos (debajo de Quiénes somos)</h3>
+        <p class="lc-ayuda">Si no cargás ninguna, se muestran solas las fotos de los productos más vistos. Cada foto puede llevar un link opcional (por ejemplo /tienda?producto=SKU). Se publica al tocar Guardar.</p>
+      </div>
+      <div class="lc-grid" id="lcBandaFotos"></div>
+    </section>
+
     <section class="lc-seccion" id="lc_espacio">
       <div class="lc-sec-head">
         <h3>El espacio</h3>
+        <p class="lc-ayuda">La foto grande que está debajo de la banda de fotos.</p>
       </div>
       <div class="lc-grid">
         <div class="lc-foto lc-full" role="group" aria-labelledby="lc_t_espacio">
@@ -1759,6 +1770,27 @@
     ['alfajor_pistacho', 'Alfajor de pistacho'], ['alfajor_avellanas', 'Alfajor de avellanas'],
     ['brownie_chocolate', 'Brownie de chocolate'],
   ];
+  (function armarFotosBanda() {
+    const cont = document.getElementById('lcBandaFotos');
+    if (!cont) return;
+    for (let n = 1; n <= 9; n++) {
+      const clave = 'banda_foto_' + n;
+      LANDING_CAMPOS_IMG.push(clave);
+      const g = document.createElement('div');
+      g.className = 'lc-foto';
+      g.setAttribute('role', 'group');
+      g.setAttribute('aria-labelledby', 'lc_t_' + clave);
+      g.innerHTML = '<div class="lc-foto-prev"><img id="preview_' + clave + '" alt=""></div>'
+        + '<div class="lc-foto-info"><span class="lc-label" id="lc_t_' + clave + '">Foto ' + n + '</span>'
+        + '<button type="button" class="lc-btn lc-btn-sec" data-landing-upload="' + clave + '">Cambiar foto</button>'
+        + '<button type="button" class="lc-btn lc-btn-sec" data-landing-quitar="' + clave + '">Quitar</button>'
+        + '<input type="hidden" id="landing_' + clave + '" data-landing-field="' + clave + '">'
+        + '<input type="text" id="landing_' + clave + '_alt" data-landing-field="' + clave + '_alt" autocomplete="off" placeholder="Descripción (opcional)" aria-label="Descripción de la foto ' + n + '">'
+        + '<input type="text" id="landing_' + clave + '_link" data-landing-field="' + clave + '_link" autocomplete="off" placeholder="Link (opcional): /tienda?producto=SKU" aria-label="Link de la foto ' + n + '"></div>';
+      cont.appendChild(g);
+    }
+  })();
+
   (function armarFotosCarta() {
     const cont = document.getElementById('lcCartaFotos');
     if (!cont) return;

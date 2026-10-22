@@ -2332,6 +2332,12 @@ for (const bloque of LANDING_BLOQUES_ESTILO) {
   }
 }
 
+/* Fotos de la banda bajo «Quiénes somos» (landing): foto, descripción y link opcional.
+   Todas vacías = la banda usa los productos más vistos. */
+for (let n = 1; n <= 9; n++) {
+  for (const sufijo of ['', '_alt', '_link']) LANDING_DEFAULTS['banda_foto_' + n + sufijo] = '';
+}
+
 /**
  * Asegura que exista la pestaña Landing con encabezado clave/valor y,
  * si falta alguna clave conocida, la siembra con el default (sin

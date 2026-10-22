@@ -432,6 +432,20 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   - **Verificado** a 375px con `/landing-contenido` simulado (abre, oscurece,
     Esc cierra, ítem sin foto no reacciona). **Sin probar**: subida real
     contra Sheets, el panel del admin en navegador (sin login) y iOS Safari.
+- **Fotos de la banda bordó de la landing editables (2026-10-21)**: Admin ›
+  Contenido › «Banda de fotos (debajo de Quiénes somos)», 9 casillas
+  `banda_foto_1…9` (+ `_alt` y `_link` opcionales), mismo modelo que
+  `hero_imagen` (sube a `/admin/landing/foto`, se publica con Guardar, botón
+  Quitar). Claves sumadas a `LANDING_DEFAULTS`.
+  - **Regla de fallback** (`landing.html`): con al menos una `banda_foto_N`
+    cargada el carrusel usa SOLO esas (orden 1→9, saltando vacías, mismo
+    `armar`); sin ninguna, sigue con `/catalogo-destacados` como antes. La
+    banda espera a `/landing-contenido` (promesa compartida
+    `window.lonContenidoPromesa`, un solo fetch) antes de elegir la fuente: sin
+    parpadeo. El link solo se respeta si empieza con `/` (no `//`) o `https://`;
+    si no, la foto va sin link.
+  - **`espacio_imagen`** (sección «El espacio» del admin) es la foto grande de
+    abajo de la banda; la ayuda del admin ahora lo dice.
 - **THE CLASSICS en mobile**: tabla de grilla CSS (nombre + 3 columnas de
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
