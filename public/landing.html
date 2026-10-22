@@ -120,11 +120,14 @@ footer a:hover{color:var(--accent-terracota)}
   .lon-banda-pista{gap:8px}
   /* Tres fotos en un celular quedan de 112px y no se ve nada: se muestran dos completas. */
   .lon-banda-pista a{flex-basis:calc((100% - 8px) / 2)}
-  .logo{height:22px}
+  /* Mismo alto que el logo de /tienda en el celular (.logo-barra-catalogo, 34px) */
+  .logo{height:34px}
   .header-row{padding:0 12px}
   .hero-copy{padding:36px 20px 44px}
   .section{padding:48px 20px}
 }
+/* /tienda corta el celular en 600px: entre 601 y 799 su logo mide 36px */
+@media(min-width:601px) and (max-width:799px){.logo{height:36px}}
 </style>
 </head>
 <body>
