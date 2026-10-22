@@ -39,20 +39,14 @@
     height:50px; width:auto; object-fit:contain; justify-self:center;
     filter:brightness(0) invert(1); opacity:.92;
   }
+  /* Flecha fija (sin flotar, pedido del dueño), en SVG para que quede centrada
+     en altura con el logo: el carácter «←» se sentaba sobre la línea de base. */
   .btn-volver-flecha{
-    display:inline-flex; align-items:center; justify-content:center;
-    width:36px; height:36px; font-size:22px; background:none; border:none; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; align-self:center;
+    width:44px; height:44px; background:none; border:none; cursor:pointer;
     text-decoration:none; padding:0;
-    animation:volverFlechaFlotar 1.6s ease-in-out infinite;
   }
-  .btn-volver-flecha:hover, .btn-volver-flecha:focus-visible{ animation-play-state:paused; transform:translateX(-4px); }
-  @keyframes volverFlechaFlotar{
-    0%, 100%{ transform:translateX(0); }
-    50%{ transform:translateX(-5px); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .btn-volver-flecha{ animation:none; }
-  }
+  .btn-volver-flecha svg{ width:30px; height:30px; display:block; stroke:currentColor; fill:none; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; }
 
   #reader{ width:100%; max-width:480px; margin:20px auto 0; padding:0 24px; overflow:hidden; }
   #reader video{
@@ -142,7 +136,7 @@
 <body>
 
 <div class="barra-superior-catalogo">
-  <a class="volver btn-volver-flecha" href="/" title="Volver al catálogo" aria-label="Volver al catálogo">←</a>
+  <a class="volver btn-volver-flecha" href="/" title="Volver al catálogo" aria-label="Volver al catálogo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></a>
   <a href="/admin.html" class="enlace-logo-header" title="Acceso admin" aria-label="Acceso admin" style="justify-self:center;">
     <img src="/logo-catalogo.png" alt="LON" class="logo-barra-catalogo">
   </a>
