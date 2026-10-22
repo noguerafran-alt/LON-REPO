@@ -346,6 +346,15 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 - Solo `public/landing.html` (la tienda `index.html` y la carta NO cambiaron). Header: ☰ a la izquierda, logo al centro, selector de idioma a la derecha. Escanear (`/cliente.html`), Carrito (`/tienda`) y Mi cuenta (`/tienda`) pasaron al panel del ☰, arriba de las categorías (claves nuevas `g_carrito` y `g_mi_cuenta` en EN/FR/PT). El panel ahora se abre desde la izquierda y cierra con Esc, tocando afuera o eligiendo un acceso. En mobile el logo mide 22px.
 - Banda de fotos en celular (<800px): cada foto mide la mitad del ancho menos el gap, entran dos completas (antes 1,8). Desktop sigue con tres.
 
+## Ocultar textos de la landing con `<clave>_oculto` + panel ☰ a la derecha (2026-10-22)
+
+- Panel ☰ de la landing: ahora se desliza desde la DERECHA (`right:0`, sombra hacia la izquierda); el botón ☰ sigue a la izquierda del header. Reemplaza lo dicho arriba ("desde la izquierda").
+- Cada texto de `LANDING_TEXTOS_BILINGUES` suma la clave `<clave>_oculto` (`'si'` o `''`) en `LANDING_DEFAULTS` (esa lista filtra lo que se guarda). `aplicarContenido` (landing.html): con `'si'` el elemento va `display:none` en todos los idiomas (si es el texto de `a.btn-link`, el link entero); idioma.js puede repintar el texto pero queda oculto. Sin la marca, vacío = texto del HTML como siempre.
+- Admin › Contenido: al cargar, el español vacío sin `_oculto` se rellena con el texto real del sitio (fetch `/landing.html` + DOMParser, `[data-landing]`; no se duplican textos en admin.html) y no cuenta como cambio. Al guardar, español vacío → `<clave>=''`, `_oculto='si'` y en/fr/pt vacíos; con texto → `_oculto=''`. Vaciar el español también limpia las casillas de traducción y no dispara la traducción automática. Ayuda nueva junto al español. Guarda: el `_oculto='si'` solo se manda si el español tenía texto (o ya estaba oculto) al cargar/rellenar (`dataset.tuvoTexto='1'`); si el fetch de `/landing.html` falla o está pendiente, un vacío manda `_oculto=''` y no toca en/fr/pt (si no, un Guardar ocultaría las 16 claves sembradas en '').
+- Por qué NO «vacío = oculto» a secas: la hoja Landing en producción tiene muchas claves sembradas en `''` que el dueño nunca tocó y hoy muestran el texto del HTML; se esfumarían del sitio en vivo.
+- Consecuencia: al guardar, un texto que se rellenó desde el HTML queda guardado con ese texto (igual al actual); si después se cambia el HTML, esa clave ya no sigue al HTML. Los separadores « · » del footer quedan si se oculta Privacidad o Términos.
+- Verificado con Edge/playwright sobre `/landing-contenido` simulado (375px y 1280px): vacío sin marca muestra el HTML; `catalogo_*` y `cta_secondary_label` con `_oculto` desaparecen (botón entero); panel ☰ pegado a la derecha. NO verificado: el admin en vivo (login) ni la traducción contra OpenRouter.
+
 ## CMS completo de la landing (2026-10-21)
 
 - **Se sacaron del panel y de `LANDING_DEFAULTS`** (la landing rediseñada ya no

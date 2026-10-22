@@ -95,7 +95,7 @@ footer a:hover{color:var(--accent-terracota)}
 .panel-menu{position:fixed;inset:0;z-index:50;display:none}
 .panel-menu.abierto{display:block}
 .panel-menu-backdrop{position:absolute;inset:0;background:rgba(59,18,32,.35)}
-.panel-menu-sheet{position:absolute;top:0;left:0;overflow-y:auto;width:min(320px,88vw);height:100%;background:var(--bg);padding:24px 20px;box-shadow:8px 0 24px rgba(59,18,32,.12);display:flex;flex-direction:column;gap:8px}
+.panel-menu-sheet{position:absolute;top:0;right:0;overflow-y:auto;width:min(320px,88vw);height:100%;background:var(--bg);padding:24px 20px;box-shadow:-8px 0 24px rgba(59,18,32,.12);display:flex;flex-direction:column;gap:8px}
 .panel-menu-sheet h2{font-family:Fraunces,serif;font-style:italic;font-weight:400;font-size:22px;margin:8px 0 16px}
 .panel-menu-sheet a{display:block;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
 .panel-menu-sheet a.acceso{display:flex;align-items:center;gap:12px}
@@ -496,6 +496,13 @@ footer a:hover{color:var(--accent-terracota)}
         el.src = valor;
         if (key === 'logo') el.classList.add('lon-foto-oculta');
         else mostrarSiTieneSrc(el);
+        return;
+      }
+      // <clave>_oculto = 'si': el dueño borró el texto a propósito. display:none (no solo
+      // vaciar) para que idioma.js, que repinta textContent, no lo haga reaparecer; en un
+      // botón se oculta el link entero. Vacío sin marca sigue siendo «texto del HTML».
+      if (contenido[key + '_oculto'] === 'si') {
+        (el.closest('a.btn-link') || el).style.display = 'none';
         return;
       }
       // Texto: el CMS puede traer español, inglés o ambos; idioma.js decide cuál
