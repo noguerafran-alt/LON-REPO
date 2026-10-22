@@ -887,6 +887,45 @@ dar de alta un punto de venta para **web services** (*Factura electrónica
 - Monotributo - Webservices*). Un punto de venta de *Comprobantes en
 línea* **no sirve**.
 
+## Cafetería (/cafeteria, 2026-10-22)
+
+**No es una página nueva**: es `landing.html` servida con otro contenido. Por eso
+no existe ningún `cafeteria.html` y no hay que buscarlo.
+
+- **La ruta vive en `seo.js`, no en `server.js`** (`app.get('/cafeteria')` →
+  `landingCafeteria(base)`). Es el mismo lugar desde donde se sirve `/`. Anotado
+  porque buscar «cafeteria» en `server.js` no devuelve nada y hace pensar que la
+  ruta falta.
+- `landingCafeteria()` toma el HTML de la landing, le pone
+  `<body data-pagina="cafeteria">` y su propio title, description, canonical y
+  `og:url`.
+- **El contenido sale de las claves con prefijo `cafe_`** de la misma hoja
+  `Landing`. El front detecta el modo por `data-pagina` o por el pathname, le saca
+  el prefijo a esas claves y usa el resto igual que en la landing. Una clave
+  `cafe_*` vacía cae al texto de fábrica, que es el de la landing.
+- Los elementos que cambian de destino llevan `data-cafe-texto`, `data-cafe-i18n`
+  y `data-cafe-href`: en la cafetería el botón principal y la franja de abajo
+  dicen «Ver la carta» y llevan a `/carta`, no a `/tienda`.
+- **Admin › Contenido** pasa a tener cuatro ediciones: Landing, Catálogo,
+  Cafetería y Carta. El editor de la carta se mudó adentro de Contenido.
+- **Menú ☰** (`public/menu-lon.js`), orden pedido por el dueño: «Ver catálogo
+  completo» → **Cafetería** → «Carta del café» → **Sobre LON**. Cafetería va con
+  el mismo estilo que las categorías. «Sobre nosotros» pasó a llamarse
+  **«Sobre LON»** (clave `g_sobre_lon`, con sus traducciones EN/FR/PT).
+
+**Verificado en el navegador (2026-10-22)**: `/cafeteria` responde 200 con su
+title propio y `data-pagina="cafeteria"`; el modo café queda activo; el botón
+principal dice «Ver la carta» y apunta a `/carta`; y el menú ☰ muestra las siete
+entradas en el orden pedido.
+
+**Sin verificar**: contra Sheets real (las claves `cafe_*` todavía no existen en
+la hoja, así que la página muestra los textos de fábrica de la landing), la carga
+de fotos propias de la cafetería, y el guardado desde el panel con login nivel 2.
+
+**Cómo quedó esto a medias**: el trabajo se hizo en el worktree `lon-cafeteria`
+y quedó **sin commitear** — siete archivos modificados y cero commits. No estaba
+roto: le faltaba commitearse. Si alguien hubiera borrado el worktree, se perdía.
+
 ## Convenciones/decisiones no obvias (ver también CLAUDE.md)
 
 - El local vende también por un **POS de café/gastronomía separado**

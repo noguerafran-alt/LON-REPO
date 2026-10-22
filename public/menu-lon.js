@@ -66,7 +66,7 @@
       '<a href="/cafeteria" data-i18n="g_cafeteria">Cafetería</a>' +
       '<a href="/carta" style="border:none;" data-i18n="g_carta_cafe">Carta del café</a>' +
       '<div class="panel-menu-accesos">' +
-      acceso('/', ICONO.sobre, 'g_sobre_nosotros', 'Sobre nosotros') +
+      acceso('/', ICONO.sobre, 'g_sobre_lon', 'Sobre LON') +
       acceso('/cliente.html', ICONO.escanear, 'g_escanear', 'Escanear') +
       acceso('/tienda?carrito=1', ICONO.carrito, 'g_carrito', 'Carrito', 'carrito') +
       acceso('/tienda?cuenta=1', ICONO.cuenta, 'g_mi_cuenta', 'Mi cuenta', 'cuenta') +
