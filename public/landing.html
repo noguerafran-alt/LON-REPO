@@ -100,6 +100,8 @@ footer a:hover{color:var(--accent-terracota)}
 .panel-menu-sheet a{display:block;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
 .panel-menu-sheet a.acceso{display:flex;align-items:center;gap:12px}
 .panel-menu-sheet a.acceso svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.panel-menu-accesos{margin-top:20px;border-top:1px solid var(--line)}
+.panel-menu-idioma{margin-top:20px}
 .panel-menu-cerrar{align-self:flex-end;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:4px}
 @media(min-width:800px){
   .header .icon-btn{width:48px;height:48px}
@@ -145,9 +147,6 @@ footer a:hover{color:var(--accent-terracota)}
   <div class="panel-menu-backdrop" data-cerrar-menu></div>
   <div class="panel-menu-sheet" role="dialog" aria-label="Menú" data-i18n-attr="aria-label:g_menu">
     <button type="button" class="panel-menu-cerrar" data-cerrar-menu aria-label="Cerrar" data-i18n-attr="aria-label:g_cerrar">×</button>
-    <a class="acceso" href="/cliente.html"><svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="g_escanear">Escanear</span></a>
-    <a class="acceso" href="/tienda?carrito=1"><svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg><span data-i18n="g_carrito">Carrito</span></a>
-    <a class="acceso" href="/tienda?cuenta=1"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg><span data-i18n="g_mi_cuenta">Mi cuenta</span></a>
     <h2 data-landing="menu_categorias" data-i18n="g_categorias">Categorías</h2>
     <a href="/tienda?cat=ANTIGUEDADES" data-i18n="g_cat_antiguedades">Antigüedades</a>
     <a href="/tienda?cat=CERAMICA" data-i18n="g_cat_ceramica">Cerámica</a>
@@ -157,6 +156,13 @@ footer a:hover{color:var(--accent-terracota)}
     <a href="/tienda?cat=VELAS" data-i18n="g_cat_velas">Velas</a>
     <a href="/carta" data-i18n="g_carta_cafe">Carta del café</a>
     <a href="/tienda" style="margin-top:12px;border:none;font-weight:600;" data-i18n="l_ver_completo">Ver catálogo completo →</a>
+    <!-- Orden pedido por el dueño: categorías arriba, accesos abajo y el idioma al final -->
+    <div class="panel-menu-accesos">
+      <a class="acceso" href="/cliente.html"><svg viewBox="0 0 24 24"><path d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8"/><path d="M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="g_escanear">Escanear</span></a>
+      <a class="acceso" href="/tienda?carrito=1"><svg viewBox="0 0 24 24"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg><span data-i18n="g_carrito">Carrito</span></a>
+      <a class="acceso" href="/tienda?cuenta=1"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 19.2c1.5-3 3.8-4.5 6.5-4.5s5 1.5 6.5 4.5"/></svg><span data-i18n="g_mi_cuenta">Mi cuenta</span></a>
+    </div>
+    <div class="panel-menu-idioma" data-selector-idioma></div>
   </div>
 </div>
 
