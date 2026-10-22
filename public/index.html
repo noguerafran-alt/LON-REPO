@@ -486,6 +486,11 @@
     .detalle-miniaturas button{ background:none; }
     .detalle-panel{ position:static; width:auto; max-height:none; box-shadow:none; padding:20px 16px 8px; }
   }
+  /* Desktop (>900px; celular/tablet <=900px sin cambios): la foto del detalle no se agranda
+     de más; entra entera en el alto de pantalla menos el header (64px), centrada. */
+  @media (min-width:901px){
+    .detalle-foto img{ max-height:calc(100vh - 64px); max-height:calc(100dvh - 64px); object-fit:contain; object-position:center; }
+  }
 
   .btn-contacto{
     background:var(--accent); color:#FFFFFF; border:none; border-radius:var(--radius);

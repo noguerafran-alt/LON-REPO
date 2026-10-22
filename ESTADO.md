@@ -294,6 +294,7 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
 - **#btnVolverDeDetalle** se mudó del header a `#catalogoDetalleView` (absoluto arriba a la izquierda sobre la foto, cuadrado claro); el handler no cambió. Tiene que quedar fuera de `#catalogoDetalleContenido` porque ese se repinta con innerHTML.
 - **Recargo MP, solo visual**: bajo el precio, «Con Mercado Pago (+N%): $ X» si la categoría tiene recargo > 0 (usa `GET /recargos-mercadopago` y `aplicarRecargoMP`, la misma cuenta y redondeo que `/crear-pago`; en EN/FR/PT en US$). El servidor y el aviso del checkout no se tocaron: el monto real lo sigue calculando el servidor.
 - **Celular (<=600px)**: una foto por pantalla deslizable (70dvh), miniaturas debajo en fila (hacen de puntitos), el panel deja de flotar y va debajo a ancho completo; flecha sobre la foto; sin scroll horizontal de la página.
+- **Foto sin zoom en PC (2026-10-22)**: en desktop (`@media (min-width:901px)`; celular/tablet <=900px sin cambios) `.detalle-foto img` usa `max-height:calc(100dvh - 64px)` y `object-fit:contain` centrada: la foto entra entera, con bandas `#f2f1ef` a los costados. Miniaturas, scroll y panel sin cambios.
 - Verificado con playwright/Edge y un mock de catálogo (1, 3 y 5 fotos, con/sin stock, sin precio, descripción larga, categoría con recargo 10% y otra sin): 1440px y 375px, ES/EN/FR/PT, agregar al carrito, comprar ahora, volver, visitas, 0 errores de consola. No verificado: catálogo y MP reales.
 
 ## Panel ☰ compartido landing + /tienda, categorías reales (2026-10-22)
