@@ -609,6 +609,22 @@ ve), en una sección propia del admin y no dentro de Contenido.
   `c_*`/`cn_*` que eran solo contenido de la carta (quedan `c_portada`,
   `c_aviso_foto`, `c_sin_tacc`, `c_precios`, `c_cerrar_foto`; paridad EN/FR/PT
   verificada); el contenido hardcodeado de `carta.html` pasó a la semilla.
+- **Visor de fotos, verificado de punta a punta (2026-10-22)**: se corrió en el
+  navegador poniendo una foto de prueba en un ítem de la semilla y reiniciando el
+  servidor. Resultado: solo ese ítem queda clickeable (`con-foto`), el aviso
+  «Tocá un producto para ver su foto» aparece recién ahí, el `<dialog>` abre con
+  `showModal()`, la imagen carga, el `alt` toma el nombre del producto, el foco
+  entra al diálogo, el fondo se oscurece (`::backdrop` rgba(20,6,10,.72)) y el
+  scroll de atrás queda bloqueado (`body.foto-abierta`). Cierra con la X, con
+  Escape y con click en el fondo. La foto de prueba **se revirtió**: la semilla
+  sigue con `foto: ""` en los 52 renglones.
+  **Ojo para la próxima sesión**: `/carta-datos` sirve la semilla desde memoria
+  (`origen: "respaldo"`), así que **editar `carta-semilla.json` no se ve hasta
+  reiniciar el servidor** — no es que el cambio no haya entrado.
+- **Lo que falta para que el visor sirva de algo**: no hay ninguna foto cargada.
+  El mecanismo está completo, pero hasta que el dueño suba fotos desde
+  Admin › Carta ningún producto es clickeable y el aviso no se muestra. Eso es
+  correcto y deliberado: la página no invita a tocar algo que no responde.
 - **Sin verificar**: contra Sheets real (creación de la hoja, siembra, PUT, fotos
   viejas de Landing), subida real de fotos, traducción real (OpenRouter), y login
   real de nivel 2. El servidor se probó sin credenciales (fallback a semilla).
