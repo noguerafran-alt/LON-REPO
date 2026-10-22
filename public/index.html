@@ -1172,10 +1172,9 @@
         ? tarjetasHtml.join('') + tarjetasHtml.join('') + tarjetasHtml.join('')
         : tarjetasHtml.join('');
 
-      const enIngles = window.LONi18n && window.LONi18n.idioma() === 'en';
+      const langDest = window.LONi18n ? window.LONi18n.idioma() : 'es';
       const tituloDest = escaparHtmlPublico((
-        (enIngles && catalogoDestacados.getAttribute('data-destacados-titulo-en'))
-        || (!enIngles && catalogoDestacados.getAttribute('data-destacados-titulo'))
+        catalogoDestacados.getAttribute('data-destacados-titulo' + (langDest === 'es' ? '' : '-' + langDest))
         || T('t_destacados', 'Piezas que miramos dos veces')
       ).trim());
       catalogoDestacados.innerHTML = `
@@ -2577,10 +2576,14 @@
         }
         // Mismo esquema que landing.html: idioma.js elige español/inglés según la bandera.
         var en = contenido[key + '_en'] == null ? '' : String(contenido[key + '_en']);
-        if (valor.trim() === '' && en.trim() === '') return;
+        var fr = contenido[key + '_fr'] == null ? '' : String(contenido[key + '_fr']);
+        var pt = contenido[key + '_pt'] == null ? '' : String(contenido[key + '_pt']);
+        if (valor.trim() === '' && en.trim() === '' && fr.trim() === '' && pt.trim() === '') return;
         if (el.dataset.lonBase === undefined) el.dataset.lonBase = el._lonEs !== undefined ? el._lonEs : el.textContent;
         el.dataset.lonEs = valor.trim() === '' ? '' : valor;
         el.dataset.lonEn = en.trim() === '' ? '' : en;
+        el.dataset.lonFr = fr.trim() === '' ? '' : fr;
+        el.dataset.lonPt = pt.trim() === '' ? '' : pt;
         el.setAttribute('data-i18n-cms', '');
       });
       if (window.LONi18n) window.LONi18n.repintar();
@@ -2610,15 +2613,16 @@
       }
 
       var tituloEs = String(contenido.destacados_titulo || '').trim();
-      var tituloEn = String(contenido.destacados_titulo_en || '').trim();
+      var titulos = { en: '', fr: '', pt: '' };
+      Object.keys(titulos).forEach(function (l) { titulos[l] = String(contenido['destacados_titulo_' + l] || '').trim(); });
       var box = document.getElementById('catalogoDestacados');
-      if (box && (tituloEs || tituloEn)) {
+      if (box && (tituloEs || titulos.en || titulos.fr || titulos.pt)) {
         box.setAttribute('data-destacados-titulo', tituloEs);
-        box.setAttribute('data-destacados-titulo-en', tituloEn);
+        Object.keys(titulos).forEach(function (l) { box.setAttribute('data-destacados-titulo-' + l, titulos[l]); });
         var h2 = box.querySelector('.titulo-seccion-destacados');
         if (h2) {
-          var enActivo = window.LONi18n && window.LONi18n.idioma() === 'en';
-          h2.textContent = (enActivo ? tituloEn : tituloEs) || (window.LONi18n ? window.LONi18n.t('t_destacados', 'Piezas que miramos dos veces') : 'Piezas que miramos dos veces');
+          var langAct = window.LONi18n ? window.LONi18n.idioma() : 'es';
+          h2.textContent = (langAct === 'es' ? tituloEs : titulos[langAct]) || (window.LONi18n ? window.LONi18n.t('t_destacados', 'Piezas que miramos dos veces') : 'Piezas que miramos dos veces');
         }
       }
 
