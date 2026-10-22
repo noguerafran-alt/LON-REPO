@@ -508,6 +508,11 @@ línea, Fraunces, crema/bordó). Solo `public/index.html` + claves en `idioma.js
   sacó la animación que la hacía flotar), más grande (SVG de 30px en un
   área táctil de 44px) y centrada en altura con el logo; antes era el
   carácter «←», que quedaba más baja que el centro del logo.
+- **Flecha de volver en `/carta`** (2026-10-22, pedido del dueño): la misma
+  flecha SVG en la esquina izquierda de la barra bordó, va a la landing (`/`)
+  — sirve igual para quien llegó por el ☰ y para el turista que entró por el
+  QR. aria-label con la clave existente `t_volver`. Las banderas siguen a la
+  derecha.
 - **THE CLASSICS en mobile**: tabla de grilla CSS (nombre + 3 columnas de
   3rem/3.6rem), nunca desborda: el nombre usa `minmax(0,1fr)` y a <=420px
   baja el espaciado de letras. Sin scroll horizontal.
