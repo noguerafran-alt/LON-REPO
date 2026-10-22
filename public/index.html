@@ -421,48 +421,67 @@
     display:block; font-family:'Archivo', sans-serif; font-weight:400; font-size:13px; line-height:1.4; color:var(--ink);
   }
   .item-catalogo-publico .precio-item{ margin-top:4px; font-variant-numeric:tabular-nums; }
-  .detalle-producto .foto-detalle{
-    width:100%; max-width:320px; aspect-ratio:1/1; border-radius:var(--radius); overflow:hidden;
-    background:var(--bg); display:flex; align-items:center; justify-content:center; position:relative;
-    color:var(--ink-muted); font-size:12px; font-family:'Fraunces', serif; margin:0 auto 16px;
+  /* Detalle de producto: fotos de borde a borde (hasta 3 a la vez) y panel flotante abajo a la derecha. */
+  #catalogoDetalleView{ margin:-20px calc(-1 * var(--catalogo-gutter, 24px)) 0; position:relative; }
+  #catalogoDetalleContenido{ text-align:left; }
+  #vistaCatalogo #btnVolverDeDetalle{
+    position:absolute; top:16px; left:16px; z-index:5; width:44px; height:44px;
+    background:rgba(255,255,255,.88); color:var(--ink);
   }
-  .detalle-producto .foto-detalle img{ width:100%; height:100%; object-fit:contain; display:block; }
-  .detalle-producto .foto-detalle .mockup-icono{ max-width:180px; }
-  .detalle-producto .miniaturas-detalle{
-    display:flex; gap:8px; max-width:320px; margin:0 auto 16px; justify-content:center;
+  .detalle-galeria{ position:relative; }
+  .detalle-fotos{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;
+    height:calc(100vh - 64px); height:calc(100dvh - 64px); min-height:420px; background:#f2f1ef;
   }
-  .detalle-producto .miniaturas-detalle button{
-    width:56px; height:56px; padding:0; border-radius:var(--radius); overflow:hidden; cursor:pointer;
-    background:var(--bg-alt); border:1px solid var(--line); flex-shrink:0;
+  .detalle-fotos::-webkit-scrollbar{ display:none; }
+  .detalle-foto{
+    flex:0 0 calc(100% / var(--n-visibles, 1)); scroll-snap-align:start; position:relative;
+    background:#f2f1ef; border-right:1px solid #fff; box-sizing:border-box; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
   }
-  .detalle-producto .miniaturas-detalle button.activa{ border-color:var(--accent); border-width:2px; }
-  .detalle-producto .miniaturas-detalle img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .detalle-producto .nombre{ font-family:'Fraunces', serif; font-weight:600; font-size:24px; color:var(--ink); margin:0 0 6px; }
-  .detalle-producto .meta{ font-family:'Fraunces', serif; font-size:13px; color:var(--ink-muted); margin-bottom:4px; }
-  .detalle-producto .precio{
-    font-family:'Fraunces', serif; font-size:22px; font-weight:700; color:var(--accent);
-    font-variant-numeric:tabular-nums; margin-top:14px;
+  .detalle-foto:last-child{ border-right:none; }
+  .detalle-foto img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .detalle-foto .mockup-icono{ max-width:180px; }
+  .detalle-miniaturas{ position:absolute; left:20px; bottom:20px; display:flex; gap:10px; z-index:3; }
+  .detalle-miniaturas button{
+    width:44px; height:44px; padding:0 0 4px; background:rgba(255,255,255,.8); border:none;
+    border-bottom:2px solid transparent; cursor:pointer; box-sizing:border-box;
   }
-  .detalle-producto .descripcion-producto{
-    font-size:14px; line-height:1.6; color:var(--ink); max-width:520px; margin:16px auto 0; text-align:left; white-space:pre-wrap;
+  .detalle-miniaturas button img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .detalle-miniaturas button.activa{ border-bottom-color:var(--ink); }
+  .detalle-panel{
+    /* bottom 92px: queda por encima del botón flotante de WhatsApp (52px + margen) */
+    position:absolute; right:24px; bottom:92px; z-index:4; width:320px; max-height:calc(100% - 116px); overflow:auto;
+    box-sizing:border-box; padding:24px; background:var(--bg-card); box-shadow:0 2px 14px rgba(0,0,0,.08);
   }
-  .detalle-producto .btn-comprar{
-    display:block; width:100%; max-width:320px; margin:18px auto 0; padding:14px; font-size:16px; font-weight:700;
-    font-family:'Fraunces', serif; border:none; border-radius:var(--radius); background:var(--accent);
-    color:#FFFFFF; cursor:pointer;
+  .detalle-panel .nombre{ font-family:'Fraunces', serif; font-weight:400; font-size:19px; line-height:1.25; color:var(--ink); margin:0 0 6px; }
+  .detalle-panel .meta{ font-size:12px; color:var(--ink-muted); margin:0 0 2px; }
+  .detalle-panel hr{ border:none; border-top:1px solid var(--line); margin:14px 0; }
+  .detalle-panel .precio{ text-align:right; font-family:'Archivo', sans-serif; font-size:16px; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .detalle-panel .precio-mp{ text-align:right; font-size:12px; color:var(--ink-muted); margin-top:4px; min-height:1em; }
+  .detalle-panel .descripcion-producto{ font-size:13px; line-height:1.55; color:var(--ink); margin:14px 0 0; white-space:pre-wrap; }
+  .detalle-panel button.btn-comprar, .detalle-panel button.btn-agregar-carrito{
+    display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin:10px 0 0; padding:13px;
+    font-family:'Archivo', sans-serif; font-size:13px; font-weight:500; letter-spacing:.04em; border-radius:0; cursor:pointer;
   }
-  .detalle-producto .btn-comprar:disabled{ opacity:.5; cursor:default; }
-  .detalle-producto .btn-agregar-carrito{
-    display:block; width:100%; max-width:320px; margin:10px auto 0; padding:13px; font-size:15px; font-weight:600;
-    font-family:'Fraunces', serif; border:1px solid var(--accent); border-radius:var(--radius); background:none;
-    color:var(--accent); cursor:pointer;
-  }
-  .detalle-producto .btn-agregar-carrito:disabled{ opacity:.5; cursor:default; }
-  .detalle-producto .sin-stock-aviso{ margin-top:14px; font-size:13px; color:var(--stamp-red); }
-  #catalogoDetalleContenido{ max-width:900px; margin:0 auto; text-align:center; }
-  .seccion-relacionados{ margin:36px auto 0; max-width:900px; text-align:left; }
+  .detalle-panel button.btn-agregar-carrito{ background:var(--ink); color:#fff; border:1px solid var(--ink); margin-top:16px; }
+  .detalle-panel button.btn-comprar{ background:none; color:var(--ink); border:1px solid var(--ink); }
+  .detalle-panel button:disabled{ opacity:.45; cursor:default; }
+  .detalle-panel button svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
+  .detalle-panel .sin-stock-aviso{ margin-top:12px; font-size:12.5px; color:var(--stamp-red); }
+  .detalle-descripcion-larga{ max-width:720px; padding:32px var(--catalogo-gutter, 24px) 0; font-size:14px; line-height:1.7; color:var(--ink); white-space:pre-wrap; }
+  .seccion-relacionados{ margin:40px 0 0; }
   .seccion-relacionados h3{
-    font-family:'Fraunces', serif; font-weight:600; font-size:18px; color:var(--ink); margin:0 0 12px; text-align:center;
+    font-family:'Fraunces', serif; font-weight:500; font-size:18px; color:var(--ink); margin:0 var(--catalogo-gutter, 24px) 14px;
+  }
+  .seccion-relacionados .grilla-catalogo-publico{ margin-left:-1px; }
+  @media (max-width:600px){
+    #catalogoDetalleView{ margin:-16px -16px 0; }
+    .detalle-fotos{ height:70vh; height:70dvh; min-height:0; }
+    .detalle-foto{ flex-basis:100%; border-right:none; }
+    .detalle-miniaturas{ position:static; padding:10px 16px 0; }
+    .detalle-miniaturas button{ background:none; }
+    .detalle-panel{ position:static; width:auto; max-height:none; box-shadow:none; padding:20px 16px 8px; }
   }
 
   .btn-contacto{
@@ -908,7 +927,6 @@
 <div id="vistaCatalogo">
     <div class="barra-superior-catalogo">
     <div style="justify-self:start; display:flex; align-items:center; gap:4px;">
-      <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
       <button type="button" class="btn-icono-header" id="btnBuscarHeader" aria-expanded="false" aria-controls="panelMenuLon" title="Menú / Categorías" aria-label="Menú categorías" data-i18n-attr="title:t_menu_categorias,aria-label:g_menu_categorias">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
       </button>
@@ -947,6 +965,7 @@
     <div id="catalogoPublicoLista" style="margin-top:12px;"></div>
   </div>
   <div id="catalogoDetalleView" style="display:none;">
+    <button type="button" class="volver btn-volver-flecha" id="btnVolverDeDetalle" title="Volver al catálogo" aria-label="Volver al catálogo" data-i18n-attr="title:t_volver_catalogo,aria-label:t_volver_catalogo" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
     <div id="catalogoDetalleContenido" style="margin-top:0;"></div>
   </div>
   <p class="nota-precios" id="notaPrecios" hidden></p>
@@ -1457,34 +1476,54 @@
     const puedeComprar = Boolean(producto.precio) && producto.disponible;
     const fotos = fotosDelProducto(producto);
 
+    const nombreEsc = escaparHtmlPublico(producto.nombre);
+    const fotosHtml = fotos.length
+      ? fotos.map((url, i) => `<div class="detalle-foto"><img src="${escaparHtmlPublico(url)}" alt="${nombreEsc} — ${T('t_foto_n', 'foto {n}', { n: i + 1 })}" ${i ? 'loading="lazy" ' : ''}decoding="async"></div>`).join('')
+      : `<div class="detalle-foto">${mockupPlaceholder(producto.categoria)}</div>`;
     const miniaturasHtml = fotos.length > 1 ? `
-      <div class="miniaturas-detalle">
-        ${fotos.map((url, indice) => `
-          <button type="button" data-foto-indice="${indice}" class="${indice === 0 ? 'activa' : ''}">
-            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="${escaparHtmlPublico(producto.nombre)} — ${T('t_foto_n', 'foto {n}', { n: indice + 1 })}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
-          </button>
-        `).join('')}
-      </div>
-    ` : '';
+      <div class="detalle-miniaturas">
+        ${fotos.map((url, i) => `
+          <button type="button" data-foto-indice="${i}" class="${i === 0 ? 'activa' : ''}" aria-label="${nombreEsc} — ${T('t_foto_n', 'foto {n}', { n: i + 1 })}">
+            <img src="${escaparHtmlPublico(urlMiniaturaPublica(url))}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${encodeURI(url)}';">
+          </button>`).join('')}
+      </div>` : '';
+    const descripcion = producto.descripcion || '';
+    const descLarga = descripcion.length > 220;
+    const descHtml = descripcion ? escaparHtmlPublico(descripcion) : '';
 
     catalogoDetalleContenido.innerHTML = `
       <div class="detalle-producto">
-        <div class="foto-detalle" id="fotoPrincipalDetalle">${fotos.length ? `<img src="${escaparHtmlPublico(fotos[0])}" alt="${escaparHtmlPublico(producto.nombre)} — LON Philosophy">` : mockupPlaceholder(producto.categoria)}</div>
-        ${miniaturasHtml}
-        <div class="nombre">${escaparHtmlPublico(producto.nombre)}</div>
-        <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
-        <div class="meta">${producto.disponible ? T('t_en_stock', 'En stock') : T('t_sin_stock', 'Sin stock')}</div>
-        ${producto.precio ? `<div class="precio">${escaparHtmlPublico(precioTxt(producto.precio))}</div>` : ''}
-        <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>${T('t_comprar_ahora', 'Comprar ahora')}</button>
-        <button type="button" class="btn-agregar-carrito" id="btnAgregarCarrito" ${puedeComprar ? '' : 'disabled'}>${T('t_agregar_carrito', 'Agregar al carrito')}</button>
-        <div id="mensajeAgregarCarrito" style="font-size:12.5px; margin-top:6px; min-height:1em;"></div>
-        ${!puedeComprar ? '<div class="sin-stock-aviso">' + (producto.disponible ? T('t_sin_precio', 'Todavía no tiene precio cargado para comprar online.') : T('t_sin_stock_momento', 'Sin stock por el momento.')) + '</div>' : ''}
-        ${producto.descripcion ? `<p class="descripcion-producto">${escaparHtmlPublico(producto.descripcion)}</p>` : ''}
+        <div class="detalle-galeria">
+          <div class="detalle-fotos" id="detalleFotos" style="--n-visibles:${Math.min(Math.max(fotos.length, 1), 3)}">${fotosHtml}</div>
+          ${miniaturasHtml}
+          <div class="detalle-panel">
+            <h1 class="nombre">${nombreEsc}</h1>
+            <div class="meta">${escaparHtmlPublico(producto.categoriaVisible || producto.categoria || '')}</div>
+            <div class="meta">${producto.disponible ? T('t_en_stock', 'En stock') : T('t_sin_stock', 'Sin stock')}</div>
+            ${producto.precio ? `<hr><div class="precio">${escaparHtmlPublico(precioTxt(producto.precio))}</div><div class="precio-mp" id="lineaRecargoMP"></div>` : ''}
+            <button type="button" class="btn-agregar-carrito" id="btnAgregarCarrito" ${puedeComprar ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H9.2a1.5 1.5 0 0 1-1.5-1.4L7 8Z"/><path d="M9.5 8V6.8A2.5 2.5 0 0 1 12 4.3 2.5 2.5 0 0 1 14.5 6.8V8"/></svg>${T('t_agregar_carrito', 'Agregar al carrito')}</button>
+            <button type="button" class="btn-comprar" id="btnComprarProducto" ${puedeComprar ? '' : 'disabled'}>${T('t_comprar_ahora', 'Comprar ahora')}</button>
+            <div id="mensajeAgregarCarrito" style="font-size:12.5px; margin-top:6px; min-height:1em;" aria-live="polite"></div>
+            ${!puedeComprar ? '<div class="sin-stock-aviso">' + (producto.disponible ? T('t_sin_precio', 'Todavía no tiene precio cargado para comprar online.') : T('t_sin_stock_momento', 'Sin stock por el momento.')) + '</div>' : ''}
+            ${descripcion && !descLarga ? `<p class="descripcion-producto">${descHtml}</p>` : ''}
+          </div>
+        </div>
+        ${descLarga ? `<p class="detalle-descripcion-larga">${descHtml}</p>` : ''}
       </div>
       <div id="seccionRelacionadosDetalle"></div>
     `;
     mostrarVistaDetalleCatalogo();
     if (!esRefresco) window.scrollTo(0, 0);
+
+    // Recargo MP: solo para mostrar, con la misma cuenta que el servidor; el monto real lo calcula él.
+    const lineaRecargoMP = document.getElementById('lineaRecargoMP');
+    if (lineaRecargoMP) {
+      getRecargosMercadoPago().then((recargos) => {
+        if (productoDetalleActual !== producto) return;
+        const pct = recargos[String(producto.categoria || '').trim().toUpperCase()] || 0;
+        if (pct > 0) lineaRecargoMP.textContent = T('t_con_mp', 'Con Mercado Pago (+{p}%): {a}', { p: pct, a: precioTxt(aplicarRecargoMP(Number(producto.precio), pct)) });
+      });
+    }
 
     const btnComprar = document.getElementById('btnComprarProducto');
     if (btnComprar) {
@@ -1504,14 +1543,21 @@
       });
     }
 
-    if (fotos.length > 1) {
-      const fotoPrincipalDetalle = document.getElementById('fotoPrincipalDetalle');
-      catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((boton) => {
+    const filaFotos = document.getElementById('detalleFotos');
+    const minis = catalogoDetalleContenido.querySelectorAll('.detalle-miniaturas button');
+    if (minis.length) {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const marcar = () => {
+        const ancho = filaFotos.firstElementChild.offsetWidth || 1;
+        const alFinal = filaFotos.scrollLeft + filaFotos.clientWidth >= filaFotos.scrollWidth - 2;
+        const activo = alFinal ? minis.length - 1 : Math.round(filaFotos.scrollLeft / ancho);
+        minis.forEach((b, i) => b.classList.toggle('activa', i === activo));
+      };
+      filaFotos.addEventListener('scroll', marcar, { passive: true });
+      minis.forEach((boton) => {
         boton.addEventListener('click', () => {
-          const indice = Number(boton.getAttribute('data-foto-indice'));
-          fotoPrincipalDetalle.innerHTML = `<img src="${escaparHtmlPublico(fotos[indice])}" alt="${escaparHtmlPublico(producto.nombre)} — ${T('t_foto_n', 'foto {n}', { n: indice + 1 })}">`;
-          catalogoDetalleContenido.querySelectorAll('.miniaturas-detalle button').forEach((b) => b.classList.remove('activa'));
-          boton.classList.add('activa');
+          const destino = filaFotos.children[Number(boton.getAttribute('data-foto-indice'))];
+          filaFotos.scrollTo({ left: destino.offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
         });
       });
     }
