@@ -27,12 +27,6 @@
     g_menu_categorias: 'Categories menu',
     g_categorias: 'Categories',
     g_cerrar: 'Close',
-    g_cat_antiguedades: 'Antiques',
-    g_cat_ceramica: 'Ceramics',
-    g_cat_joyas: 'Jewelry',
-    g_cat_libros: 'Books',
-    g_cat_madera: 'Woodwork',
-    g_cat_velas: 'Candles',
     g_carta_cafe: 'Café menu',
     g_privacidad: 'Privacy',
     g_terminos: 'Terms',
@@ -268,12 +262,6 @@
     g_menu_categorias: 'Menu des catégories',
     g_categorias: 'Catégories',
     g_cerrar: 'Fermer',
-    g_cat_antiguedades: 'Antiquités',
-    g_cat_ceramica: 'Céramique',
-    g_cat_joyas: 'Bijoux',
-    g_cat_libros: 'Livres',
-    g_cat_madera: 'Bois',
-    g_cat_velas: 'Bougies',
     g_carta_cafe: 'Carte du café',
     g_privacidad: 'Confidentialité',
     g_terminos: 'Conditions',
@@ -505,12 +493,6 @@
     g_menu_categorias: 'Menu de categorias',
     g_categorias: 'Categorias',
     g_cerrar: 'Fechar',
-    g_cat_antiguedades: 'Antiguidades',
-    g_cat_ceramica: 'Cerâmica',
-    g_cat_joyas: 'Joias',
-    g_cat_libros: 'Livros',
-    g_cat_madera: 'Madeira',
-    g_cat_velas: 'Velas',
     g_carta_cafe: 'Cardápio do café',
     g_privacidad: 'Privacidade',
     g_terminos: 'Termos',
@@ -890,5 +872,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
   else iniciar();
 
-  window.LONi18n = { t: t, idioma: function () { return idioma; }, fijar: fijar, claves: EN, diccionarios: DIC, repintar: aplicarDom };
+  window.LONi18n = { t: t, idioma: function () { return idioma; }, fijar: fijar, claves: EN, diccionarios: DIC, repintar: aplicarDom, armarSelectores: armarSelectores };
 })();
