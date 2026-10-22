@@ -341,6 +341,11 @@ Ticket de ejemplo del 2026-08-23 (noche), parser local:
   directo en el `<a>`. El estilo editable (`hero_ctas` → `.hero .cta-row a`)
   sigue en el `<a>` y el span lo hereda.
 
+## Header de la landing simplificado (2026-10-22)
+
+- Solo `public/landing.html` (la tienda `index.html` y la carta NO cambiaron). Header: ☰ a la izquierda, logo al centro, selector de idioma a la derecha. Escanear (`/cliente.html`), Carrito (`/tienda`) y Mi cuenta (`/tienda`) pasaron al panel del ☰, arriba de las categorías (claves nuevas `g_carrito` y `g_mi_cuenta` en EN/FR/PT). El panel ahora se abre desde la izquierda y cierra con Esc, tocando afuera o eligiendo un acceso. En mobile el logo mide 22px.
+- Banda de fotos en celular (<800px): cada foto mide la mitad del ancho menos el gap, entran dos completas (antes 1,8). Desktop sigue con tres.
+
 ## CMS completo de la landing (2026-10-21)
 
 - **Se sacaron del panel y de `LANDING_DEFAULTS`** (la landing rediseñada ya no
