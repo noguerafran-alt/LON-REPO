@@ -63,6 +63,10 @@ module.exports = {
   // o esta vacia, se siembra con los defaults de LON (handoff negocio).
   HOJA_LANDING: process.env.GOOGLE_LANDING_SHEET_NAME || 'Landing',
 
+  // Carta del cafe (/carta) como datos: una fila por seccion/categoria/subgrupo/producto.
+  // Vive en la planilla de PRODUCTOS. La crea la app (con su fila de encabezados) si falta.
+  HOJA_CARTA: process.env.GOOGLE_CARTA_SHEET_NAME || 'Carta',
+
   /* ------------------------------------------------------------
    * 3) COLUMNAS — en que columna (0 = A, 1 = B, ...) esta cada dato.
    *    Cambialo aca si en tu Sheet el orden de columnas es distinto.
@@ -101,6 +105,26 @@ module.exports = {
     // cualquier otro valor = visible (asi los productos que ya existian
     // antes de agregar esta columna siguen mostrandose sin tocar nada).
     visiblePublico: 11,
+  },
+
+  // Hoja Carta. El orden de las claves ES el orden de las columnas (A, B, ...) y
+  // los nombres son los encabezados que la app escribe al crear la hoja.
+  COLUMNAS_CARTA: {
+    tipo: 0,           // seccion | categoria | subgrupo | item
+    id: 1,             // estable: lo genera el editor (en los productos de la semilla es el slug de la foto)
+    padre: 2,          // id del padre (vacio en las secciones)
+    orden: 3,          // posicion entre hermanos
+    nombre_es: 4, nombre_en: 5, nombre_fr: 6, nombre_pt: 7,
+    descripcion_es: 8, descripcion_en: 9, descripcion_fr: 10, descripcion_pt: 11,
+    formato: 12,       // solo categorias: uno | tres (Small/Medium/Large)
+    estilo: 13,        // solo categorias con formato uno: filas | puntos | detalle
+    marca: 14,         // solo categorias: SI = marca de agua del gajo
+    rotulo_1: 15, rotulo_2: 16, rotulo_3: 17, // solo categorias: encabezados de las columnas de precio
+    precio: 18,        // item en categoria formato uno
+    precio_s: 19, precio_m: 20, precio_l: 21, // item en categoria formato tres ("-" = no se vende)
+    sin_tacc: 22,      // SI = icono Sin TACC
+    foto: 23,          // URL
+    activo: 24,        // SI / NO
   },
 
   COLUMNAS_CONTADOR_UNIDADES: {

@@ -72,6 +72,8 @@ dialog.foto img{display:block;max-width:calc(90vw - 30px);max-height:70vh;width:
 dialog.foto .nombre{display:block;text-align:center;margin-top:10px}
 dialog.foto button{position:absolute;top:6px;right:6px;width:32px;height:32px;border:0;border-radius:50%;background:var(--bg-card);color:var(--ink);font:inherit;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 0 0 1px var(--line)}
 body.foto-abierta{overflow:hidden}
+#carta{min-height:60vh}
+.cargando{text-align:center;margin:40px 0;font-size:13px;font-variant-caps:all-small-caps;letter-spacing:.3em;color:var(--ink-muted)}
 @media (max-width:420px){
   .nombre{letter-spacing:.08em;font-size:14px}
   .fila{grid-template-columns:minmax(0,1fr) repeat(3,3rem);gap:0 2px}
@@ -95,136 +97,8 @@ body.foto-abierta{overflow:hidden}
     <p class="aviso-foto" id="avisoFoto" data-i18n="c_aviso_foto" hidden>Tocá un producto para ver su foto</p>
   </header>
 
-  <!-- 1. COFFEE MENU -->
-  <h2 class="seccion">Coffee Menu</h2>
-
-  <section class="caja marca" aria-labelledby="t-classics">
-    <h3 id="t-classics">The Classics</h3>
-    <div class="fila enc"><span>&nbsp;</span><span>Small</span><span>Medium</span><span>Large</span></div>
-    <div class="fila" data-foto="espresso"><span class="nombre">ESPRESSO</span><span class="precio">5700</span><span class="precio">-</span><span class="precio">-</span></div>
-    <div class="fila" data-foto="doppio"><span class="nombre">DOPPIO</span><span class="precio">5700</span><span class="precio">-</span><span class="precio">-</span></div>
-    <div class="fila" data-foto="macchiato"><span class="nombre">MACCHIATO</span><span class="precio">5700</span><span class="precio">-</span><span class="precio">-</span></div>
-    <div class="fila" data-foto="americano"><span class="nombre">AMERICANO</span><span class="precio">5700</span><span class="precio">6300</span><span class="precio">-</span></div>
-    <div class="fila" data-foto="capuccino"><span class="nombre">CAPUCCINO</span><span class="precio">-</span><span class="precio">6300</span><span class="precio">6900</span></div>
-    <div class="fila" data-foto="flat_white"><span class="nombre">FLAT WHITE</span><span class="precio">-</span><span class="precio">6300</span><span class="precio">6900</span></div>
-    <div class="fila" data-foto="latte"><span class="nombre">LATTE</span><span class="precio">-</span><span class="precio">6300</span><span class="precio">6900</span></div>
-    <div class="fila" data-foto="lagrima"><span class="nombre">LAGRIMA</span><span class="precio">-</span><span class="precio">5900</span><span class="precio">6400</span></div>
-  </section>
-
-  <section class="caja marca" aria-labelledby="t-specials">
-    <h3 id="t-specials">The Specials</h3>
-    <div class="fila uno enc"><span>&nbsp;</span><span>Medium</span></div>
-    <h4>Hot</h4>
-    <div class="fila uno" data-foto="coffee_chai"><span class="nombre">COFFEE CHAI</span><span class="precio">7200</span></div>
-    <div class="fila uno" data-foto="organic_mocca"><span class="nombre">ORGANIC MOCCA</span><span class="precio">7300</span></div>
-    <h4>Cold</h4>
-    <div class="fila uno" data-foto="iced_latte"><span class="nombre">ICED LATTE</span><span class="precio">7200</span></div>
-    <div class="fila uno" data-foto="espresso_tonic"><span class="nombre">ESPRESSO TONIC</span><span class="precio">8200</span></div>
-    <div class="fila uno" data-foto="affogato"><span class="nombre">AFFOGATO</span><span class="precio">8700</span></div>
-    <div class="fila uno" data-foto="orange_coffe"><span class="nombre">ORANGE COFFE</span><span class="precio">7800</span></div>
-    <div class="fila uno" data-foto="caramel_macchiato"><span class="nombre">CARAMEL MACCHIATO</span><span class="precio">7500</span></div>
-  </section>
-
-  <section class="caja" aria-labelledby="t-adicionales">
-    <h3 id="t-adicionales" data-i18n="c_adicionales">Adicionales</h3>
-    <div class="fila uno" data-foto="leche_almendras"><span class="nombre" data-i18n="cn_almendra">LECHE DE ALMENDRAS</span><span class="precio">2000</span></div>
-    <div class="fila uno" data-foto="leche_avena"><span class="nombre" data-i18n="cn_avena">LECHE DE AVENA</span><span class="precio">2000</span></div>
-    <div class="fila uno" data-foto="extra_shot"><span class="nombre" data-i18n="cn_extra_shot">EXTRA SHOT</span><span class="precio">2500</span></div>
-  </section>
-
-  <section class="caja" aria-labelledby="t-takeaway">
-    <h3 id="t-takeaway">Take Away</h3>
-    <div class="fila uno"><span class="nombre">MEDIUM</span><span class="precio">7200</span></div>
-    <div class="fila uno"><span class="nombre">LARGE</span><span class="precio">7700</span></div>
-  </section>
-
-  <!-- 2. NON - COFFEE -->
-  <h2 class="seccion">Non - Coffee</h2>
-
-  <section class="caja marca" aria-label="Non - Coffee">
-    <div class="item" data-foto="matcha_latte"><div class="linea"><span class="nombre">MATCHA LATTE</span><span class="precio">7100</span></div>
-      <span class="desc" data-i18n="c_matcha">Bebida a base té verde matcha. Emulsionada con leche</span></div>
-    <div class="item" data-foto="golden_milk"><div class="linea"><span class="nombre">GOLDEN MILK</span><span class="precio">7200</span></div>
-      <span class="desc" data-i18n="c_golden">Bebida a base de cúrcuma, canela, nuez moscada, miel y pimienta negra. Emulsionada con leche</span></div>
-    <div class="item" data-foto="chai_latte"><div class="linea"><span class="nombre">CHAI LATTE</span><span class="precio">7200</span></div>
-      <span class="desc" data-i18n="c_chai">Bebida a base té negro, canela, cardamomo, coco en escamas, nuez moscada, clavo de olor, miel y pimienta negra. Emulsionada con leche</span></div>
-  </section>
-
-  <section class="caja" aria-labelledby="t-drinks">
-    <h3 id="t-drinks">Drinks</h3>
-    <ul class="puntos">
-      <li data-foto="matcha_orange"><span class="nombre">MATCHA ORANGE</span><i></i><span class="precio">7300</span></li>
-      <li data-foto="jugo_naranja"><span class="nombre" data-i18n="cn_jugo">JUGO DE NARANJA</span><i></i><span class="precio">6600</span></li>
-      <li data-foto="limonada_clasica"><span class="nombre" data-i18n="cn_lim_clasica">LIMONADA CLÁSICA</span><i></i><span class="precio">5600</span></li>
-      <li data-foto="limonada_frutos_rojos"><span class="nombre" data-i18n="cn_lim_frutos">LIMONADA FRUTOS ROJOS</span><i></i><span class="precio">7200</span></li>
-      <li data-foto="limonada_hibiscus"><span class="nombre" data-i18n="cn_lim_hibiscus">LIMONADA DE HIBISCUS</span><i></i><span class="precio">7300</span></li>
-      <li data-foto="agua_gas"><span class="nombre" data-i18n="cn_agua_gas">AGUA CON GAS</span><i></i><span class="precio">4900</span></li>
-    </ul>
-  </section>
-
-  <section class="caja marca" aria-labelledby="t-infusiones">
-    <h3 id="t-infusiones" data-i18n="c_infusiones">Infusiones · Anuá</h3>
-    <div class="item" data-foto="bromelia"><div class="linea"><span class="nombre">BROMELIA · <span data-i18n="c_inspirado_ca">INSPIRADO EN CENTRO AMÉRICA</span></span><span class="precio">6900</span></div>
-      <span class="desc" data-i18n="c_bromelia">Ananá, vaina de vainilla molida, coco tostado y anís. (notas dulces, cuerpo avainillado. Efecto nutritivo, carminativo y saciante)</span></div>
-    <div class="item" data-foto="irupe"><div class="linea"><span class="nombre">IRUPÉ · <span data-i18n="c_inspirado_lit">INSPIRADO EN EL LITORAL ARGENTINO</span></span><span class="precio">6900</span></div>
-      <span class="desc" data-i18n="c_irupe">Mango, hibiscus, lemongrass y flor de azahar. (notas ácidas, verdes y dulces. Efecto refrescante, desinflamante, antioxidante y restaurador)</span></div>
-  </section>
-
-  <!-- 3. BRUNCH -->
-  <h2 class="seccion">Brunch</h2>
-
-  <section class="caja marca" aria-label="Brunch">
-    <div class="item" data-foto="palta_toast"><div class="linea"><span class="nombre" data-i18n="cn_palta">PALTA · TOAST</span><span class="precio">13500</span></div>
-      <span class="desc" data-i18n="c_palta">(tostón de pan integral, palta, tomate confitado, queso crema)</span>
-      <span class="desc opc" data-i18n="c_palta_opc">opcional: huevo poché $2000</span></div>
-    <div class="item" data-foto="toast_forest"><div class="linea"><span class="nombre"><span data-i18n="cn_forest">TOAST FOREST</span> (<span data-i18n="c_sin_tacc_mayus">SIN TACC</span>)</span><span class="precio">18500</span></div>
-      <span class="desc" data-i18n="c_forest">Pan de elaboración propia preparado con fécula de mandioca, almidón de maíz, harina de arroz integral, harina de garbanzos, harina de trigo sarraceno y un mix de semillas. Servido con alioli de almendras, palta fresca y cebollas encurtidas.</span></div>
-    <div class="item" data-foto="chipa_setas"><div class="linea"><span class="nombre" data-i18n="cn_chipa_setas">CHIPA DE SETAS</span><span class="precio">15400</span></div>
-      <span class="desc" data-i18n="c_chipa_setas">Relleno de una selección de hongos de pino, portobellos y champiñones salteados con cebolla puerro y tomates secos confitados.</span></div>
-    <div class="item" data-foto="chipa_tomates"><div class="linea"><span class="nombre" data-i18n="cn_chipa_tomates">CHIPA DE TOMATES CONFITADOS X2</span><span class="precio">16500</span></div>
-      <span class="desc" data-i18n="c_chipa_tomates">Relleno de cebollas encurtidas y tomates confitados.</span></div>
-    <div class="item" data-foto="handroll_verdura"><div class="linea"><span class="nombre" data-i18n="cn_handroll_verdura">HANDROLL DE VERDURA</span><span class="precio">15800</span></div>
-      <span class="desc" data-i18n="c_handroll_verdura">Panqueque de premezcla sin gluten, relleno de espinaca, cebolla y zanahoria salteadas, ricotta cremosa y queso dambo.</span></div>
-    <div class="item" data-foto="handroll_bondiola"><div class="linea"><span class="nombre" data-i18n="cn_handroll_bondiola">HANDROLL DE BONDIOLA BRASEADA</span><span class="precio">15800</span></div>
-      <span class="desc" data-i18n="c_handroll_bondiola">Panqueque de premezcla sin gluten, relleno de bondiola braseada, cebolla caramelizada y queso dambo fundido.</span></div>
-  </section>
-
-  <!-- 4. SWEET BITES / BAKERY / PATISSERIE -->
-  <h2 class="seccion">Sweet Bites · Bakery · Patisserie</h2>
-
-  <section class="caja marca" aria-labelledby="t-sweet">
-    <h3 id="t-sweet">Sweet Bites</h3>
-    <ul class="puntos">
-      <li data-foto="florentinos"><span class="nombre" data-i18n="cn_florentinos">FLORENTINOS (X3)</span><i></i><span class="precio">4200</span></li>
-      <li data-foto="bocadito_almendra"><span class="nombre" data-i18n="cn_bocadito">BOCADITO DE ALMENDRA (X3)</span><i></i><span class="precio">4400</span></li>
-      <li data-foto="mini_alfajor_pistacho"><span class="nombre" data-i18n="cn_mini_alf_pist">MINI ALFAJOR DE PISTACHO</span><i></i><span class="precio">4900</span></li>
-      <li data-foto="mini_alfajor_avellanas"><span class="nombre" data-i18n="cn_mini_alf_avel">MINI ALFAJOR DE AVELLANAS</span><i></i><span class="precio">4900</span></li>
-      <li data-foto="macaron"><span class="nombre">MACARON</span><i></i><span class="precio">4900</span></li>
-      <li data-foto="datil_relleno"><span class="nombre" data-i18n="cn_datil">DATIL RELLENO</span><i></i><span class="precio">6000</span></li>
-    </ul>
-  </section>
-
-  <section class="caja marca" aria-labelledby="t-bakery">
-    <h3 id="t-bakery">Bakery</h3>
-    <ul class="puntos">
-      <li data-foto="medialunas"><span class="nombre">MEDIALUNAS</span><i></i><span class="precio">3200</span></li>
-      <li data-foto="pain_au_chocolat"><span class="nombre">PAIN AU CHOCOLAT</span><i></i><span class="precio">6500</span></li>
-      <li data-foto="chipa"><span class="nombre">CHIPA</span><i></i><span class="precio">5200</span></li>
-      <li data-foto="budin_frutos_rojos"><span class="nombre"><span data-i18n="cn_budin">BUDIN DE FRUTOS ROJOS</span>
-        <svg class="sintacc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" role="img" aria-label="Sin TACC" data-i18n-attr="aria-label:c_sin_tacc"><title data-i18n="c_sin_tacc">Sin TACC</title><path d="M12 21V9"/><path d="M12 9c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 9c2-.5 3-2 3-4-2 .5-3 2-3 4zM12 14c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 14c2-.5 3-2 3-4-2 .5-3 2-3 4z"/><path d="M4 20L20 4"/></svg></span><i></i><span class="precio">8200</span></li>
-    </ul>
-  </section>
-
-  <section class="caja marca" aria-labelledby="t-pat">
-    <h3 id="t-pat">Patisserie</h3>
-    <ul class="puntos">
-      <li data-foto="cookie_mani_chocolate"><span class="nombre" data-i18n="cn_cookie_mani">COOKIE DE MANI Y CHOCOLATE</span><i></i><span class="precio">5800</span></li>
-      <li data-foto="cookie_frutos_rojos"><span class="nombre" data-i18n="cn_cookie_frutos">COOKIE DE FRUTOS ROJOS</span><i></i><span class="precio">5800</span></li>
-      <li data-foto="alfajor_pistacho"><span class="nombre" data-i18n="cn_alf_pist">ALFAJOR DE PISTACHO</span><i></i><span class="precio">7500</span></li>
-      <li data-foto="alfajor_avellanas"><span class="nombre" data-i18n="cn_alf_avel">ALFAJOR DE AVELLANAS</span><i></i><span class="precio">7500</span></li>
-      <li data-foto="brownie_chocolate"><span class="nombre" data-i18n="cn_brownie">BROWNIE DE CHOCOLATE</span><i></i><span class="precio">8200</span></li>
-    </ul>
-  </section>
+  <!-- La carta se arma desde /carta-datos (hoja Carta; editor en Admin > Carta). -->
+  <div id="carta"><p class="cargando" id="cargando">· · ·</p></div>
 </main>
 <footer data-i18n="c_precios">Precios en pesos argentinos.</footer>
 <dialog class="foto" id="dlgFoto" aria-label="Foto del producto">
@@ -234,17 +108,143 @@ body.foto-abierta{overflow:hidden}
 </dialog>
 <script src="/idioma.js"></script>
 <script>
-/* Las fotos las carga el dueño en Admin › Contenido (claves carta_foto_<data-foto>).
-   Si el fetch falla o no hay foto, la carta queda exactamente como es. */
+/* Carta armada desde los datos. Sin /carta-datos usa /carta-semilla.json (la carta
+   original); los textos salen de nombre_<idioma> con caída al español. */
 (function () {
+  var cont = document.getElementById('carta');
   var dlg = document.getElementById('dlgFoto');
-  if (!dlg || !dlg.showModal) return;
   var img = document.getElementById('dlgFotoImg');
   var nom = document.getElementById('dlgFotoNombre');
+  var carta = null;
 
-  function abrir(el, url) {
-    var n = el.querySelector('.nombre').cloneNode(true);
-    n.querySelectorAll('svg').forEach(function (s) { s.remove(); });
+  var ICONO_SIN_TACC = '<svg class="sintacc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" role="img"><title></title><path d="M12 21V9"/><path d="M12 9c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 9c2-.5 3-2 3-4-2 .5-3 2-3 4zM12 14c-2-.5-3-2-3-4 2 .5 3 2 3 4zM12 14c2-.5 3-2 3-4-2 .5-3 2-3 4z"/><path d="M4 20L20 4"/></svg>';
+
+  function idioma() { return window.LONi18n ? window.LONi18n.idioma() : 'es'; }
+  function nm(n) { return (n && (n[idioma()] || n.es)) || ''; }
+  function el(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+
+  function nombre(it) {
+    var s = el('span', 'nombre', nm(it.nombre));
+    if (it.sin_tacc) {
+      var t = window.LONi18n ? window.LONi18n.t('c_sin_tacc', 'Sin TACC') : 'Sin TACC';
+      s.appendChild(document.createTextNode(' '));
+      var holder = document.createElement('span');
+      holder.innerHTML = ICONO_SIN_TACC;
+      var svg = holder.firstChild;
+      svg.setAttribute('aria-label', t);
+      svg.querySelector('title').textContent = t;
+      s.appendChild(svg);
+    }
+    return s;
+  }
+
+  function itemEl(it, c) {
+    var e;
+    if (c.formato === 'tres') {
+      e = el('div', 'fila');
+      e.appendChild(nombre(it));
+      [it.precio_s, it.precio_m, it.precio_l].forEach(function (p) { e.appendChild(el('span', 'precio', p)); });
+    } else if (c.estilo === 'puntos') {
+      e = el('li');
+      e.appendChild(nombre(it));
+      e.appendChild(el('i'));
+      e.appendChild(el('span', 'precio', it.precio));
+    } else if (c.estilo === 'detalle') {
+      e = el('div', 'item');
+      var linea = el('div', 'linea');
+      linea.appendChild(nombre(it));
+      linea.appendChild(el('span', 'precio', it.precio));
+      e.appendChild(linea);
+      nm(it.descripcion).split('\n').forEach(function (l, i) {
+        if (l.trim()) e.appendChild(el('span', i ? 'desc opc' : 'desc', l));
+      });
+    } else {
+      e = el('div', 'fila uno');
+      e.appendChild(nombre(it));
+      e.appendChild(el('span', 'precio', it.precio));
+    }
+    e.setAttribute('data-foto', it.id);
+    if (it.foto) {
+      e.classList.add('con-foto');
+      e.setAttribute('role', 'button');
+      e.tabIndex = 0;
+      e.addEventListener('click', function () { abrir(e, it.foto); });
+      e.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(e, it.foto); }
+      });
+    }
+    return e;
+  }
+
+  function cajaEl(c, s) {
+    var box = el('section', c.marca ? 'caja marca' : 'caja');
+    var titulo = nm(c.nombre);
+    if (titulo) {
+      var h = el('h3', null, titulo);
+      h.id = 't-' + c.id;
+      box.setAttribute('aria-labelledby', h.id);
+      box.appendChild(h);
+    } else {
+      box.setAttribute('aria-label', nm(s.nombre));
+    }
+    if (c.formato === 'tres') {
+      var enc = el('div', 'fila enc');
+      enc.appendChild(el('span', null, ' '));
+      c.rotulos.forEach(function (r) { enc.appendChild(el('span', null, r)); });
+      box.appendChild(enc);
+    } else if (c.rotulos[0]) {
+      var enc1 = el('div', 'fila uno enc');
+      enc1.appendChild(el('span', null, ' '));
+      enc1.appendChild(el('span', null, c.rotulos[0]));
+      box.appendChild(enc1);
+    }
+    function grupo(items) {
+      if (c.formato !== 'tres' && c.estilo === 'puntos') {
+        var ul = el('ul', 'puntos');
+        items.forEach(function (it) { ul.appendChild(itemEl(it, c)); });
+        box.appendChild(ul);
+      } else {
+        items.forEach(function (it) { box.appendChild(itemEl(it, c)); });
+      }
+    }
+    var corrida = [];
+    function volcar() { if (corrida.length) grupo(corrida); corrida = []; }
+    c.hijos.forEach(function (h) {
+      if (h.tipo === 'subgrupo') {
+        volcar();
+        box.appendChild(el('h4', null, nm(h.nombre)));
+        grupo(h.items);
+      } else corrida.push(h);
+    });
+    volcar();
+    return box;
+  }
+
+  function pintar() {
+    if (!carta) return;
+    cont.textContent = '';
+    var hayFoto = false;
+    carta.secciones.forEach(function (s) {
+      cont.appendChild(el('h2', 'seccion', nm(s.nombre)));
+      s.categorias.forEach(function (c) {
+        c.hijos.forEach(function (h) {
+          (h.tipo === 'subgrupo' ? h.items : [h]).forEach(function (it) { if (it.foto) hayFoto = true; });
+        });
+        cont.appendChild(cajaEl(c, s));
+      });
+    });
+    document.getElementById('avisoFoto').hidden = !hayFoto;
+  }
+
+  function abrir(e, url) {
+    if (!dlg || !dlg.showModal) return;
+    var n = e.querySelector('.nombre').cloneNode(true);
+    n.querySelectorAll('svg').forEach(function (x) { x.remove(); });
     var texto = n.textContent.replace(/\s+/g, ' ').trim();
     img.src = url;
     img.alt = texto;
@@ -253,33 +253,25 @@ body.foto-abierta{overflow:hidden}
     dlg.showModal();
   }
 
-  document.getElementById('dlgFotoX').addEventListener('click', function () { dlg.close(); });
-  // El click en el ::backdrop llega con el propio dialog como target.
-  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
-  dlg.addEventListener('close', function () {
-    document.body.classList.remove('foto-abierta');
-    img.removeAttribute('src');
-  });
+  if (dlg) {
+    document.getElementById('dlgFotoX').addEventListener('click', function () { dlg.close(); });
+    // El click en el ::backdrop llega con el propio dialog como target.
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+    dlg.addEventListener('close', function () {
+      document.body.classList.remove('foto-abierta');
+      img.removeAttribute('src');
+    });
+  }
 
-  fetch('/landing-contenido')
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (d) {
-      var c = d && d.contenido;
-      if (!c) return;
-      document.querySelectorAll('[data-foto]').forEach(function (el) {
-        var url = String(c['carta_foto_' + el.getAttribute('data-foto')] || '').trim();
-        if (!url) return;
-        document.getElementById('avisoFoto').hidden = false;
-        el.classList.add('con-foto');
-        el.setAttribute('role', 'button');
-        el.tabIndex = 0;
-        el.addEventListener('click', function () { abrir(el, url); });
-        el.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(el, url); }
-        });
-      });
-    })
-    .catch(function () {});
+  function json(url) {
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  json('/carta-datos').then(function (d) { return d.carta; })
+    .catch(function () { return json('/carta-semilla.json'); })
+    .then(function (d) { carta = d; pintar(); })
+    .catch(function () { cont.textContent = ''; });
+
+  window.addEventListener('lon-idioma', pintar);
 })();
 </script>
 </body>
