@@ -31,9 +31,11 @@
   h1{ font-weight:400; font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-muted); margin:0 0 24px; }
   #sellarMensaje{ font-size:20px; line-height:1.35; margin:0 0 20px; }
   #sellarMensaje.error{ color:#9b2c2c; }
-  #sellarCantidad{ display:flex; gap:14px; justify-content:center; margin:0 0 22px; }
-  #sellarCantidad button{ width:76px; height:76px; border-radius:50%; border:2px solid var(--bordo); background:var(--bg-card); color:var(--bordo); font:400 32px Fraunces,Georgia,serif; cursor:pointer; }
-  #sellarCantidad button:active{ background:var(--bordo); color:var(--crema); }
+  #sellarMensaje:empty{ display:none; }
+  #sellarCantidad{ margin:0 0 22px; }
+  #sellarCantidad button.sellar-uno{ display:block; width:100%; min-height:64px; border:0; border-radius:8px; background:var(--bordo); color:var(--crema); font:400 24px Fraunces,Georgia,serif; cursor:pointer; }
+  #sellarCantidad .sellar-mas{ margin:14px 0 0; font-size:14px; color:var(--ink-muted); }
+  #sellarCantidad .sellar-mas button{ min-width:44px; min-height:44px; border:0; background:none; color:var(--bordo); font:400 16px Fraunces,Georgia,serif; text-decoration:underline; cursor:pointer; }
   #sellarTarjeta{ margin:0 0 22px; }
   #sellarTarjeta:empty{ display:none; }
   #sellarAviso{ margin:0 0 18px; padding:10px 12px; border-radius:8px; background:var(--bg-card); border:1px solid var(--line); font-size:13px; color:var(--ink-muted); position:relative; text-align:left; padding-right:34px; }
@@ -53,9 +55,8 @@
   <h1 data-i18n="s_titulo">Sellar mi café</h1>
   <p id="sellarMensaje">Sellando tu café...</p>
   <div id="sellarCantidad" class="oculto">
-    <button type="button" data-n="1">1</button>
-    <button type="button" data-n="2">2</button>
-    <button type="button" data-n="3">3</button>
+    <button type="button" class="sellar-uno" data-n="1" data-i18n="s_sumar1">Sumar 1 café</button>
+    <p class="sellar-mas"><span data-i18n="s_mas">¿Compraste más?</span> <button type="button" data-n="2">2</button> · <button type="button" data-n="3">3</button></p>
   </div>
   <div id="sellarTarjeta"></div>
   <div id="sellarGoogle" class="oculto"></div>
@@ -93,7 +94,7 @@
     $('sellarCantidad').classList.toggle('oculto', !cantidad);
     vista = () => {
       const m = $('sellarMensaje');
-      m.textContent = T(clave, es, vars);
+      m.textContent = clave ? T(clave, es, vars) : (es || '');
       m.classList.toggle('error', Boolean(error));
     };
     vista();
@@ -119,11 +120,11 @@
   });
   window.addEventListener('lon-idioma', () => { if (vista) vista(); });
 
-  // Pregunta cuantos cafes y recien con el toque en 1/2/3 llama al servidor.
+  // Ofrece sumar 1 (o 2/3) y recien con el toque llama al servidor.
   function preguntar(){
     const s = sesion();
     if (!s) return pedirLogin();
-    mostrar({ clave: 's_cuantos', es: '¿Cuántos cafés?', cantidad: true });
+    mostrar({ clave: null, es: '', cantidad: true });
   }
   $('sellarCantidad').addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-n]');
