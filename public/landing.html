@@ -118,9 +118,14 @@ footer a:hover{color:var(--accent-terracota)}
   .hero-copy{padding:36px 20px 44px}
   .section{padding:48px 20px}
 }
+/* Anti-parpadeo: hasta que llega el contenido del CMS los textos por defecto del HTML no se ven
+   (visibility, no display: el layout no salta). La clase la pone el script del <head>, así que
+   sin JS el texto por defecto se ve igual. */
+html.lon-cargando [data-landing]:not(img),html.lon-cargando [data-landing-ig-text]{visibility:hidden}
 /* /tienda corta el celular en 600px: entre 601 y 799 su logo mide 36px */
 @media(min-width:601px) and (max-width:799px){.logo{height:36px}}
 </style>
+<script>document.documentElement.classList.add('lon-cargando');setTimeout(function(){document.documentElement.classList.remove('lon-cargando');},3000);</script>
 </head>
 <body>
 <header class="header" id="headerLanding">
@@ -333,9 +338,12 @@ fetch('/catalogo-categorias')
 
   // La banda espera al contenido del CMS para decidir la fuente (sin parpadeo). Si el CMS
   // falla o no trae fotos, vale el comportamiento de siempre.
-  window.lonContenidoPromesa = fetch('/landing-contenido')
-    .then(function (res) { return res.ok ? res.json() : null; })
-    .catch(function () { return null; });
+  // El servidor suele inyectar el contenido en el HTML (LON_CONTENIDO_INICIAL); si no, fetch.
+  window.lonContenidoPromesa = window.LON_CONTENIDO_INICIAL
+    ? Promise.resolve({ ok: true, contenido: window.LON_CONTENIDO_INICIAL })
+    : fetch('/landing-contenido')
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .catch(function () { return null; });
   window.lonContenidoPromesa
     .then(function (data) {
       var c = contenidoDePagina((data && data.ok && data.contenido) || {});
@@ -569,7 +577,8 @@ fetch('/catalogo-categorias')
       if (data && data.ok && data.contenido) aplicarContenido(data.contenido);
     })
     .catch(function () { /* respaldo abajo */ })
-    .then(respaldoFotos);
+    .then(respaldoFotos)
+    .then(function () { document.documentElement.classList.remove('lon-cargando'); });
 })();
 </script>
 </body>

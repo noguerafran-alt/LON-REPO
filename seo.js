@@ -60,6 +60,37 @@ function jsonSeguro(valor) {
   return JSON.stringify(valor).replace(/</g, '\\u003c');
 }
 
+/* Mete el contenido del CMS en el <head> de la landing para que el cliente no tenga que esperar
+   al fetch: sin esto se veian un instante los textos por defecto del HTML. Se escapa < (cierra
+   </script>) y U+2028/2029 (rompen un literal JS en navegadores viejos). */
+function inyectarContenidoInicial(html, contenido) {
+  const json = JSON.stringify(contenido)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+  return html.replace('<meta charset="UTF-8">', () => `<meta charset="UTF-8">
+<script>window.LON_CONTENIDO_INICIAL=${json};</script>`);
+}
+
+/* Contenido del CMS o null: nunca frena ni rompe la pagina si Sheets tarda o falla (el cliente
+   cae al fetch de siempre). La lectura sigue en curso y deja el cache tibio para la proxima. */
+const ESPERA_CONTENIDO_MS = 1500;
+async function contenidoOpcional(cargar) {
+  if (!cargar) return null;
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(cargar),
+      new Promise((resolve) => { timer = setTimeout(() => resolve(null), ESPERA_CONTENIDO_MS); }),
+    ]);
+  } catch (err) {
+    console.warn('SEO: sin contenido inicial de la landing:', err.message);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /* MISMA logica de slug que usa el frontend en public/index.html
    (funcion slugProducto). Tienen que coincidir exactamente: el
    navegador arma la URL con una y el servidor la resuelve con la otra.
@@ -330,7 +361,7 @@ async function servirCatalogoConSeo(req, res, next, obtenerProductos, base) {
   return res.type('html').send(htmlFinal);
 }
 
-function montarRutasSeo(app, { cargarProductos, urlBase }) {
+function montarRutasSeo(app, { cargarProductos, urlBase, cargarLandingContenido }) {
   const base = String(urlBase || '').replace(/\/+$/, '');
   const obtenerProductos = crearCargadorCacheado(cargarProductos);
 
@@ -344,16 +375,19 @@ function montarRutasSeo(app, { cargarProductos, urlBase }) {
 
     try {
       const html = leerLanding();
-      return res.type('html').send(html);
+      const contenido = await contenidoOpcional(cargarLandingContenido);
+      return res.type('html').send(contenido ? inyectarContenidoInicial(html, contenido) : html);
     } catch (err) {
       console.error('SEO: no se pudo leer landing.html:', err.message);
       return next();
     }
   });
 
-  app.get('/cafeteria', (req, res, next) => {
+  app.get('/cafeteria', async (req, res, next) => {
     try {
-      return res.type('html').send(landingCafeteria(base));
+      const html = landingCafeteria(base);
+      const contenido = await contenidoOpcional(cargarLandingContenido);
+      return res.type('html').send(contenido ? inyectarContenidoInicial(html, contenido) : html);
     } catch (err) {
       console.error('SEO: no se pudo armar /cafeteria:', err.message);
       return next();
@@ -401,4 +435,4 @@ ${urls.map((u) => `  <url>
   });
 }
 
-module.exports = { montarRutasSeo, slugProducto };
+module.exports = { montarRutasSeo, slugProducto, inyectarContenidoInicial };
