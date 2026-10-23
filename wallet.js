@@ -42,6 +42,13 @@ function armarClase(issuer, urlBase) {
   };
 }
 
+// El texto que más mira el cliente (y el que se ve cuando el pase aparece por la geocerca).
+function textoFaltan(n, objetivo) {
+  const faltan = objetivo - n;
+  if (faltan <= 0) return '¡Tu próximo café es gratis!';
+  return faltan === 1 ? 'Te falta 1 café para el gratis' : `Te faltan ${faltan} cafés para el gratis`;
+}
+
 function armarObjeto(issuer, { codigoFidelidad, nombre, cafesContador }, objetivo) {
   const n = Number(cafesContador) || 0;
   return {
@@ -51,7 +58,8 @@ function armarObjeto(issuer, { codigoFidelidad, nombre, cafesContador }, objetiv
     accountId: codigoFidelidad,
     accountName: nombre || '',
     loyaltyPoints: { label: 'Cafés', balance: { int: n } },
-    textModulesData: [{ id: 'cafes', header: 'Cafés', body: n >= objetivo ? `${n} de ${objetivo} · ¡Tu próximo café es gratis!` : `${n} de ${objetivo}` }],
+    secondaryLoyaltyPoints: { label: 'Café gratis', balance: { string: n >= objetivo ? '¡El próximo!' : `Faltan ${objetivo - n}` } },
+    textModulesData: [{ id: 'cafes', header: `${n} de ${objetivo} cafés`, body: textoFaltan(n, objetivo) }],
     barcode: { type: 'QR_CODE', value: codigoFidelidad, alternateText: codigoFidelidad },
   };
 }
@@ -123,8 +131,13 @@ function demo() {
   assert.deepStrictEqual(armarClase('I', 'u').merchantLocations, [{ latitude: -34.4773096, longitude: -58.5550469 }]);
   const o = armarObjeto('I', { codigoFidelidad: 'LON-AB', nombre: 'Ana', cafesContador: 2 }, 3);
   assert.strictEqual(o.barcode.value, 'LON-AB');
-  assert.strictEqual(o.textModulesData[0].body, '2 de 3');
-  assert.ok(armarObjeto('I', { codigoFidelidad: 'X', cafesContador: 3 }, 3).textModulesData[0].body.includes('gratis'));
+  assert.strictEqual(o.textModulesData[0].header, '2 de 3 cafés');
+  assert.strictEqual(o.textModulesData[0].body, 'Te falta 1 café para el gratis');
+  assert.strictEqual(o.secondaryLoyaltyPoints.balance.string, 'Faltan 1');
+  assert.strictEqual(armarObjeto('I', { codigoFidelidad: 'X', cafesContador: 0 }, 3).textModulesData[0].body, 'Te faltan 3 cafés para el gratis');
+  const pendiente = armarObjeto('I', { codigoFidelidad: 'X', cafesContador: 3 }, 3);
+  assert.strictEqual(pendiente.textModulesData[0].body, '¡Tu próximo café es gratis!');
+  assert.strictEqual(pendiente.secondaryLoyaltyPoints.balance.string, '¡El próximo!');
 
   // JWT RS256 verificable con la publica
   const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
