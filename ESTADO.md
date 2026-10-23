@@ -446,6 +446,25 @@ línea, Fraunces, crema/bordó). Solo `public/index.html` + claves en `idioma.js
   `onload`; el respaldo solo se carga si el fetch falla, la clave viene vacía
   o la foto del CMS da error. Nunca se ve la foto vieja antes (`cargarFoto` /
   `respaldoFotos` en landing.html).
+- **Anti-parpadeo de textos y contenido (2026-10-23)**: al abrir `/` o `/cafeteria`
+  se veían un instante los textos/fotos/video por defecto del HTML y después los
+  del CMS, porque el contenido llegaba con un `fetch('/landing-contenido')` que
+  leía Sheets en cada visita. Ahora: (1) `server.js` cachea el contenido 60 s en
+  memoria (`cargarLandingContenido`, con lectura única en vuelo; mismo patrón que
+  `cacheCategoriasPublicas`); el `PUT /admin/landing` reemplaza el caché con lo
+  que guardó, así el dueño ve su cambio al toque. `GET /admin/landing` NO usa el
+  caché. (2) `seo.js` (`montarRutasSeo` recibe `cargarLandingContenido`) inyecta
+  `window.LON_CONTENIDO_INICIAL` en el `<head>` de `/` y `/cafeteria`
+  (`inyectarContenidoInicial`, escapa `<` y U+2028/2029). Si el caché está frío y
+  Sheets no responde en 1,5 s o falla, se sirve el HTML sin inyectar y el cliente
+  cae al fetch de siempre: Sheets nunca rompe ni demora la página. (3)
+  `landing.html`: `lonContenidoPromesa` usa lo inyectado si existe; un script del
+  `<head>` pone `lon-cargando` en `<html>` y el CSS oculta con `visibility` los
+  `[data-landing]` (menos `img`) y `[data-landing-ig-text]`; la clase se saca al
+  terminar `aplicarContenido` + `respaldoFotos`, o a los 3 s (failsafe: el texto
+  por defecto aparece igual). Sin JS no se oculta nada. El service worker no
+  intervenía (no cachea). Con ≥1 min de edad el caché puede mostrar contenido de
+  hasta 60 s atrás si alguien edita Sheets a mano (el PUT sí lo refresca).
 - **Hero a `100dvh`** (con `100vh` de respaldo): al abrir solo se ve el hero.
 - **Barra de categorías eliminada**; las categorías y `/carta` viven solo en
   el menú de las tres barras (ya los tenía).

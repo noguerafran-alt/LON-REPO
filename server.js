@@ -138,6 +138,7 @@ montarRutasSeo(app, {
   // Ojo: va SITIO_URL (el dominio propio), no PUBLIC_URL — ver el
   // comentario de SITIO_URL en config.js.
   urlBase: config.SITIO_URL,
+  cargarLandingContenido,
 });
 
 // La tarjeta NFC graba /resena y no el link de Google: si Google lo cambia,
@@ -1787,10 +1788,31 @@ async function leerLandingContenidoAsegurado() {
   return { sheetsClient, contenido };
 }
 
+/* Caché de 60 s del contenido público de la landing: sin él, cada visita a /, /cafeteria y
+   /landing-contenido leía Sheets y el contenido llegaba tarde (parpadeo del texto viejo).
+   `version` evita que una lectura vieja en vuelo pise lo que acaba de guardar el PUT. */
+let cacheLanding = { hasta: 0, contenido: null, version: 0, enVuelo: null };
+function cargarLandingContenido() {
+  if (cacheLanding.contenido && Date.now() < cacheLanding.hasta) return Promise.resolve(cacheLanding.contenido);
+  if (cacheLanding.enVuelo) return cacheLanding.enVuelo;
+  const version = cacheLanding.version;
+  const enVuelo = leerLandingContenidoAsegurado()
+    .then(({ contenido }) => {
+      if (cacheLanding.version === version) {
+        cacheLanding.contenido = contenido;
+        cacheLanding.hasta = Date.now() + 60 * 1000;
+      }
+      return contenido;
+    })
+    .finally(() => { if (cacheLanding.enVuelo === enVuelo) cacheLanding.enVuelo = null; });
+  cacheLanding.enVuelo = enVuelo;
+  return enVuelo;
+}
+
 /* Público: textos/fotos actuales de la landing (rate-limited). */
 app.get('/landing-contenido', limiteLecturaPublica, async (req, res) => {
   try {
-    const { contenido } = await leerLandingContenidoAsegurado();
+    const contenido = await cargarLandingContenido();
     res.json({ ok: true, contenido });
   } catch (err) {
     console.error('Error leyendo contenido de landing:', err.message);
@@ -1828,6 +1850,7 @@ app.put('/admin/landing', limiteAdmin, async (req, res) => {
     const contenido = await setLandingContenido(
       sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_LANDING, updates,
     );
+    cacheLanding = { hasta: Date.now() + 60 * 1000, contenido, version: cacheLanding.version + 1, enVuelo: null };
     res.json({ ok: true, contenido });
   } catch (err) {
     console.error('Error guardando landing (admin):', err.message);
