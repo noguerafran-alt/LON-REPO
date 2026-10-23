@@ -235,6 +235,8 @@ module.exports = {
     // Sellado NFC (/sellar). Encabezados a escribir A MANO en la fila 1.
     ultimoSello: 5,       // F: "Ultimo sello" (fecha-hora ISO UTC del ultimo sello por NFC)
     selloDia: 6,          // G: "Sellos del dia" ("AAAA-MM-DD|N", dia calendario de Argentina)
+    // Aviso semanal de Wallet. Encabezado a escribir A MANO en H1.
+    ultimoAvisoWallet: 7, // H: "Ultimo aviso Wallet" (semana ISO AAAA-Www del ultimo aviso, semana en zona Argentina)
   },
 
   // Columnas de la hoja CIERRE_CAJA (planilla de VENTAS). Una fila por
@@ -422,6 +424,9 @@ module.exports = {
   SELLO_NFC_TOKEN: (process.env.SELLO_NFC_TOKEN || '').trim(),
   SELLO_MINUTOS_ENTRE: Number(process.env.SELLO_MINUTOS_ENTRE || 30),
   SELLO_MAX_POR_DIA: Number(process.env.SELLO_MAX_POR_DIA || 3),
+
+  // Token del disparo semanal POST /tareas/aviso-semanal-wallet (Authorization: Bearer). Sin el, el endpoint responde 503.
+  AVISO_SEMANAL_TOKEN: (process.env.AVISO_SEMANAL_TOKEN || '').trim(),
 
   // Google Wallet (opcional): tarjeta de fidelidad. Sin issuer o sin
   // credenciales el boton no aparece. Por defecto usa la MISMA cuenta de
