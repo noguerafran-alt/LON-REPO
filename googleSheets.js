@@ -1561,10 +1561,24 @@ async function getClientes(sheetsClient, spreadsheetId, sheetName) {
       cafesContador: Number.isFinite(cafesContador) ? cafesContador : 0,
       ultimoSello: fila[cols.ultimoSello] ? String(fila[cols.ultimoSello]).trim() : '',
       selloDia: fila[cols.selloDia] ? String(fila[cols.selloDia]).trim() : '',
+      ultimoAvisoWallet: fila[cols.ultimoAvisoWallet] ? String(fila[cols.ultimoAvisoWallet]).trim() : '',
     });
   }
 
   return clientes;
+}
+
+/** Anota la semana del ultimo aviso de Wallet de varias filas en un solo batchUpdate. */
+async function marcarAvisosWallet(sheetsClient, spreadsheetId, sheetName, marcas) {
+  if (!marcas.length) return;
+  const letra = columnaALetra(config.COLUMNAS_CLIENTES.ultimoAvisoWallet);
+  await sheetsClient.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      valueInputOption: 'RAW',
+      data: marcas.map((m) => ({ range: `${sheetName}!${letra}${m.numeroFila}`, values: [[m.semana]] })),
+    },
+  });
 }
 
 async function buscarClientePorEmail(sheetsClient, spreadsheetId, sheetName, email) {
@@ -2619,6 +2633,7 @@ async function setCartaFilas(sheetsClient, spreadsheetId, sheetName, filas) {
 }
 
 module.exports = {
+  marcarAvisosWallet,
   appendRow,
   appendRows,
   asegurarFilasSuficientes,

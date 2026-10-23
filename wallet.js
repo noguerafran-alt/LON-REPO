@@ -6,6 +6,7 @@
  * ============================================================ */
 const crypto = require('crypto');
 const config = require('./config');
+const { diaAR } = require('./sello');
 
 const API = 'https://walletobjects.googleapis.com/walletobjects/v1';
 const SCOPE = 'https://www.googleapis.com/auth/wallet_object.issuer';
@@ -124,6 +125,59 @@ function actualizarEnSegundoPlano(cliente, cafesContador) {
     });
 }
 
+/** Semana ISO (AAAA-Www) del dia calendario de Argentina, no del UTC de Render. */
+function semanaISOAR(fecha) {
+  const [y, m, d] = diaAR(fecha).split('-').map(Number);
+  const dia = Date.UTC(y, m - 1, d);
+  const jueves = new Date(dia + (3 - ((new Date(dia).getUTCDay() + 6) % 7)) * 86400000);
+  const anio = jueves.getUTCFullYear();
+  const semana = Math.floor((jueves - Date.UTC(anio, 0, 1)) / 604800000) + 1;
+  return `${anio}-W${String(semana).padStart(2, '0')}`;
+}
+
+/** A quien avisar: con codigo, 1..objetivo cafes (0 = nunca vino) y sin aviso esta semana. */
+function clientesParaAvisar(clientes, objetivo, semana) {
+  return clientes.filter((c) => c.codigoFidelidad && c.cafesContador >= 1 && c.cafesContador <= objetivo && c.ultimoAvisoWallet !== semana);
+}
+
+/**
+ * Mensaje con notificacion al pase (Wallet API, loyaltyObject.addMessage:
+ * https://developers.google.com/wallet/retail/loyalty-cards/rest/v1/loyaltyobject/addmessage ;
+ * Message.messageType TEXT_AND_NOTIFY). `id` unico por semana: si se repite el disparo Google no duplica.
+ * Devuelve 'enviado' | 'sinPase' (404: nunca guardo el pase); otros errores se lanzan.
+ */
+async function avisarFaltan(cliente, semana) {
+  const objetivo = config.CAFES_PARA_GRATIS;
+  const idObj = idObjeto(config.GOOGLE_WALLET_ISSUER_ID, cliente.codigoFidelidad);
+  try {
+    await pedir('POST', `${API}/loyaltyObject/${encodeURIComponent(idObj)}/addMessage`, {
+      message: { id: `faltan_${semana}`, header: 'LON Philosophy · Café', body: textoFaltan(cliente.cafesContador, objetivo), messageType: 'TEXT_AND_NOTIFY' },
+    });
+    return 'enviado';
+  } catch (err) {
+    if (err.response && err.response.status === 404) return 'sinPase';
+    throw err;
+  }
+}
+
+/** Manda el aviso a todos los que corresponde. `marcas` = filas a anotar en la hoja. */
+async function avisoSemanal(clientes, ahora = new Date()) {
+  const semana = semanaISOAR(ahora);
+  const resumen = { enviados: 0, salteados: clientes.length, sinPase: 0, errores: 0 };
+  const marcas = [];
+  for (const c of clientesParaAvisar(clientes, config.CAFES_PARA_GRATIS, semana)) {
+    resumen.salteados--;
+    try {
+      if (await avisarFaltan(c, semana) === 'enviado') { resumen.enviados++; marcas.push({ numeroFila: c.numeroFila, semana }); }
+      else resumen.sinPase++;
+    } catch (err) {
+      resumen.errores++;
+      console.error('Google Wallet: no se pudo avisar a', c.codigoFidelidad + ':', err.message);
+    }
+  }
+  return { resumen, marcas };
+}
+
 function demo() {
   const assert = require('assert');
   assert.strictEqual(idObjeto('3388.1', 'LON-AB 12/x'), '3388.1.cafe_LON-AB_12_x');
@@ -148,6 +202,22 @@ function demo() {
   assert.strictEqual(JSON.parse(Buffer.from(h, 'base64url')).alg, 'RS256');
   assert.strictEqual(JSON.parse(Buffer.from(p, 'base64url')).typ, 'savetowallet');
 
+  // semana ISO en Argentina (UTC-3)
+  assert.strictEqual(semanaISOAR(new Date('2026-10-23T12:00:00Z')), '2026-W43');
+  assert.strictEqual(semanaISOAR(new Date('2026-10-25T20:00:00Z')), '2026-W43'); // domingo 17h AR
+  assert.strictEqual(semanaISOAR(new Date('2026-10-26T01:00:00Z')), '2026-W43'); // domingo 22h AR, ya lunes en UTC
+  assert.strictEqual(semanaISOAR(new Date('2026-10-26T03:00:00Z')), '2026-W44'); // lunes 00h AR
+  assert.strictEqual(semanaISOAR(new Date('2026-01-01T12:00:00Z')), '2026-W01');
+  assert.strictEqual(semanaISOAR(new Date('2027-01-01T12:00:00Z')), '2026-W53'); // viernes: aun semana 53 de 2026
+  assert.strictEqual(semanaISOAR(new Date('2024-12-30T12:00:00Z')), '2025-W01'); // lunes de 2024 que ya es 2025-W01
+  assert.strictEqual(semanaISOAR(new Date('2027-01-01T02:00:00Z')), '2026-W53'); // 31/12 23h AR
+
+  // a quien se avisa (objetivo 3)
+  const cl = (codigoFidelidad, cafesContador, ultimoAvisoWallet = '') => ({ codigoFidelidad, cafesContador, ultimoAvisoWallet });
+  const sel = clientesParaAvisar([cl('a', 0), cl('b', 1), cl('c', 2), cl('d', 3), cl('e', 2, '2026-W43'), cl('', 2), cl('f', 2, '2026-W42')], 3, '2026-W43');
+  assert.deepStrictEqual(sel.map((c) => c.codigoFidelidad), ['b', 'c', 'd', 'f']);
+  assert.strictEqual(textoFaltan(3, 3), '¡Tu próximo café es gratis!');
+
   // sin config no hay link
   assert.strictEqual(urlGuardar({ codigoFidelidad: 'X' }), null);
   console.log('wallet.js: autochequeo OK');
@@ -155,4 +225,4 @@ function demo() {
 
 if (require.main === module) demo();
 
-module.exports = { habilitado, urlGuardar, actualizarEnSegundoPlano };
+module.exports = { habilitado, urlGuardar, actualizarEnSegundoPlano, avisoSemanal, semanaISOAR };

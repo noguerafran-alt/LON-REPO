@@ -69,6 +69,8 @@ const {
   ensureCartaSheet,
   getCartaFilas,
   setCartaFilas,
+  getClientes,
+  marcarAvisosWallet,
 } = require('./googleSheets');
 const { generarPdfEtiquetas } = require('./generarEtiquetas');
 const QRCode = require('qrcode');
@@ -261,6 +263,9 @@ if (!config.GOOGLE_RESENA_URL) {
 }
 if (!config.SELLO_NFC_TOKEN) {
   console.warn('⚠️  No configuraste SELLO_NFC_TOKEN — /sellar funciona sin código secreto: cualquiera que conozca el link puede sellar (con el límite de tiempo por cliente igual).');
+}
+if (!config.AVISO_SEMANAL_TOKEN) {
+  console.warn('⚠️  No configuraste AVISO_SEMANAL_TOKEN — POST /tareas/aviso-semanal-wallet responde 503 y el aviso semanal de Wallet no se manda.');
 }
 if (!config.GOOGLE_WALLET_ISSUER_ID) {
   console.warn('⚠️  No configuraste GOOGLE_WALLET_ISSUER_ID — el botón «Agregar a Google Wallet» no aparece.');
@@ -592,6 +597,30 @@ app.post('/cliente/sellar', limiteSello, async (req, res) => {
     console.error('Error sellando café por NFC:', err.message);
     res.status(500).json({ error: 'No se pudo sellar tu café. Probá de nuevo.' });
   }
+});
+
+/* Aviso semanal de Wallet ("te faltan N cafes"). Lo dispara el workflow de GitHub
+   .github/workflows/aviso-wallet-semanal.yml. La marca por fila (columna H) lo hace
+   a prueba de repeticiones; el candado evita que un reintento por timeout corra en paralelo. */
+const limiteAvisoSemanal = crearLimitador({ windowMs: 60 * 60 * 1000, max: 10 });
+let avisoEnCurso = false;
+app.post('/tareas/aviso-semanal-wallet', limiteAvisoSemanal, async (req, res) => {
+  if (!config.AVISO_SEMANAL_TOKEN) return res.status(503).json({ error: 'AVISO_SEMANAL_TOKEN no está configurado.' });
+  const m = /^Bearer (.+)$/.exec(req.get('authorization') || '');
+  if (!m || !tokenValido(m[1], config.AVISO_SEMANAL_TOKEN)) return res.status(401).json({ error: 'No autorizado.' });
+  if (!wallet.habilitado()) return res.status(503).json({ error: 'Google Wallet no está habilitado (faltan GOOGLE_WALLET_ISSUER_ID o credenciales).' });
+  if (avisoEnCurso) return res.status(409).json({ error: 'Ya hay un aviso corriendo.' });
+  avisoEnCurso = true;
+  try {
+    const sheetsClient = google.sheets({ version: 'v4', auth });
+    const clientes = await getClientes(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES);
+    const { resumen, marcas } = await wallet.avisoSemanal(clientes);
+    await marcarAvisosWallet(sheetsClient, config.SHEET_ID_PRODUCTOS, config.HOJA_CLIENTES, marcas);
+    res.json(resumen);
+  } catch (err) {
+    console.error('Error en el aviso semanal de Wallet:', err.message);
+    res.status(500).json({ error: 'No se pudo completar el aviso semanal.' });
+  } finally { avisoEnCurso = false; }
 });
 
 /* Consulta (sin modificar nada) los datos de fidelidad de un cliente a
