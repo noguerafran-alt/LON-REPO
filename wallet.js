@@ -36,6 +36,9 @@ function armarClase(issuer, urlBase) {
     programLogo: { sourceUri: { uri: `${urlBase}/logo-catalogo.png` }, contentDescription: { defaultValue: { language: 'es', value: 'LON Philosophy' } } },
     hexBackgroundColor: '#5E1E2B',
     reviewStatus: 'UNDER_REVIEW',
+    // `locations` esta deprecado y Google ya no lo usa para avisos por cercania: falla en silencio
+    // (sin error de API). El vigente es `merchantLocations`; coordenadas del place_id de /resena.
+    merchantLocations: [{ latitude: -34.4773096, longitude: -58.5550469 }],
   };
 }
 
@@ -117,6 +120,7 @@ function demo() {
   const assert = require('assert');
   assert.strictEqual(idObjeto('3388.1', 'LON-AB 12/x'), '3388.1.cafe_LON-AB_12_x');
   assert.strictEqual(idClase('3388.1'), '3388.1.lon_cafe');
+  assert.deepStrictEqual(armarClase('I', 'u').merchantLocations, [{ latitude: -34.4773096, longitude: -58.5550469 }]);
   const o = armarObjeto('I', { codigoFidelidad: 'LON-AB', nombre: 'Ana', cafesContador: 2 }, 3);
   assert.strictEqual(o.barcode.value, 'LON-AB');
   assert.strictEqual(o.textModulesData[0].body, '2 de 3');
