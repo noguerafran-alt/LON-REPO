@@ -4,7 +4,7 @@
 > que cualquier cambio de código — ver `CLAUDE.md`. No es un changelog
 > retroactivo perfecto: empieza a llevarse desde acá en adelante.
 >
-> Última actualización: **2026-10-22**
+> Última actualización: **2026-10-23**
 
 ## Qué hace la app hoy
 
@@ -57,6 +57,75 @@
   confirmación de transferencia (Gmail SMTP), SEO dinámico por producto
   (`seo.js`) + sitemap.
 
+## La tienda se instala como app (PWA, 2026-10-23)
+
+Paso **1 de 2**. El objetivo final son las **notificaciones push de
+promociones**, que **todavía NO están implementadas**: sin app instalada no hay
+push, sobre todo en iPhone, donde Safari solo las permite si la app está en la
+pantalla de inicio. Este cambio solo habilita la instalación.
+
+- **`public/manifest.webmanifest`** (nuevo): `name` «LON Philosophy»,
+  `short_name` «LON», `start_url` **`/tienda`** y `scope` `/`, `display:
+  standalone`, bordó `#5E1E2B` de
+  tema y fondo, e `icons` con `icono-192.png`, `icono-512.png` (`purpose: any`)
+  y `icono-maskable-512.png` (`purpose: maskable`, logo al 72% sobre bordó para
+  que el recorte circular de Android no se lo coma). Enlazado desde
+  `public/index.html` junto con `<meta name="theme-color">`. **No hizo falta
+  tocar `server.js`**: `express.static` ya responde
+  `application/manifest+json` para `.webmanifest` (verificado con curl).
+  **Por qué `start_url` es `/tienda` y no `/`**: el botón de instalar vive en
+  «Mi cuenta», que está en `/tienda`. Con `start_url` en `/` el cliente
+  instalaba desde la tienda y la app le abría la **landing**, que es otra
+  página — tenía que volver a navegar para llegar a su tarjeta. El `scope`
+  queda igual en `/`, más amplio que el `start_url`, para que desde la app se
+  pueda ir a la landing, `/carta` o `/mi-tarjeta` sin salirse de la app.
+- **`public/sw.js`** (nuevo) **NO CACHEA NADA, y no tiene que empezar a
+  hacerlo.** Solo `skipWaiting()` en `install`, `clients.claim()` en `activate`
+  y un handler de `fetch` vacío (Chrome pide que exista para considerar la app
+  instalable) que va derecho a la red. El motivo: este repo **no tiene build
+  step**, los archivos de `public/` se editan y se despliegan tal cual, **sin
+  hash en el nombre**. Un caché en el service worker le serviría HTML y JS
+  viejos a clientes reales y, como el service worker queda instalado en el
+  teléfono, **un deploy no lo arregla**: habría que escribir código de
+  desinstalación y esperar a que cada cliente vuelva a entrar. Es de lo más
+  difícil de revertir que se puede meter en producción. Si alguna vez hace
+  falta velocidad, se resuelve con cache HTTP del servidor, no en el SW.
+- **Botón en «Mi cuenta»** (`public/index.html`, debajo de
+  `#btnWalletCliente`), **solo para el cliente logueado** (pedido del dueño) y
+  solo si la app no está ya abierta como app (`LONTarjeta.esApp()`).
+  - **Android/escritorio**: se captura `beforeinstallprompt` con
+    `preventDefault()`, se guarda el evento y recién ahí aparece
+    `#btnInstalarApp`; al tocarlo llama a `prompt()`. Si el navegador nunca
+    dispara el evento (ya instalada, o no soportado) **el botón no aparece**:
+    no hay botón que no haga nada. El evento no se reutiliza, así que se
+    descarta después del primer uso y en `appinstalled`.
+  - **iPhone/iPad** (`LONTarjeta.esIOS()`): **Safari no dispara
+    `beforeinstallprompt` ni expone ninguna API de instalación**, por eso ahí
+    va un **instructivo**, no un botón, reusando la clave ya traducida
+    `s_inicio_aviso` («tocá Compartir (□↑) → Agregar a inicio»), igual que el
+    aviso de `sellar.html`.
+  - Detección reusada de `public/tarjeta.js` (`esIOS`/`esApp`); no se escribió
+    detección nueva. Clave de idioma nueva: `t_instalar_app` (EN/FR/PT en
+    `idioma.js`; el español es el texto del HTML, como siempre). CSS prefijado
+    con `#loginClienteLogueado` para ganarle a la regla genérica
+    `.login-box button`.
+- **Convive con el aviso de `/sellar`, son dos accesos distintos**:
+  `sellar.html` declara `apple-mobile-web-app-title` **«LON Café»** para quien
+  agrega `/mi-tarjeta` a la pantalla de inicio (la tarjeta de fidelidad),
+  mientras que el manifest nuevo declara la app como **«LON Philosophy»** con
+  `start_url` `/tienda`. Un cliente puede terminar con los dos íconos; es
+  a propósito, no lo unifiques sin pensarlo.
+- Verificado con el servidor local y Edge/playwright: `/manifest.webmanifest`
+  200 con `application/manifest+json` y JSON válido, `/sw.js` 200, el service
+  worker queda `active` con scope `/`, deslogueado no se muestra nada, con
+  sesión y UA de iPhone aparece el instructivo, con UA de escritorio y el
+  evento aparece el botón y `prompt()` se llama. **No verificado**: el
+  `beforeinstallprompt` **real** (no se dispara en headless ni en localhost sin
+  HTTPS — en la prueba se despachó un evento sintético, que valida el código de
+  LON pero no el del navegador) ni el flujo de instalación en un celular real.
+  Los 500 de `/catalogo-publico`, `/tarifas-envio` y `/landing-contenido` en la
+  consola son los de siempre por falta de credenciales de Sheets.
+
 ## Hojas de Google Sheets usadas
 
 **Planilla `SHEET_ID_PRODUCTOS`**: `Productos`, `STOCK` (o el nombre en
@@ -71,6 +140,12 @@ fila 1**, al final: **G Categorias**, **H Suma categorias**, **I
 Detalle JSON** — la app nunca escribe encabezados).
 
 ## Pendiente / a medias
+
+- **Notificaciones push de promociones**: NO implementadas. El 2026-10-23
+  se hizo el paso previo (la tienda se instala como app, ver su sección);
+  falta todo lo demás: permiso, `pushManager.subscribe`, VAPID, dónde se
+  guardan las suscripciones y el panel para mandar el aviso. En iPhone solo
+  va a funcionar para quien haya instalado la app.
 
 - **Factura electrónica (ARCA)**: arrancada el 2026-10-20. Hay un módulo
   nuevo `arca.js` con la lógica del comprobante y su autochequeo

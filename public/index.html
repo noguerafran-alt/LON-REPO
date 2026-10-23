@@ -44,6 +44,8 @@
 <!-- SEO:FIN -->
 
 <link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#5E1E2B">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -230,6 +232,18 @@
   .qr-fidelidad-cliente.oculto{ display:none; }
   #loginClienteLogueado a#btnWalletCliente{ display:block; margin-top:12px; padding:10px; border-radius:var(--radius); background:var(--bg-header); color:var(--header-text); text-decoration:none; font-size:14px; }
   #loginClienteLogueado a#btnWalletCliente.oculto{ display:none; }
+  /* Mismo aspecto que el botón de Wallet; con el ID del panel adelante porque
+     .login-box button (más abajo) le pisaría el fondo y el ancho. */
+  #loginClienteLogueado button#btnInstalarApp{
+    display:block; width:100%; margin:12px 0 0; padding:10px; border:none;
+    border-radius:var(--radius); background:var(--bg-header); color:var(--header-text);
+    /* hereda la tipografía en vez de fijarla: así queda igual que el enlace de
+       Wallet que está justo arriba, que la hereda del contenedor */
+    font-family:inherit; font-size:14px; font-weight:400; cursor:pointer;
+  }
+  #loginClienteLogueado button#btnInstalarApp.oculto{ display:none; }
+  #loginClienteLogueado #avisoInstalarApp{ margin:12px 0 0; font-size:12px; color:var(--ink-muted); line-height:1.4; }
+  #loginClienteLogueado #avisoInstalarApp.oculto{ display:none; }
   .btn-login-cliente{ font-size:22px; position:relative; }
   .btn-login-cliente.logueado::after{
     content:''; position:absolute; top:-2px; right:-4px; width:8px; height:8px;
@@ -846,6 +860,8 @@
         <div id="tarjetaCliente" style="margin-bottom:10px;"></div>
         <p style="font-size:12px; color:var(--ink-muted); margin:8px 0 0;" data-i18n="t_qr_texto">Mostrá este QR en el local para cargar tu café. Al completar 3, el próximo escaneo te entrega un regalo sorpresa.</p>
         <a id="btnWalletCliente" class="oculto" href="#" target="_blank" rel="noopener" data-i18n="t_wallet_agregar">Agregar a Google Wallet</a>
+        <button type="button" id="btnInstalarApp" class="oculto" data-i18n="t_instalar_app">Instalar la app</button>
+        <p id="avisoInstalarApp" class="oculto"><strong data-i18n="t_instalar_app">Instalar la app</strong><br><span data-i18n="s_inicio_aviso">Agregala a tu pantalla de inicio: tocá Compartir (□↑) → Agregar a inicio</span></p>
       </div>
       <button type="button" id="btnSalirCliente" style="width:100%; margin-top:16px;" data-i18n="t_cerrar_sesion">Cerrar sesión</button>
     </div>
@@ -1814,6 +1830,44 @@
     loginClienteLogueado.classList.toggle('oculto', !logueado);
     loginClienteFormulario.classList.toggle('oculto', logueado);
     if (logueado) nombreClienteLogueado.textContent = sesionCliente.nombre;
+    actualizarInstalarApp();
+  }
+
+  // Instalar la tienda como app. Paso previo obligado para las notificaciones
+  // push: en iPhone Safari solo las permite si la app está en la pantalla de
+  // inicio. Solo se le ofrece al cliente logueado (pedido del dueño).
+  const btnInstalarApp = document.getElementById('btnInstalarApp');
+  const avisoInstalarApp = document.getElementById('avisoInstalarApp');
+  let eventoInstalar = null;
+
+  function actualizarInstalarApp(){
+    const ofrecer = Boolean(sesionCliente) && !LONTarjeta.esApp();
+    // iPhone/iPad no tienen API de instalación: va el instructivo de Compartir.
+    btnInstalarApp.classList.toggle('oculto', !(ofrecer && eventoInstalar && !LONTarjeta.esIOS()));
+    avisoInstalarApp.classList.toggle('oculto', !(ofrecer && LONTarjeta.esIOS()));
+  }
+
+  window.addEventListener('beforeinstallprompt', (ev) => {
+    ev.preventDefault();
+    eventoInstalar = ev;
+    actualizarInstalarApp();
+  });
+  window.addEventListener('appinstalled', () => {
+    eventoInstalar = null;
+    actualizarInstalarApp();
+  });
+  btnInstalarApp.addEventListener('click', async () => {
+    if (!eventoInstalar) return;
+    const ev = eventoInstalar;
+    eventoInstalar = null; // el evento no se puede reutilizar aunque el cliente cancele
+    actualizarInstalarApp();
+    try { await ev.prompt(); } catch (e) {}
+  });
+
+  // El service worker no cachea nada (ver public/sw.js); se registra solo para
+  // que el navegador considere la tienda instalable.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
   sesionCliente = cargarSesionClienteGuardada();
