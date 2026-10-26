@@ -361,7 +361,7 @@ async function servirCatalogoConSeo(req, res, next, obtenerProductos, base) {
   return res.type('html').send(htmlFinal);
 }
 
-function montarRutasSeo(app, { cargarProductos, urlBase, cargarLandingContenido }) {
+function montarRutasSeo(app, { cargarProductos, urlBase, cargarLandingContenido, proximamente = false }) {
   const base = String(urlBase || '').replace(/\/+$/, '');
   const obtenerProductos = crearCargadorCacheado(cargarProductos);
 
@@ -404,14 +404,19 @@ function montarRutasSeo(app, { cargarProductos, urlBase, cargarLandingContenido 
     return servirCatalogoConSeo(req, res, next, obtenerProductos, base);
   });
 
-  /* Sitemap: landing, tienda, productos y legales. */
+  /* Sitemap: landing, tienda, productos y legales. Con el cartel de
+     «Próximamente» prendido (proximamente) solo van / (el cartel) y
+     los legales: tienda, productos y cafeteria muestran el cartel y no
+     tienen que figurar como paginas propias. */
   app.get('/sitemap.xml', async (req, res) => {
-    const productos = await obtenerProductos();
+    const productos = proximamente ? [] : await obtenerProductos();
 
     const urls = [
       { loc: `${base}/`, priority: '1.0', changefreq: 'weekly' },
-      { loc: `${base}/tienda`, priority: '0.9', changefreq: 'daily' },
-      { loc: `${base}/cafeteria`, priority: '0.7', changefreq: 'weekly' },
+      ...(proximamente ? [] : [
+        { loc: `${base}/tienda`, priority: '0.9', changefreq: 'daily' },
+        { loc: `${base}/cafeteria`, priority: '0.7', changefreq: 'weekly' },
+      ]),
       ...productos.map((p) => ({
         loc: `${base}/tienda?producto=${encodeURIComponent(slugProducto(p))}`,
         priority: '0.8',

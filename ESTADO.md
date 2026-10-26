@@ -1090,3 +1090,11 @@ con `--header-text`.
   robots y sitemap siguen igual. La web completa sigue intacta detrás.
   **Para reabrir el sitio: `PROXIMAMENTE=0` (o false/no/off) en Render y redeploy/restart.** El cartel lleva el
   Instagram (`@lonphilosophy`) y la dirección confirmada por Francisco (Av. Sucre 2187, Beccar, link a Google Maps).
+
+## Visibilidad en buscadores con IA (2026-10-26)
+
+- `proximamente.html` lleva description, canonical `https://lonphilosophy.com.ar/`, OG (imagen `logo.png`) y JSON-LD
+  `CafeOrCoffeeShop`+`Store` (nombre, dirección Av. Sucre 2187, Beccar, San Isidro, Instagram), y la línea visible
+  «Beccar, San Isidro (Buenos Aires)» debajo de la dirección. Sin `geo`, `openingHours` ni teléfono: no están en el repo.
+- `robots.txt` apunta a `https://lonphilosophy.com.ar/sitemap.xml`. Con `PROXIMAMENTE` prendido el sitemap lista solo
+  `/` y los legales (opción `proximamente` de `montarRutasSeo`). `public/llms.txt` es estático y no lo tapa el cartel.
