@@ -128,6 +128,26 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
   maxAge: '365d',
   immutable: true,
 }));
+// Cartel de «Próximamente»: tapa SOLO las páginas públicas de la web. Lista
+// cerrada a propósito (no un catch-all): admin, API, webhooks, pagos y sus
+// páginas de vuelta, /sellar y /mi-tarjeta (tarjeta del local), /resena,
+// legales (Meta y Google piden la política de privacidad accesible), assets,
+// favicon, robots y sitemap siguen andando. Va antes de montarRutasSeo y de
+// express.static porque si no ellos contestan primero.
+const RUTAS_PROXIMAMENTE = new Set([
+  '/', '/index.html', '/landing.html', '/tienda', '/tienda.html', '/cafeteria', '/carta', '/carta.html',
+]);
+if (config.PROXIMAMENTE) {
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const ruta = req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path;
+    if (!RUTAS_PROXIMAMENTE.has(ruta)) return next();
+    // no-store: al apagar el flag nadie tiene que quedarse con el cartel cacheado.
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(path.join(__dirname, 'public', 'proximamente.html'));
+  });
+}
+
 // SEO + landing: / (landing), /tienda (catalogo) y el sitemap se arman
 // en el servidor, asi que tienen que registrarse ANTES de express.static
 // — si no, express contesta "/" con index.html (catalogo) y la landing

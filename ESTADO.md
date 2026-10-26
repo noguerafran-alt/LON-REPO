@@ -1073,3 +1073,20 @@ privacidad/términos, «← Volver al catálogo» del login admin) se dejaron.
 Gotcha: `#vistaCatalogo .volver` (ID, gris `--ink-muted`) le ganaba al color de
 la flecha en el detalle; por eso existe `#vistaCatalogo .btn-volver-flecha`
 con `--header-text`.
+
+## Favicon nuevo + cartel «Próximamente» (2026-10-26)
+
+- **Favicon**: Google mostraba el globito porque `/favicon.ico` daba 404 (JSON del catch-all). Ahora hay
+  `public/favicon.ico` (16/32/48), `icono-favicon-192.png`, `icono-favicon-32.png` y `apple-touch-icon.png`
+  (180), todos recortados de `icono-512.png` (escarabajo crema sobre `#3F141D`) con el margen achicado para
+  que se lea a 16px. Todas las páginas de `public/` llevan los 4 `<link>` (ico `sizes="any"`, png 192, png 32,
+  apple-touch 180); se sacó `/favicon.png` de los `<head>` (el archivo queda). `scripts/semilla/carta-original.html`
+  es copia congelada y no se tocó.
+- **Próximamente**: con `config.PROXIMAMENTE` (env `PROXIMAMENTE`, **activo por defecto**) un middleware en
+  `server.js`, antes de `montarRutasSeo` y `express.static`, contesta con `public/proximamente.html` (200,
+  `no-store`, con GA4 y sin noindex) a `/`, `/index.html`, `/landing.html`, `/tienda`, `/tienda.html`,
+  `/cafeteria`, `/carta` y `/carta.html`, con o sin barra final y con cualquier query. Lista cerrada a propósito: admin, API,
+  webhooks, pagos y `checkout-*.html`, `/sellar`, `/mi-tarjeta`, `/cliente`, `/resena`, legales, assets, favicon,
+  robots y sitemap siguen igual. La web completa sigue intacta detrás.
+  **Para reabrir el sitio: `PROXIMAMENTE=0` (o false/no/off) en Render y redeploy/restart.** El cartel lleva el
+  Instagram (`@lonphilosophy`) y la dirección confirmada por Francisco (Av. Sucre 2187, Beccar, link a Google Maps).

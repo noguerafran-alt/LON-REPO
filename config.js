@@ -460,6 +460,11 @@ module.exports = {
   // Solo la usa seo.js.
   SITIO_URL: (process.env.SITIO_URL || 'https://lonphilosophy-3h5c.onrender.com').replace(/\/+$/, ''),
 
+  // Cartel de «Próximamente» en las páginas públicas (ver server.js). Activo
+  // salvo que se apague explícitamente: PROXIMAMENTE=0 (o false/no/off) en
+  // Render vuelve a mostrar la web completa, que sigue intacta detrás.
+  PROXIMAMENTE: !['0', 'false', 'no', 'off'].includes(String(process.env.PROXIMAMENTE || '').trim().toLowerCase()),
+
   // Formulario de reseña de Google de LON. Es el link "Pedir reseñas" del
   // Perfil de Empresa (https://g.page/r/XXXX/review) o
   // https://search.google.com/local/writereview?placeid=PLACE_ID.
