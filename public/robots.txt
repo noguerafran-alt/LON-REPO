@@ -7,4 +7,4 @@ Disallow: /checkout-error.html
 Disallow: /checkout-exito.html
 Disallow: /checkout-pendiente.html
 
-Sitemap: https://lonphilosophy-3h5c.onrender.com/sitemap.xml
+Sitemap: https://lonphilosophy.com.ar/sitemap.xml

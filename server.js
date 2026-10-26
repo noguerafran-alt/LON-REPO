@@ -161,6 +161,8 @@ montarRutasSeo(app, {
   // comentario de SITIO_URL en config.js.
   urlBase: config.SITIO_URL,
   cargarLandingContenido,
+  // Con el cartel prendido el sitemap no lista tienda, productos ni cafeteria.
+  proximamente: config.PROXIMAMENTE,
 });
 
 // La tarjeta NFC graba /resena y no el link de Google: si Google lo cambia,
