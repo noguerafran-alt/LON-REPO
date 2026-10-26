@@ -1088,5 +1088,5 @@ con `--header-text`.
   `/cafeteria`, `/carta` y `/carta.html`, con o sin barra final y con cualquier query. Lista cerrada a propósito: admin, API,
   webhooks, pagos y `checkout-*.html`, `/sellar`, `/mi-tarjeta`, `/cliente`, `/resena`, legales, assets, favicon,
   robots y sitemap siguen igual. La web completa sigue intacta detrás.
-  **Para reabrir el sitio: `PROXIMAMENTE=0` (o false/no/off) en Render y redeploy/restart.** No hay dirección
-  en el cartel porque no figura en el repo ni en el sitio; el Instagram sí (`@lonphilosophy`).
+  **Para reabrir el sitio: `PROXIMAMENTE=0` (o false/no/off) en Render y redeploy/restart.** El cartel lleva el
+  Instagram (`@lonphilosophy`) y la dirección confirmada por Francisco (Av. Sucre 2187, Beccar, link a Google Maps).
